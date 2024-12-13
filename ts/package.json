@@ -1,0 +1,18 @@
+{
+  "author": "angelozam17@gmail.com",
+  "dependencies": {
+    "ts-node": "10.9.2",
+    "typescript": "5.7.2"
+  },
+  "description": "",
+  "devDependencies": {
+    "@types/node": "22.10.1",
+    "nodemon": "3.1.7"
+  },
+  "license": "MIT",
+  "name": "algorithms_ts",
+  "scripts": {
+    "start": "nodemon ./src/index.ts"
+  },
+  "version": "1.0.0"
+}
