@@ -1,24 +1,5 @@
 import { log } from "console";
-import mergeNodes, {
-  ListNode,
-} from "./leetcode/2181_merge_nodes_in_between_zeros";
+import differenceOfSums from "./leetcode/2894_divisible_and_non_divisible_sums_difference";
 
-const list = new ListNode(
-  0,
-  new ListNode(
-    3,
-    new ListNode(
-      1,
-      new ListNode(
-        0,
-        new ListNode(4, new ListNode(5, new ListNode(2, new ListNode(0))))
-      )
-    )
-  )
-);
-
-let current: ListNode | null = mergeNodes(list);
-while (current !== null) {
-  console.log(current.val);
-  current = current.next;
-}
+const result = differenceOfSums(10, 3);
+log(result);

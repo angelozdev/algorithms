@@ -29,7 +29,7 @@ function gcd(n: number, m: number): number {
 }
 
 function insertGreatestCommonDivisors(
-  head: ListNode<number> | null
+  head: ListNode<number> | null,
 ): ListNode<number> | null {
   let currentNode = head;
 
