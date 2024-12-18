@@ -1,5 +1,5 @@
 import { log } from "console";
-import differenceOfSums from "./leetcode/2894_divisible_and_non_divisible_sums_difference";
+import findWordsContaining from "./leetcode/2942_findwords_containing_character";
 
-const result = differenceOfSums(10, 3);
+const result = findWordsContaining(["abc", "bcd", "aaaa", "cbc"], "a");
 log(result);
