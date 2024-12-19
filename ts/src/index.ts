@@ -1,5 +1,9 @@
 import { log } from "console";
-import findWordsContaining from "./leetcode/2942_findwords_containing_character";
+import maximumWealth from "./leetcode/1672_richest_customer_wealth";
 
-const result = findWordsContaining(["abc", "bcd", "aaaa", "cbc"], "a");
+const result = maximumWealth([
+  [1, 2, 3],
+  [3, 2, 1],
+]);
+
 log(result);
