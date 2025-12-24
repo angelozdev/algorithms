@@ -1,19 +1,20 @@
 {
   "author": "angelozam17@gmail.com",
   "dependencies": {
-    "ts-node": "10.9.2",
     "typescript": "5.7.2"
   },
   "description": "",
   "devDependencies": {
     "@types/node": "22.10.1",
-    "nodemon": "3.1.7",
+    "tsx": "^4.19.2",
     "vitest": "2.1.8"
   },
   "license": "MIT",
   "name": "algorithms_ts",
   "scripts": {
-    "start": "nodemon ./src/index.ts"
+    "dev": "tsx watch ./src/index.ts",
+    "run": "tsx",
+    "start": "tsx watch ./src/index.ts"
   },
   "version": "1.0.0"
 }
