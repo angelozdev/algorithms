@@ -8,5 +8,7 @@
     "source.organizeImports": "explicit"
   },
   "editor.formatOnSave": true,
-  "python.defaultInterpreterPath": "/Users/angelozambrano/.pyenv/shims/python3"
+  "python.defaultInterpreterPath": "/Users/angelozambrano/.pyenv/shims/python3",
+  "python-envs.defaultEnvManager": "ms-python.python:pyenv",
+  "python-envs.pythonProjects": []
 }
