@@ -85,12 +85,15 @@ export function htmlToText(html: string): string {
 
 /**
  * Values after "Output:" (function problems) or on the line after "Output" (design problems),
- * with or without Markdown bold, and with Markdown escapes (\[, \_, …) removed.
+ * with or without Markdown bold. A `code` value loses its backticks; any other value loses its
+ * Markdown escapes (\[, \_, \-, …).
  */
 export function parseOutputs(text: string): string[] {
-  return [...text.matchAll(/Output:?(?:\*\*)?[ \t]*\n?[ \t]*(\S.*)/g)].map((match) =>
-    match[1].replace(/\\([\\`*_~[\]])/g, "$1").trim(),
-  );
+  return [...text.matchAll(/Output:?(?:\*\*)?[ \t]*\n?[ \t]*(\S.*)/g)].map((match) => {
+    const raw = match[1].trim();
+    const code = /^`(.*)`$/.exec(raw);
+    return code ? code[1] : raw.replace(/\\([!-\/:-@[-`{-~])/g, "$1");
+  });
 }
 
 export function slugFrom(arg: string): string {

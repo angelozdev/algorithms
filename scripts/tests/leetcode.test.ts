@@ -58,6 +58,32 @@ const minStack: LeetCodeQuestion = {
   metaData: JSON.stringify({ classname: "MinStack", constructor: { params: [] }, methods: [], systemdesign: true }),
 };
 
+const addedInteger: LeetCodeQuestion = {
+  questionFrontendId: "3131",
+  title: "Find the Integer Added to Array I",
+  titleSlug: "find-the-integer-added-to-array-i",
+  difficulty: "Easy",
+  content: [
+    '<div class="example-block">',
+    '<p><strong>Input:</strong> <span class="example-io">nums1 = [2,6,4], nums2 = [9,7,5]</span></p>',
+    '<p><strong>Output:</strong> <span class="example-io">3</span></p>',
+    "</div>",
+    '<div class="example-block">',
+    '<p><strong>Input:</strong> <span class="example-io">nums1 = [10], nums2 = [5]</span></p>',
+    '<p><strong>Output:</strong> <span class="example-io">-5</span></p>',
+    "</div>",
+  ].join("\n"),
+  exampleTestcases: "[2,6,4]\n[9,7,5]\n[10]\n[5]",
+  metaData: JSON.stringify({
+    name: "addedInteger",
+    params: [
+      { name: "nums1", type: "integer[]" },
+      { name: "nums2", type: "integer[]" },
+    ],
+    return: { type: "integer" },
+  }),
+};
+
 describe("helpers", () => {
   it("maps LeetCode types to the runner grammar", () => {
     expect(mapLeetCodeType("integer[]")).toBe("int[]");
@@ -77,6 +103,7 @@ describe("helpers", () => {
   it("finds outputs with or without a colon", () => {
     expect(parseOutputs("Output: [0,1]\nOutput\n[null,1]")).toEqual(["[0,1]", "[null,1]"]);
     expect(parseOutputs("**Output:** \\[0,1\\]\n**Output**\n[null,1]")).toEqual(["[0,1]", "[null,1]"]);
+    expect(parseOutputs(htmlToText("<p><strong>Output:</strong> <code>[1,2]</code></p>"))).toEqual(["[1,2]"]);
   });
 
   it("extracts slugs from URLs", () => {
@@ -120,6 +147,13 @@ describe("buildDraft", () => {
     expect(draft.cases.examples).toEqual([
       { input: [[3, 2, 2, 3], 3], expected: [2, 2] },
       { input: [[0, 1, 2, 2, 3, 0, 4, 2], 2], expected: [0, 1, 4, 0, 3] },
+    ]);
+  });
+
+  it("reads outputs in the example-block format, negative values included", () => {
+    expect(buildDraft(addedInteger).cases.examples).toEqual([
+      { input: [[2, 6, 4], [9, 7, 5]], expected: 3 },
+      { input: [[10], [5]], expected: -5 },
     ]);
   });
 
