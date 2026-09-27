@@ -64,11 +64,23 @@ export async function loadStressCases(dir: string, id: string): Promise<StressCa
   // The mtime query busts the ESM cache so watch mode sees edits. It uses integer
   // nanoseconds: a fractional mtimeMs ends the id in ".NNNN", which Vite takes as the extension.
   const url = `${pathToFileURL(file).href}?mtime=${statSync(file, { bigint: true }).mtimeNs}`;
-  const mod = (await import(url)) as { default?: unknown };
+  let mod: { default?: unknown };
+  try {
+    mod = (await import(url)) as { default?: unknown };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CaseFileError([`failed to load: ${message}`], "stress.ts");
+  }
   if (typeof mod.default !== "function") {
     throw new CaseFileError(["expected a default export function (rng) => StressCase[]"], "stress.ts");
   }
-  const cases = (mod.default as (rng: Rng) => unknown)(createRng(seedFromId(id)));
+  let cases: unknown;
+  try {
+    cases = (mod.default as (rng: Rng) => unknown)(createRng(seedFromId(id)));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new CaseFileError([`stress() threw: ${message}`], "stress.ts");
+  }
   if (!Array.isArray(cases) || cases.length === 0) {
     throw new CaseFileError(["must return a non-empty array of { name, input, limitMs? }"], "stress.ts");
   }

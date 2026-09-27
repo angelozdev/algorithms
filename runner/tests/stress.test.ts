@@ -70,4 +70,18 @@ describe("loadStressCases", () => {
     write(bad, "stress.ts", 'export default () => [{ input: [1], limitMs: -1 }];\n');
     await expect(loadStressCases(bad, "x")).rejects.toThrow(/\[0\]\.name: required/);
   });
+
+  it("reports files that fail to load or whose generator throws as case-file errors", async () => {
+    const broken = path.join(dir, "broken");
+    write(broken, "stress.ts", 'export default () => [{ name: "half", input: [1] }\n');
+    const loading = loadStressCases(broken, "x");
+    await expect(loading).rejects.toBeInstanceOf(CaseFileError);
+    await expect(loading).rejects.toThrow(/failed to load/);
+
+    const throwing = path.join(dir, "throwing");
+    write(throwing, "stress.ts", 'export default () => { throw new TypeError("boom"); };\n');
+    const generating = loadStressCases(throwing, "x");
+    await expect(generating).rejects.toBeInstanceOf(CaseFileError);
+    await expect(generating).rejects.toThrow(/stress\(\) threw: boom/);
+  });
 });
