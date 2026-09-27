@@ -4,7 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { REPO_ROOT, TSX_BIN } from "../../runner/src/paths.ts";
 import { sync } from "../lib/sync.ts";
-import { makeStudyRepo, put } from "./fixture.ts";
+import { conceptReadme, makeStudyRepo, put } from "./fixture.ts";
 
 const read = (root: string, rel: string) => readFileSync(path.join(root, rel), "utf8");
 
@@ -103,6 +103,18 @@ describe("sync", () => {
     put(root, "problems/lc-0001-two-sum/README.md", custom);
     sync(root);
     expect(read(root, "problems/lc-0001-two-sum/README.md")).toBe(custom);
+  });
+
+  it("never writes past an unclosed auto marker", () => {
+    const root = makeStudyRepo();
+    const unclosed = conceptReadme({ slug: "arrays", title: "Arrays", status: "mastered", requires: [], explanation: "USER WROTE THIS" }).replace(
+      "<!-- auto:exercises -->\n<!-- /auto -->",
+      "<!-- auto:exercises -->",
+    );
+    put(root, "concepts/arrays/README.md", unclosed);
+    sync(root);
+    const untouched = unclosed.slice(0, unclosed.indexOf("<!-- auto:problems -->"));
+    expect(read(root, "concepts/arrays/README.md").slice(0, untouched.length)).toBe(untouched);
   });
 
   it("runs from the CLI", () => {
