@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { type Stats, statSync } from "node:fs";
 import path from "node:path";
 import { watch } from "chokidar";
 import { formatTerminal } from "./reporter.ts";
@@ -8,23 +9,39 @@ import { ensureSolution } from "./stubs.ts";
 import type { Lang, Target } from "./types.ts";
 
 export interface Watcher {
-  /** Resolves once the initial scan is done: changes made from then on are reported. */
+  /** Resolves once the watched files are armed: saves made to them from then on are reported. */
   ready: Promise<void>;
   close(): void;
 }
 
-/** Calls onChange (debounced) when one of `names` inside `dir` is created, written, replaced by a rename, or removed. */
+/** One saved state of a file ("missing" when it does not exist): every save changes it. */
+function version(stats: Stats | undefined): string {
+  return stats ? `${stats.ino}:${stats.size}:${stats.mtimeMs}` : "missing";
+}
+
+/**
+ * Calls onChange (debounced) when one of `names` inside `dir` is created, written, replaced by a rename, or removed.
+ * Only a new version of a file counts: macOS reports one save twice (kqueue on the file, then FSEvents on the
+ * directory about 50 ms later) and can replay events from just before the watcher started.
+ */
 export function watchFiles(
   dir: string,
   names: readonly string[],
   onChange: () => void,
   debounceMs = 100,
 ): Watcher {
+  const versions = new Map(
+    names.map((name) => [name, version(statSync(path.join(dir, name), { throwIfNoEntry: false }))]),
+  );
   let timer: NodeJS.Timeout | null = null;
-  const watcher = watch(dir, { depth: 0, ignoreInitial: true });
-  const ready = new Promise<void>((resolve) => watcher.once("ready", resolve));
-  watcher.on("all", (_event, file) => {
-    if (!names.includes(path.basename(file))) return;
+  const watcher = watch(dir, { depth: 0, ignoreInitial: true, alwaysStat: true });
+  // chokidar is ready once it has created its fs watchers; libuv arms them on its next poll, a loop turn later.
+  const ready = new Promise<void>((resolve) => watcher.once("ready", () => setImmediate(() => setImmediate(resolve))));
+  watcher.on("all", (event, file, stats) => {
+    const name = path.basename(file);
+    const current = event === "unlink" ? "missing" : version(stats);
+    if (!versions.has(name) || versions.get(name) === current) return;
+    versions.set(name, current);
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
