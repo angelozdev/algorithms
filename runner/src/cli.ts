@@ -1,5 +1,7 @@
 import { existsSync } from "node:fs";
+import path from "node:path";
 import { parseArgs } from "node:util";
+import { FillError, fillExpected } from "./fill-expected.ts";
 import { contentRoot } from "./paths.ts";
 import { formatTerminal } from "./reporter.ts";
 import { listTargets, QueryError, resolveQuery } from "./resolver.ts";
@@ -57,11 +59,19 @@ function parseFlags(args: string[]) {
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   const { values, positionals } = parseFlags(rest);
-  if (command !== "test" && command !== "watch") throw new UsageError(USAGE);
+  if (command !== "test" && command !== "watch" && command !== "fill-expected") throw new UsageError(USAGE);
   const root = contentRoot();
   const target = resolveQuery(listTargets(root), positionals.join(" "));
   if (command === "watch") {
     await watchTarget(target, parseLang(values.lang, false) as Lang, { open: values.open, root });
+    return 0;
+  }
+  if (command === "fill-expected") {
+    if (!values.ref) throw new UsageError("fill-expected needs --ref <path to a reference solution outside the repo>");
+    const result = await fillExpected(target, path.resolve(values.ref), root);
+    const file = path.relative(root, path.join(target.dir, "cases.json")).split(path.sep).join("/");
+    process.stdout.write(`Filled ${result.filled} hidden expected value(s) in ${file}.\n`);
+    for (const warning of result.warnings) process.stdout.write(`warning: ${warning}\n`);
     return 0;
   }
   return testCommand(target, parseLang(values.lang, true), values.json, root);
@@ -81,6 +91,9 @@ main(process.argv.slice(2)).then(
       process.exitCode = 2;
     } else if (error instanceof UsageError) {
       process.stderr.write(`${error.message}\n`);
+      process.exitCode = 1;
+    } else if (error instanceof FillError) {
+      process.stderr.write(`fill-expected: ${error.message}\n`);
       process.exitCode = 1;
     } else {
       process.stderr.write(`${(error as Error).stack ?? String(error)}\n`);
