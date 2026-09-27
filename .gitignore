@@ -352,3 +352,7 @@ $RECYCLE.BIN/
 
 # Runner test scratch space
 runner/tests/.tmp/
+
+# Python bytecode caches
+__pycache__/
+*.py[cod]
