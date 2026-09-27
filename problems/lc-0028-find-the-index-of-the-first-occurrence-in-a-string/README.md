@@ -6,10 +6,10 @@ url: https://leetcode.com/problems/find-the-index-of-the-first-occurrence-in-a-s
 difficulty: easy
 patterns: [strings]
 concepts: [string-matching]
-status: solving
+status: solved
 hints: 0
 solution_revealed: false
-solved_in: []
+solved_in: [py]
 complexity: null
 ---
 # 28. Find the Index of the First Occurrence in a String
@@ -28,8 +28,10 @@ Return the index where `needle` first appears inside `haystack`, or `-1` if `nee
 ## Concepts
 
 <!-- auto:concepts -->
+- string-matching (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: green in py

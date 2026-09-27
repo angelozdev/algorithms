@@ -6,10 +6,10 @@ url: https://leetcode.com/problems/plus-one/
 difficulty: easy
 patterns: [math]
 concepts: [carry-propagation]
-status: solving
+status: solved
 hints: 0
 solution_revealed: false
-solved_in: []
+solved_in: [py]
 complexity: null
 ---
 # 66. Plus One
@@ -29,8 +29,10 @@ A large integer is given as an array `digits`, most significant digit first, wit
 ## Concepts
 
 <!-- auto:concepts -->
+- carry-propagation (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: green in py

@@ -1,0 +1,22 @@
+{
+  "mode": "function",
+  "entry": "findWordsContaining",
+  "params": [
+    {"name":"words","type":"string[]"},
+    {"name":"x","type":"string"}
+  ],
+  "returns": "int[]",
+  "compare": "unordered",
+  "examples": [
+    {"input":[["leet","code"],"e"],"expected":[0,1]},
+    {"input":[["abc","bcd","aaaa","cbc"],"a"],"expected":[0,2]},
+    {"input":[["abc","bcd","aaaa","cbc"],"z"],"expected":[]}
+  ],
+  "hidden": [
+    {"input":[["a"],"a"],"expected":[0]},
+    {"input":[["b"],"a"],"expected":[]},
+    {"input":[["abc","def","ghi","cab"],"c"],"expected":[0,3]},
+    {"input":[["zzz","z","az"],"z"],"expected":[0,1,2]},
+    {"input":[["leetcode"],"t"],"expected":[0]}
+  ]
+}

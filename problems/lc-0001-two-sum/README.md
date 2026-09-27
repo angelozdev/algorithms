@@ -6,10 +6,10 @@ url: https://leetcode.com/problems/two-sum/
 difficulty: easy
 patterns: [arrays-hashing]
 concepts: [hash-map]
-status: solving
+status: solved
 hints: 0
 solution_revealed: false
-solved_in: []
+solved_in: [py, ts]
 complexity: null
 ---
 # 1. Two Sum
@@ -31,8 +31,10 @@ Given an integer array `nums` and an integer `target`, return the indices of the
 ## Concepts
 
 <!-- auto:concepts -->
+- hash-map (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: green in py, ts

@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "mergeTwoLists",
+  "params": [
+    {"name":"list1","type":"ListNode"},
+    {"name":"list2","type":"ListNode"}
+  ],
+  "returns": "ListNode",
+  "compare": "exact",
+  "examples": [
+    {"input":[[1,2,4],[1,3,4]],"expected":[1,1,2,3,4,4]},
+    {"input":[[],[]],"expected":[]},
+    {"input":[[],[0]],"expected":[0]},
+    {"input":[[1,2],[3,4,5]],"expected":[1,2,3,4,5]}
+  ],
+  "hidden": [
+    {"input":[[5],[1,2,4]],"expected":[1,2,4,5]},
+    {"input":[[-100,0,100],[-50,50]],"expected":[-100,-50,0,50,100]},
+    {"input":[[1,1,1],[1,1]],"expected":[1,1,1,1,1]},
+    {"input":[[],[1]],"expected":[1]},
+    {"input":[[2],[1]],"expected":[1,2]},
+    {"input":[[-3,-1,4],[-2,-2,5,6]],"expected":[-3,-2,-2,-1,4,5,6]}
+  ]
+}

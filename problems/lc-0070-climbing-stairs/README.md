@@ -6,10 +6,10 @@ url: https://leetcode.com/problems/climbing-stairs/
 difficulty: easy
 patterns: [dp-1d]
 concepts: [dynamic-programming, recursion]
-status: solving
+status: solved
 hints: 0
 solution_revealed: false
-solved_in: []
+solved_in: [py]
 complexity: null
 ---
 # 70. Climbing Stairs
@@ -28,8 +28,11 @@ A staircase has `n` steps and each move climbs either 1 or 2 steps. In how many 
 ## Concepts
 
 <!-- auto:concepts -->
+- dynamic-programming (missing)
+- recursion (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: green in py

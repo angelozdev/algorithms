@@ -6,10 +6,10 @@ url: https://leetcode.com/problems/length-of-last-word/
 difficulty: easy
 patterns: [strings]
 concepts: [string-traversal]
-status: solving
+status: solved
 hints: 0
 solution_revealed: false
-solved_in: []
+solved_in: [py]
 complexity: null
 ---
 # 58. Length of Last Word
@@ -29,8 +29,10 @@ The string `s` is made of words (runs of letters) separated by spaces, possibly 
 ## Concepts
 
 <!-- auto:concepts -->
+- string-traversal (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: green in py

@@ -29,8 +29,10 @@ complexity: null
 ## Concepts
 
 <!-- auto:concepts -->
+- binary-search (missing)
 <!-- /auto -->
 
 ## Log
 
 - 2026-09-27 · migrated from the legacy repo
+- 2026-09-27 · migration check: py fails examples

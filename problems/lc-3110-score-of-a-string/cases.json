@@ -1,0 +1,21 @@
+{
+  "mode": "function",
+  "entry": "scoreOfString",
+  "params": [
+    {"name":"s","type":"string"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":["hello"],"expected":13},
+    {"input":["zaz"],"expected":50}
+  ],
+  "hidden": [
+    {"input":["ab"],"expected":1},
+    {"input":["az"],"expected":25},
+    {"input":["aa"],"expected":0},
+    {"input":["abcdefghijklmnopqrstuvwxyz"],"expected":25},
+    {"input":["zyxw"],"expected":3},
+    {"input":["azaz"],"expected":75}
+  ]
+}
