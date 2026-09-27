@@ -10,8 +10,3 @@ class Solution:
             else:
                 l += 1
         return l
-
-
-sol = Solution()
-s = "Hello World"
-print(sol.lengthOfLastWord(s))

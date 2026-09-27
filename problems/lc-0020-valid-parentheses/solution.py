@@ -20,10 +20,3 @@ class Solution:
                 return False
 
         return len(stack) == 0
-
-
-if __name__ == "__main__":
-    sol = Solution()
-    assert sol.isValid("()[]{}") == True
-    assert sol.isValid(")") == False
-    assert sol.isValid("(((") == False

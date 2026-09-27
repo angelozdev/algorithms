@@ -15,8 +15,3 @@ class Solution:
             return self.searchInsert(nums[mid:right], target)
         else:
             return self.searchInsert(nums[left:mid], target)
-
-
-sol = Solution()
-nums = list(range(1_000))
-print(sol.searchInsert(nums, 80))

@@ -11,10 +11,3 @@ class Solution:
             x //= 10
 
         return original == reversed_num
-
-
-if __name__ == "__main__":
-    solution = Solution()
-    assert solution.isPalindrome(121)
-    assert not solution.isPalindrome(-121)
-    assert not solution.isPalindrome(10)

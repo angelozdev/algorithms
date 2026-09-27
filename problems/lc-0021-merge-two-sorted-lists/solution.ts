@@ -1,3 +1,5 @@
+import { ListNode } from "lc"; // delete this line when pasting into LeetCode
+
 /**
  * Definition for singly-linked list.
  * class ListNode {
@@ -11,31 +13,6 @@
  **/
 
 type TNode = ListNode | null;
-
-class ListNode {
-  val: number;
-  next: TNode;
-  constructor(val?: number, next?: TNode) {
-    this.val = val === undefined ? 0 : val;
-    this.next = next === undefined ? null : next;
-  }
-
-  toArray() {
-    const list = [];
-    let current: TNode = this;
-
-    while (current !== null) {
-      list.push(current.val);
-      current = current.next;
-    }
-
-    return list;
-  }
-
-  toString() {
-    return `${this.toArray().join("-> ")}`;
-  }
-}
 
 function mergeTwoLists(list1: TNode, list2: TNode): TNode {
   let a: TNode = list1;
@@ -61,9 +38,4 @@ function mergeTwoLists(list1: TNode, list2: TNode): TNode {
   return result.next;
 }
 
-const a = new ListNode(1, new ListNode(2));
-const b = new ListNode(3, new ListNode(4, new ListNode(5)));
-
-const list = mergeTwoLists(a, b);
-
-console.log(list?.toString());
+export default mergeTwoLists;

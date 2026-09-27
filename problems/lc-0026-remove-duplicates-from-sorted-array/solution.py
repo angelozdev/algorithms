@@ -12,7 +12,3 @@ class Solution(object):
                 nums[i], nums[head] = nums[head], nums[i]
 
         return nums
-
-
-sol = Solution()
-print(sol.removeDuplicates([0, 0, 1, 1, 1, 2, 2, 3, 3, 4]))

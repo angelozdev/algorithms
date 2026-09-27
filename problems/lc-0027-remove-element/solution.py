@@ -8,7 +8,3 @@ class Solution:
                 k += 1
 
         return k
-
-
-sol = Solution()
-print(sol.removeElement([0, 1, 2, 2, 3, 0, 4, 2], 2))

@@ -5,8 +5,3 @@ class Solution:
                 return i
 
         return -1
-
-
-sol = Solution()
-print(sol.strStr("mississippi", "issip"))
-print(sol.strStr("sad", "sad"))

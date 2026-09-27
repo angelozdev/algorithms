@@ -1,13 +1,5 @@
 import { log } from "console";
-
-export class ListNode {
-  val: number;
-  next: ListNode | null;
-  constructor(val?: number, next?: ListNode | null) {
-    this.val = val === undefined ? 0 : val;
-    this.next = next === undefined ? null : next;
-  }
-}
+import { ListNode } from "lc"; // delete this line when pasting into LeetCode
 
 function mergeNodes(head: ListNode | null): ListNode | null {
   if (!head) return null;

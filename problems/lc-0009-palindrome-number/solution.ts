@@ -1,6 +1,4 @@
-import assert from "node:assert";
-
-function isPalindrome(x: number): boolean {
+export default function isPalindrome(x: number): boolean {
   if (x < 0) return false;
 
   const original = x;
@@ -14,7 +12,3 @@ function isPalindrome(x: number): boolean {
 
   return original === reversedNumber;
 }
-
-assert.equal(isPalindrome(121), true);
-assert.equal(isPalindrome(-121), false);
-assert.equal(isPalindrome(10), false);

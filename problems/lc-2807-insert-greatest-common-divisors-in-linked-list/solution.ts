@@ -1,22 +1,5 @@
 import { log } from "console";
-
-export class ListNode<T> {
-  val: T | null;
-  next: ListNode<T> | null;
-  constructor(val?: T, next?: ListNode<T> | null) {
-    this.val = val === undefined ? null : val;
-    this.next = next === undefined ? null : next;
-  }
-
-  forEach(callback: (node: T | null) => void) {
-    let currentNode: ListNode<T> | null = this;
-
-    while (currentNode) {
-      callback(currentNode?.val);
-      currentNode = currentNode.next;
-    }
-  }
-}
+import { ListNode } from "lc"; // delete this line when pasting into LeetCode
 
 function gcd(n: number, m: number): number {
   while (m !== 0) {
@@ -29,8 +12,8 @@ function gcd(n: number, m: number): number {
 }
 
 function insertGreatestCommonDivisors(
-  head: ListNode<number> | null,
-): ListNode<number> | null {
+  head: ListNode | null,
+): ListNode | null {
   let currentNode = head;
 
   while (
