@@ -16,7 +16,7 @@ describe("watchFiles", () => {
     await sleep(150); // let the creation event settle before watching
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 100);
-    await sleep(50); // let the watcher arm: on macOS fs.watch starts its FSEvents stream asynchronously
+    await watcher.ready;
     writeFileSync(path.join(dir, "solution.py"), "b");
     writeFileSync(path.join(dir, "solution.py"), "c");
     await sleep(400);
@@ -30,7 +30,7 @@ describe("watchFiles", () => {
     await sleep(150); // let the creation event settle before watching
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 50);
-    await sleep(50); // let the watcher arm: on macOS fs.watch starts its FSEvents stream asynchronously
+    await watcher.ready;
     writeFileSync(path.join(dir, ".solution.py.swp"), "b");
     renameSync(path.join(dir, ".solution.py.swp"), path.join(dir, "solution.py"));
     await sleep(300);
@@ -44,7 +44,7 @@ describe("watchFiles", () => {
     await sleep(150); // let the creation event settle before watching
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 50);
-    await sleep(50); // let the watcher arm: on macOS fs.watch starts its FSEvents stream asynchronously
+    await watcher.ready;
     writeFileSync(path.join(dir, "notes.txt"), "x");
     await sleep(300);
     watcher.close();

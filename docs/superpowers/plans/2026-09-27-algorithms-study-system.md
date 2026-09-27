@@ -15,7 +15,7 @@
 - Every file in the repo is written in **English**. Claude chats with the user in **Spanish**.
 - Claude configuration is **project-level only** (`algorithms/.claude/`). Nothing goes to `~/.claude/`.
 - Runtimes: Node.js ≥ 24, pnpm 11, Python **3.13** resolved with `uv python find` (pinned by `.python-version`).
-- Dependencies are limited to `typescript`, `tsx`, `vitest`, `zod`, `yaml`, `@types/node`. Colors via `node:util` `styleText`, watching via `fs.watch`. No chalk, no chokidar.
+- Dependencies: prefer well-maintained libraries over hand-rolled code when they remove real complexity or flakiness (amended during execution: `chokidar` for watch mode, `node-html-markdown` for LeetCode statements). Keep native `fetch`, `node:util` `parseArgs`/`styleText`, `yaml` + the small frontmatter parser, `zod`, the custom `node:child_process` executor, and pnpm scripts; the Python harness stays stdlib-only.
 - The harness request **never includes `expected`**. No terminal or JSON output ever contains a hidden case's expected value.
 - Limits: examples + hidden process wall clock **5000 ms**; stress **2000 ms per case** (default), stress process wall clock = sum of stress limits **+ 2000 ms**; captured stdout shown truncated to **20 lines**.
 - Default language is `py`.

@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { watch } from "node:fs";
 import path from "node:path";
+import { watch } from "chokidar";
 import { formatTerminal } from "./reporter.ts";
 import { runTarget } from "./run.ts";
 import { CaseFileError, loadCaseFile } from "./schema.ts";
@@ -8,10 +8,12 @@ import { ensureSolution } from "./stubs.ts";
 import type { Lang, Target } from "./types.ts";
 
 export interface Watcher {
+  /** Resolves once the initial scan is done: changes made from then on are reported. */
+  ready: Promise<void>;
   close(): void;
 }
 
-/** Calls onChange (debounced) when one of `names` inside `dir` is written or replaced by a rename. */
+/** Calls onChange (debounced) when one of `names` inside `dir` is created, written, replaced by a rename, or removed. */
 export function watchFiles(
   dir: string,
   names: readonly string[],
@@ -19,8 +21,10 @@ export function watchFiles(
   debounceMs = 100,
 ): Watcher {
   let timer: NodeJS.Timeout | null = null;
-  const watcher = watch(dir, (_event, filename) => {
-    if (!filename || !names.includes(path.basename(filename.toString()))) return;
+  const watcher = watch(dir, { depth: 0, ignoreInitial: true });
+  const ready = new Promise<void>((resolve) => watcher.once("ready", resolve));
+  watcher.on("all", (_event, file) => {
+    if (!names.includes(path.basename(file))) return;
     if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
       timer = null;
@@ -28,9 +32,10 @@ export function watchFiles(
     }, debounceMs);
   });
   return {
+    ready,
     close: () => {
       if (timer) clearTimeout(timer);
-      watcher.close();
+      watcher.close().catch(() => {});
     },
   };
 }
