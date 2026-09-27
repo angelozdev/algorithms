@@ -152,6 +152,35 @@ describe("python harness", () => {
     expect(outcome.runs.get("c")?.output).toEqual([null, null, 7]);
   });
 
+  it("loads solutions that define dataclasses with quoted forward references", async () => {
+    const file = solution(
+      "dataclass",
+      [
+        "from dataclasses import dataclass",
+        "",
+        "",
+        "@dataclass",
+        "class Node:",
+        "    key: int",
+        '    next: "Node | None" = None',
+        "",
+        "",
+        "class Solution:",
+        "    def solve(self, nums: list[int]) -> int:",
+        "        head = None",
+        "        for n in nums:",
+        "            head = Node(n, head)",
+        "        return head.key",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness("py", harnessRequest(file, { cases: [{ id: "a", input: [[1, 2, 3]] }] }), {
+      wallLimitMs: 5000,
+    });
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("a")).toMatchObject({ ok: true, output: 3 });
+  });
+
   it("reports syntax errors as a fatal load error", async () => {
     const file = solution("syntax", "class Solution:\n    def solve(self, nums)\n        return 1\n");
     const outcome = await runHarness("py", harnessRequest(file, { cases: [{ id: "a", input: [[1]] }] }), {

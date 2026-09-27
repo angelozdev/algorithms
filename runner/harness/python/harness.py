@@ -179,6 +179,7 @@ def serialize(value, type_name):
 def load_module(path: str):
     spec = importlib.util.spec_from_file_location("solution", path)
     module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
