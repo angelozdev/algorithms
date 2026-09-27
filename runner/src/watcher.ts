@@ -47,10 +47,11 @@ export async function renderRun(target: Target, lang: Lang, root: string): Promi
   }
 }
 
-export function openInEditor(file: string): void {
+/** Opens `file` in VS Code; when `code` cannot be started, passes a warning to `onError`. */
+export function openInEditor(file: string, onError: (message: string) => void): void {
   const child = spawn("code", [file], { stdio: "ignore", detached: true });
   child.on("error", () => {
-    process.stderr.write(`warning: "code" is not on your PATH — open ${file} yourself.\n`);
+    onError(`warning: "code" is not on your PATH — open ${file} yourself.`);
   });
   child.unref();
 }
@@ -61,7 +62,21 @@ export async function watchTarget(
   options: { open: boolean; root: string },
 ): Promise<Watcher> {
   const solution = ensureSolution(target.dir, loadCaseFile(target.dir), lang).path;
-  if (options.open) openInEditor(solution);
+  // A notice (e.g. the --open warning) is drawn under every screen, so clearing never hides it.
+  let notice = "";
+  let screen: string | null = null;
+  const draw = (): void => {
+    if (screen === null) return;
+    process.stdout.write(
+      `\x1b[2J\x1b[H${screen}\n\nwatching ${path.relative(options.root, solution)} … (Ctrl+C to stop)\n${notice}`,
+    );
+  };
+  if (options.open) {
+    openInEditor(solution, (message) => {
+      notice = `${message}\n`;
+      draw();
+    });
+  }
   let running = false;
   let again = false;
   const cycle = async (): Promise<void> => {
@@ -72,12 +87,10 @@ export async function watchTarget(
     running = true;
     do {
       again = false;
-      const text = await renderRun(target, lang, options.root).catch(
+      screen = await renderRun(target, lang, options.root).catch(
         (error: unknown) => `Runner error: ${(error as Error).message}`,
       );
-      process.stdout.write(
-        `\x1b[2J\x1b[H${text}\n\nwatching ${path.relative(options.root, solution)} … (Ctrl+C to stop)\n`,
-      );
+      draw();
     } while (again);
     running = false;
   };
