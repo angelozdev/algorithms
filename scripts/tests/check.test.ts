@@ -72,6 +72,12 @@ describe("checkRepo", () => {
     expect(messages(root)).toContain("problems/lc-0001-two-sum/README.md: missing <!-- auto:concepts --> … <!-- /auto --> section");
   });
 
+  it("requires every auto section to be closed", () => {
+    const root = makeStudyRepo();
+    edit(root, "concepts/hash-map/README.md", "<!-- auto:exercises -->\n<!-- /auto -->\n", "<!-- auto:exercises -->\n");
+    expect(messages(root)).toContain("concepts/hash-map/README.md: missing <!-- auto:exercises --> … <!-- /auto --> section");
+  });
+
   it("exits 1 from the CLI when there are errors", () => {
     const root = makeStudyRepo();
     const run = () => spawnSync(TSX_BIN, ["scripts/check.ts"], { cwd: REPO_ROOT, env: { ...process.env, ALGO_ROOT: root }, encoding: "utf8" });

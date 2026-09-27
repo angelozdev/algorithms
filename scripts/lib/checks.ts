@@ -4,6 +4,7 @@ import type { z } from "zod";
 import { type DocEntry, type RepoModel, scanRepo, str, strList } from "../../lib/repo.ts";
 import { conceptFrontmatter, exerciseFrontmatter, problemFrontmatter } from "../../lib/schemas.ts";
 import { assertHiddenFilled, CaseFileError, formatPath, loadCaseFile } from "../../runner/src/schema.ts";
+import { replaceAuto } from "./auto.ts";
 import { missingConcepts } from "./render.ts";
 
 export interface Issue {
@@ -90,7 +91,7 @@ export function checkRepo(root: string): CheckReport {
   const requireAuto = (entry: DocEntry, names: string[]): void => {
     if (entry.error) return;
     for (const name of names) {
-      if (!entry.body.includes(`<!-- auto:${name} -->`)) error(entry.rel, `missing <!-- auto:${name} --> … <!-- /auto --> section`);
+      if (replaceAuto(entry.body, name, "") === null) error(entry.rel, `missing <!-- auto:${name} --> … <!-- /auto --> section`);
     }
   };
 
