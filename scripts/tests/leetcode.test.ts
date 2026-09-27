@@ -70,11 +70,13 @@ describe("helpers", () => {
   });
 
   it("turns HTML into readable text", () => {
-    expect(htmlToText("<p>a&nbsp;&lt;b&gt;</p><ul><li><code>10<sup>4</sup></code></li></ul>")).toBe("a <b>\n- 10^4");
+    expect(htmlToText("<p>a&nbsp;&lt;b&gt;</p><ul><li><code>10<sup>4</sup></code></li></ul>")).toBe("a <b>\n\n- `10^4`");
+    expect(htmlToText("<p>x<sub>i</sub> &lt; x<sub>j</sub></p>")).toBe("x_i < x_j");
   });
 
   it("finds outputs with or without a colon", () => {
     expect(parseOutputs("Output: [0,1]\nOutput\n[null,1]")).toEqual(["[0,1]", "[null,1]"]);
+    expect(parseOutputs("**Output:** \\[0,1\\]\n**Output**\n[null,1]")).toEqual(["[0,1]", "[null,1]"]);
   });
 
   it("extracts slugs from URLs", () => {

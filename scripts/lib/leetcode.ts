@@ -1,3 +1,5 @@
+import { NodeHtmlMarkdown } from "node-html-markdown";
+
 export interface LeetCodeQuestion {
   questionFrontendId: string;
   title: string;
@@ -73,23 +75,22 @@ export function mapLeetCodeType(type: string): string | null {
   return mapped ? mapped + "[]".repeat(depth) : null;
 }
 
-const ENTITIES: Record<string, string> = { "&nbsp;": " ", "&lt;": "<", "&gt;": ">", "&amp;": "&", "&quot;": '"', "&#39;": "'" };
+/** Exponents and subscripts stay readable: 10<sup>4</sup> → 10^4, x<sub>i</sub> → x_i. */
+const markdown = new NodeHtmlMarkdown({ bulletMarker: "-" }, { sup: { prefix: "^" }, sub: { prefix: "_" } });
 
+/** Converts a LeetCode statement (HTML) to Markdown. */
 export function htmlToText(html: string): string {
-  return html
-    .replace(/<sup>(.*?)<\/sup>/g, "^$1")
-    .replace(/<li>/g, "- ")
-    .replace(/<\/(p|li|pre|div)>|<br\s*\/?>/g, "\n")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&[a-z]+;|&#\d+;/g, (entity) => ENTITIES[entity] ?? entity)
-    .replace(/[ \t]+\n/g, "\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+  return markdown.translate(html);
 }
 
-/** Values after "Output:" (function problems) or on the line after "Output" (design problems). */
+/**
+ * Values after "Output:" (function problems) or on the line after "Output" (design problems),
+ * with or without Markdown bold, and with Markdown escapes (\[, \_, …) removed.
+ */
 export function parseOutputs(text: string): string[] {
-  return [...text.matchAll(/Output:?[ \t]*\n?[ \t]*(\S.*)/g)].map((match) => match[1].trim());
+  return [...text.matchAll(/Output:?(?:\*\*)?[ \t]*\n?[ \t]*(\S.*)/g)].map((match) =>
+    match[1].replace(/\\([\\`*_~[\]])/g, "$1").trim(),
+  );
 }
 
 export function slugFrom(arg: string): string {
