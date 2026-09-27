@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "lengthOfLastWord",
+  "params": [
+    {"name":"s","type":"string"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":["Hello World"],"expected":5},
+    {"input":["   fly me   to   the moon  "],"expected":4},
+    {"input":["luffy is still joyboy"],"expected":6}
+  ],
+  "hidden": [
+    {"input":["a"],"expected":1},
+    {"input":["a "],"expected":1},
+    {"input":["   a"],"expected":1},
+    {"input":["day"],"expected":3},
+    {"input":["b   a    "],"expected":1},
+    {"input":["Today is a nice day"],"expected":3},
+    {"input":["abc  de"],"expected":2},
+    {"input":["   leading"],"expected":7}
+  ]
+}

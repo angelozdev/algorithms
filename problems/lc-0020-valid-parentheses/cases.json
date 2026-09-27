@@ -1,0 +1,29 @@
+{
+  "mode": "function",
+  "entry": "isValid",
+  "params": [
+    {"name":"s","type":"string"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":["()"],"expected":true},
+    {"input":["()[]{}"],"expected":true},
+    {"input":["(]"],"expected":false},
+    {"input":["([])"],"expected":true},
+    {"input":["([)]"],"expected":false},
+    {"input":[")"],"expected":false},
+    {"input":["((("],"expected":false}
+  ],
+  "hidden": [
+    {"input":["]"],"expected":false},
+    {"input":["{[]}"],"expected":true},
+    {"input":["(("],"expected":false},
+    {"input":["){"],"expected":false},
+    {"input":["([]{})"],"expected":true},
+    {"input":["(((((((())))))))"],"expected":true},
+    {"input":["[({})]("],"expected":false},
+    {"input":["{[}]"],"expected":false},
+    {"input":["(([]){})"],"expected":true}
+  ]
+}

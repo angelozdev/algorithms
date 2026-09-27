@@ -1,0 +1,27 @@
+{
+  "mode": "function",
+  "entry": "isPalindrome",
+  "params": [
+    {"name":"x","type":"int"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":[121],"expected":true},
+    {"input":[-121],"expected":false},
+    {"input":[10],"expected":false}
+  ],
+  "hidden": [
+    {"input":[0],"expected":true},
+    {"input":[1],"expected":true},
+    {"input":[11],"expected":true},
+    {"input":[1221],"expected":true},
+    {"input":[12321],"expected":true},
+    {"input":[123],"expected":false},
+    {"input":[1000021],"expected":false},
+    {"input":[2147447412],"expected":true},
+    {"input":[2147483647],"expected":false},
+    {"input":[-2147483648],"expected":false},
+    {"input":[1000000001],"expected":true}
+  ]
+}

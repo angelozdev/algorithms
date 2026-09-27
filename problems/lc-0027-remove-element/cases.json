@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "removeElement",
+  "params": [
+    {"name":"nums","type":"int[]"},
+    {"name":"val","type":"int"}
+  ],
+  "returns": "int",
+  "compare": "unordered",
+  "inPlace": {"param":"nums","prefix":"return"},
+  "examples": [
+    {"input":[[3,2,2,3],3],"expected":[2,2]},
+    {"input":[[0,1,2,2,3,0,4,2],2],"expected":[0,1,4,0,3]}
+  ],
+  "hidden": [
+    {"input":[[],0],"expected":[]},
+    {"input":[[1],1],"expected":[]},
+    {"input":[[1],2],"expected":[1]},
+    {"input":[[4,4,4,4],4],"expected":[]},
+    {"input":[[0,1,2,3],5],"expected":[0,1,2,3]},
+    {"input":[[3,3,1,3,2],3],"expected":[1,2]},
+    {"input":[[50,0,50,0],0],"expected":[50,50]}
+  ]
+}
