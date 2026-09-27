@@ -87,4 +87,9 @@ describe("resolveQuery", () => {
     expect(() => resolveQuery(targets(), "nope")).toThrow('Nothing matches "nope".');
     expect(() => resolveQuery(targets(), " ")).toThrow(QueryError);
   });
+
+  it("never resolves a bare number by substring", () => {
+    expect(() => resolveQuery(targets(), "2")).toThrow('Nothing matches "2".');
+    expect(() => resolveQuery(targets(), "5")).toThrow('Nothing matches "5".');
+  });
 });

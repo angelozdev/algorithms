@@ -23,7 +23,10 @@ export function listTargets(root: string): Target[] {
   return targets.filter((target) => existsSync(path.join(target.dir, "cases.json")));
 }
 
-/** Exact id → LeetCode number → substring of id or folder name. Never guesses between several. */
+/**
+ * Exact id → LeetCode number → substring of id or folder name. Never guesses between several.
+ * A digits-only query is a LeetCode number and never falls through to substring matching.
+ */
 export function resolveQuery(targets: Target[], query: string): Target {
   const q = query.trim().toLowerCase();
   if (!q) {
@@ -31,14 +34,12 @@ export function resolveQuery(targets: Target[], query: string): Target {
   }
   const exact = targets.filter((target) => target.id.toLowerCase() === q);
   if (exact.length === 1) return exact[0];
-  if (/^\d{1,4}$/.test(q)) {
-    const byNumber = targets.filter((target) => target.id === `lc-${q.padStart(4, "0")}`);
-    if (byNumber.length === 1) return byNumber[0];
-  }
-  const partial = targets.filter(
-    (target) => target.id.toLowerCase().includes(q) || path.basename(target.dir).toLowerCase().includes(q),
-  );
-  if (partial.length === 1) return partial[0];
-  if (partial.length === 0) throw new QueryError(`Nothing matches "${query}".`);
-  throw new QueryError(`"${query}" matches ${partial.length} problems/exercises — be more specific:`, partial);
+  const matches = /^\d+$/.test(q)
+    ? targets.filter((target) => target.id === `lc-${q.padStart(4, "0")}`)
+    : targets.filter(
+        (target) => target.id.toLowerCase().includes(q) || path.basename(target.dir).toLowerCase().includes(q),
+      );
+  if (matches.length === 1) return matches[0];
+  if (matches.length === 0) throw new QueryError(`Nothing matches "${query}".`);
+  throw new QueryError(`"${query}" matches ${matches.length} problems/exercises — be more specific:`, matches);
 }
