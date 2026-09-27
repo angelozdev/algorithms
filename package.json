@@ -1,0 +1,30 @@
+{
+  "name": "algorithms",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Study algorithms with Claude Code without spoilers: concepts, problems, and a local test runner.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "watch": "tsx runner/src/cli.ts watch",
+    "test": "tsx runner/src/cli.ts test",
+    "fill-expected": "tsx runner/src/cli.ts fill-expected",
+    "leetcode": "tsx scripts/leetcode.ts",
+    "sync": "tsx scripts/sync.ts",
+    "check": "tsx scripts/check.ts",
+    "verify": "vitest run && tsx scripts/check.ts"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.3",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}
