@@ -13,7 +13,7 @@ describe("watchFiles", () => {
   it("debounces bursts of writes into one call", async () => {
     const dir = path.join(root, "burst");
     write(dir, "solution.py", "a");
-    await sleep(150); // let the creation event settle before watching
+    await sleep(150); // not covered by ready: macOS FSEvents reports a file created just before watching as a change
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 100);
     await watcher.ready;
@@ -27,7 +27,7 @@ describe("watchFiles", () => {
   it("reacts to atomic saves (temp file renamed onto the solution)", async () => {
     const dir = path.join(root, "atomic");
     write(dir, "solution.py", "a");
-    await sleep(150); // let the creation event settle before watching
+    await sleep(150); // not covered by ready: macOS FSEvents reports a file created just before watching as a change
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 50);
     await watcher.ready;
@@ -41,7 +41,7 @@ describe("watchFiles", () => {
   it("ignores files it does not watch", async () => {
     const dir = path.join(root, "ignore");
     write(dir, "solution.py", "a");
-    await sleep(150); // let the creation event settle before watching
+    await sleep(150); // not covered by ready: macOS FSEvents reports a file created just before watching as a change
     let calls = 0;
     const watcher = watchFiles(dir, ["solution.py"], () => calls++, 50);
     await watcher.ready;
