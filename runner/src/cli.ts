@@ -7,6 +7,7 @@ import { runTarget } from "./run.ts";
 import { CaseFileError } from "./schema.ts";
 import { solutionPath } from "./stubs.ts";
 import { LANGS, type Lang, type RunResult, type Target } from "./types.ts";
+import { watchTarget } from "./watcher.ts";
 
 const USAGE = `Usage:
   pnpm watch <query> [--lang py|ts] [--open]
@@ -56,9 +57,13 @@ function parseFlags(args: string[]) {
 async function main(argv: string[]): Promise<number> {
   const [command, ...rest] = argv;
   const { values, positionals } = parseFlags(rest);
-  if (command !== "test") throw new UsageError(USAGE);
+  if (command !== "test" && command !== "watch") throw new UsageError(USAGE);
   const root = contentRoot();
   const target = resolveQuery(listTargets(root), positionals.join(" "));
+  if (command === "watch") {
+    await watchTarget(target, parseLang(values.lang, false) as Lang, { open: values.open, root });
+    return 0;
+  }
   return testCommand(target, parseLang(values.lang, true), values.json, root);
 }
 
