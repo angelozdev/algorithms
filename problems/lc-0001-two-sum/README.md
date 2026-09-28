@@ -31,7 +31,7 @@ Given an integer array `nums` and an integer `target`, return the indices of the
 ## Concepts
 
 <!-- auto:concepts -->
-- hash-map (missing)
+- [Hash map](../../concepts/hash-map/README.md) · learning
 <!-- /auto -->
 
 ## Log

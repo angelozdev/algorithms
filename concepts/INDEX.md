@@ -4,13 +4,15 @@
 
 ## Learning path
 
-_No concepts yet._
+1. [Hash map](hash-map/README.md) · learning
 
 ## By status
 
 ### mastered (0)
 
-### learning (0)
+### learning (1)
+
+- [Hash map](hash-map/README.md)
 
 ### new (0)
 
@@ -24,7 +26,6 @@ _No concepts yet._
 - dummy-node — referenced by lc-0021
 - dynamic-programming — referenced by lc-0070
 - gcd — referenced by lc-2807
-- hash-map — referenced by lc-0001
 - in-place-array-modification — referenced by lc-0026, lc-0027, lc-1920
 - linked-list — referenced by lc-0021, lc-2181, lc-2807
 - matrix-traversal — referenced by lc-1672

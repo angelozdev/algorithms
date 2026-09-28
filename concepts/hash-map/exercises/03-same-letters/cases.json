@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "sameLetters",
+  "params": [
+    {"name":"a","type":"string"},
+    {"name":"b","type":"string"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":["listen","silent"],"expected":true},
+    {"input":["rat","car"],"expected":false},
+    {"input":["aab","abb"],"expected":false}
+  ],
+  "hidden": [
+    {"input":["",""],"expected":true},
+    {"input":["a","a"],"expected":true},
+    {"input":["a","b"],"expected":false},
+    {"input":["ab","a"],"expected":false},
+    {"input":["aabbcc","cbacba"],"expected":true},
+    {"input":["abc","abcc"],"expected":false},
+    {"input":["zzzz","zzzz"],"expected":true}
+  ]
+}
