@@ -1,17 +1,19 @@
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { REPO_ROOT, TSX_BIN } from "../../runner/src/paths.ts";
 import { checkRepo, sectionText } from "../lib/checks.ts";
 import { sync } from "../lib/sync.ts";
-import { conceptReadme, makeStudyRepo, problemReadme, put } from "./fixture.ts";
+import { cleanupTempDirs, conceptReadme, makeStudyRepo, problemReadme, put } from "./fixture.ts";
 
 const messages = async (root: string) => (await checkRepo(root)).errors.map((e) => `${e.file}: ${e.message}`);
 const edit = (root: string, rel: string, from: string, to: string) =>
   put(root, rel, readFileSync(path.join(root, rel), "utf8").replace(from, to));
 
 describe("checkRepo", () => {
+  afterEach(cleanupTempDirs);
+
   it("accepts a synced valid repo and warns about missing concepts", async () => {
     const root = makeStudyRepo();
     sync(root);

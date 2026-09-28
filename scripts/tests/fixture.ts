@@ -1,6 +1,20 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
+
+const created: string[] = [];
+
+/** A new dir in the OS temp dir, removed by cleanupTempDirs(). */
+export function makeTempDir(prefix: string): string {
+  const dir = mkdtempSync(path.join(os.tmpdir(), prefix));
+  created.push(dir);
+  return dir;
+}
+
+/** Removes every dir made by makeTempDir() and makeStudyRepo() so far. Call it from afterEach. */
+export function cleanupTempDirs(): void {
+  for (const dir of created.splice(0)) rmSync(dir, { recursive: true, force: true });
+}
 
 export function put(root: string, rel: string, content: string): void {
   const file = path.join(root, rel);
@@ -119,7 +133,7 @@ export function exerciseReadme(fields: { id: string; title: string; concept: str
 
 /** A small, valid study repo in the OS temp dir. */
 export function makeStudyRepo(): string {
-  const root = mkdtempSync(path.join(os.tmpdir(), "algo-repo-"));
+  const root = makeTempDir("algo-repo-");
   put(
     root,
     "problems/lc-0001-two-sum/README.md",

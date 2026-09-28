@@ -1,10 +1,9 @@
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
-import os from "node:os";
+import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { REPO_ROOT } from "../../runner/src/paths.ts";
-import { put } from "./fixture.ts";
+import { cleanupTempDirs, makeTempDir, put } from "./fixture.ts";
 
 const HOOKS = path.join(REPO_ROOT, ".claude", "hooks");
 const PROJECT = "/work/algorithms";
@@ -67,8 +66,10 @@ describe("guard-solution hook", () => {
 });
 
 describe("reminder hook", () => {
+  afterEach(cleanupTempDirs);
+
   it("lists work in progress with hint levels", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "algo-hook-"));
+    const root = makeTempDir("algo-hook-");
     put(root, "problems/lc-0001-two-sum/README.md", "---\nid: lc-0001\nstatus: solving\nhints: 1\n---\n");
     put(root, "problems/lc-0009-palindrome-number/README.md", "---\nid: lc-0009\nstatus: solved\nhints: 0\n---\n");
     put(root, "concepts/hash-map/README.md", "---\nslug: hash-map\nstatus: learning\n---\n");
@@ -82,7 +83,7 @@ describe("reminder hook", () => {
   });
 
   it("says when nothing is in progress", () => {
-    const root = mkdtempSync(path.join(os.tmpdir(), "algo-hook-"));
+    const root = makeTempDir("algo-hook-");
     const output = hook("reminder.mjs", { prompt: "hola" }, root);
     expect(output.hookSpecificOutput.additionalContext).toContain("In progress: nothing.");
   });

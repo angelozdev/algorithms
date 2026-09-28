@@ -1,14 +1,16 @@
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { REPO_ROOT, TSX_BIN } from "../../runner/src/paths.ts";
 import { sync } from "../lib/sync.ts";
-import { conceptReadme, makeStudyRepo, put } from "./fixture.ts";
+import { cleanupTempDirs, conceptReadme, makeStudyRepo, put } from "./fixture.ts";
 
 const read = (root: string, rel: string) => readFileSync(path.join(root, rel), "utf8");
 
 describe("sync", () => {
+  afterEach(cleanupTempDirs);
+
   it("writes the problem index grouped by pattern", () => {
     const root = makeStudyRepo();
     sync(root);
