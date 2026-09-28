@@ -7,6 +7,10 @@ description: Use when a concept note is missing or the user wants to learn, crea
 
 The hard rules and the student profile in `CLAUDE.md` apply. Reply in Spanish; write files in English.
 
+## Existing concept
+
+If `concepts/<slug>/` already exists, do not recreate or rewrite any of it (it holds the user's "My explanation"). If its `status` is `new` and the user starts studying it, set `status: learning` and run `pnpm -s sync && pnpm -s check`. Then teach it Socratically, as in the last bullet of Create mode step 6.
+
 ## Create mode
 
 1. **Slug and folder:** a kebab-case English slug (`two-pointers`) in `concepts/<slug>/`.

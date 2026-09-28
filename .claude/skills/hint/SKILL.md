@@ -15,5 +15,5 @@ The hard rules in `CLAUDE.md` apply. Reply in Spanish.
    - **Already at level 2:** no more hints. Point to the concept notes linked in the README and to their exercises, and mention that `/give-up` exists (the user has to type it).
 4. **Already solved but not optimal** (`complexity.optimal: false`): the same ladder applies to reaching the better complexity, and the counter keeps going.
 5. **"Why does it fail?":** use only what the runner printed, meaning the failing input and the user's own output. Never reveal other hidden inputs or any expected value.
-6. **Record:** set `hints` to the new level and append `- YYYY-MM-DD · hint <level>` to the Log. Run `pnpm -s sync`.
+6. **Record:** if you gave a hint (level 1 or 2), set `hints` to that level and append `- YYYY-MM-DD · hint <level>` to the Log. If the user was already at level 2, leave `hints: 2` and append `- YYYY-MM-DD · hint refused (max level)`. Run `pnpm -s sync`.
 7. **Reply** with the hint and nothing else.
