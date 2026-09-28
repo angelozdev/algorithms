@@ -1,7 +1,7 @@
 # Algorithms Study System — Design (Sub-project A)
 
 - **Date:** 2026-09-27
-- **Status:** Draft, pending user review
+- **Status:** Implemented on branch `restructure`. §12 lists the amendments made after planning.
 - **Branch:** `restructure`
 - **Scope:** Sub-project A (knowledge base, Claude layer, test engine + terminal watch). Sub-project B (local web playground) gets its own spec later and builds on the engine defined here.
 
@@ -46,6 +46,7 @@ The user wants to study algorithms (LeetCode and similar platforms) through Clau
 | Engine | TypeScript orchestrator + one small harness per language, talking JSON. |
 | Language | **Every file in the repo is in English.** Claude chats with the user in **Spanish**. |
 | Claude config scope | Project-level only (`algorithms/.claude/`). Nothing goes to `~/.claude/`. |
+| Dependencies | Allowed when they remove real complexity or flakiness: `chokidar` (watch mode) and `node-html-markdown` (LeetCode statements) were adopted during implementation. See §7 and §12. |
 
 ## 3. Repository layout
 
@@ -55,7 +56,8 @@ algorithms/
 ├── AGENTS.md -> CLAUDE.md        # symlink so other agents follow the same rules
 ├── README.md                     # human quickstart (start Claude Code from this folder)
 ├── INDEX.md                      # generated: problems by pattern + status
-├── package.json                  # pnpm scripts: watch, test, fill-expected, sync, check, verify
+├── package.json                  # pnpm scripts: watch, test, fill-expected, leetcode, sync, check, verify
+├── pnpm-workspace.yaml           # allowBuilds: esbuild (pnpm 11)
 ├── pyproject.toml                # Python 3.13 + ruff config (no runtime deps)
 ├── tsconfig.json                 # includes `paths` alias for "lc"
 ├── concepts/
@@ -71,13 +73,14 @@ algorithms/
 │       ├── stress.ts             # optional
 │       ├── solution.py           # user-owned
 │       └── solution.ts           # user-owned
+├── lib/                          # shared Markdown model: frontmatter parser, repo scanner, frontmatter schemas
 ├── runner/
-│   ├── src/                      # orchestrator, CLI, resolver, loader, stubs, comparator, reporter, watcher
+│   ├── src/                      # orchestrator, CLI, resolver, loader, stubs, comparator, reporter, watcher, stress worker
 │   ├── harness/
 │   │   ├── python/               # harness.py + lc.py (ListNode, TreeNode)
 │   │   └── ts/                   # harness.ts + lc.ts (ListNode, TreeNode)
 │   └── tests/                    # vitest + fixtures
-├── scripts/                      # sync, check
+├── scripts/                      # sync, check, leetcode
 ├── .claude/
 │   ├── settings.json             # hook registration (committed)
 │   ├── hooks/                    # guard-solution.mjs, reminder.mjs
@@ -108,7 +111,7 @@ title: Two Sum
 source: leetcode
 url: https://leetcode.com/problems/two-sum/
 difficulty: easy                 # easy | medium | hard
-patterns: [hashing]              # drives INDEX.md grouping
+patterns: [arrays-hashing]       # drives INDEX.md grouping; fixed vocabulary (§12)
 concepts: [hash-map]             # concept slugs (may reference concepts not created yet)
 status: solving                  # todo | solving | solved | revealed
 hints: 0                         # highest hint level reached: 0 | 1 | 2
@@ -135,9 +138,10 @@ complexity: null                 # set by review: { time: "O(n)", space: "O(n)",
 - **Statement:** the repo is **public on GitHub**, so the statement is a short English paraphrase plus the examples and constraints, with the `url` for the full text. It is not a verbatim copy of the platform's statement.
 - **Status transitions:**
   - `todo`: added for later ("save this one for later").
-  - `solving`: set by `/problem` by default.
+  - `solving`: set by `/problem` by default, and by `/hint`, `/review` and `/give-up` when they act on a `todo` item.
   - `solved`: set by `/review` when at least one language is fully green.
   - `revealed`: set by `/give-up`. A `revealed` problem that later goes fully green becomes `solved`, and `solution_revealed` stays `true`.
+- **In progress:** `status: solving`, or `status: todo` with a `solution.py`/`solution.ts` in the folder (for example, created by `pnpm watch`). Exercises start as `todo`, so this is how the reminder and the skills see them once the user starts one.
 - **Log:** one line per meaningful event (hint used, green, review verdict, reveal, migration result). Written by the skills.
 
 ### 4.2 `cases.json`
@@ -192,7 +196,7 @@ complexity: null                 # set by review: { time: "O(n)", space: "O(n)",
 ### 4.3 `stress.ts` (optional)
 
 ```ts
-import type { Rng, StressCase } from "../../runner/src/stress";
+import type { Rng, StressCase } from "../../runner/src/stress.ts";
 
 export default function stress(rng: Rng): StressCase[] {
   // e.g. n = 100_000 inputs; rng is seeded per problem id → deterministic
@@ -203,6 +207,8 @@ export default function stress(rng: Rng): StressCase[] {
 - Stress cases check **time only**, not correctness.
 - The default limit is **2000 ms per case**, measured inside the harness (Python interpreter startup is excluded). An optional `limitMs` overrides it per case.
 - The generous margin is deliberate: at n = 10⁵, O(n log n) passes in any language and O(n²) finishes in none.
+- Inputs stay within the problem's own constraints (the largest n they allow, not always 10⁵), and each `input` must match the `cases.json` signature: the runner and `pnpm check` report a mismatch as a case-file error.
+- The generator runs in its own process with a 10 s limit (see §5.3).
 
 ### 4.4 Concept `README.md`
 
@@ -276,20 +282,27 @@ Result: the repo never contains a solution that is not the user's.
 ### 5.3 Execution pipeline
 
 ```
-resolver → loader (schema-validate cases.json, load stress.ts) → stub (if missing)
+resolver → loader (schema-validate cases.json) → stub (if missing)
         → executor → harness subprocess → comparator → reporter (terminal | JSON)
-        → watcher (fs.watch, 100 ms debounce, clear screen, rerun)
+        → watcher (chokidar, 100 ms debounce, clear screen, rerun)
+stress.ts → stress worker (own process, 10 s limit), only once hidden passes
 ```
 
 - **Phases, gated:** examples → hidden → stress.
   - Hidden runs only if all examples pass. Otherwise it is reported as `skipped (fix examples first)`.
+  - Examples and hidden share one harness process; hidden results are reported only when every example passes. What the user sees is the same as two gated runs, and each save costs one process start instead of two.
   - Stress runs only if all hidden cases pass.
   - Stress runs in its own subprocess, so a hang there never loses the earlier results.
+- **Loading stress cases:** lazily, and out of process.
+  - `stress.ts` is loaded only when every hidden case passes. Most saves in watch mode stop at examples or hidden, so generating 10⁵-element inputs on every save would only add latency.
+  - Generation runs in a separate `node --import <tsx loader>` process (the stress worker), which sends the cases back as JSON and is killed after 10 s. A generator that never returns cannot freeze `pnpm watch`, `pnpm test` or `pnpm check`; a timeout, crash, load error or throw is reported as a case-file error for `stress.ts`.
+  - A fresh process per load also means edits to `stress.ts` are always picked up, with no module-cache tricks.
+  - `pnpm check` loads every `stress.ts` the same way (the generator only, never a solution), so a broken file is caught when it is written, not at the user's first green.
 - **Protocol:**
   - The orchestrator spawns the harness with an extra pipe on **fd 3** and sends one request on stdin: `{ solutionPath, mode, entry, params, returns, inPlace, cases: [{ id, input }] }`.
   - The request **never includes `expected`**. The harness only executes; the orchestrator compares.
   - The harness writes one JSON line per case to fd 3: `{ id, ok: true, output, ms, stdout }` or `{ id, ok: false, error: { kind, message, trace }, stdout }`.
-  - Anything the user's code prints goes to stdout/stderr and is attributed to the case that was running. The protocol channel is never corrupted by user prints.
+  - Anything the user's code prints is captured in-process per case (`redirect_stdout`/`redirect_stderr` in Python; `process.stdout.write`/`process.stderr.write` patched in TypeScript), capped at 64 KB, and attributed to the case that was running. The protocol channel is never corrupted by user prints.
 - **Type adapters** live in the harness: arrays ⇄ `ListNode`/`TreeNode` on input and output, plus in-place param capture.
 - **Timeouts:**
   - Per-case time is measured inside the harness.
@@ -297,7 +310,8 @@ resolver → loader (schema-validate cases.json, load stress.ts) → stub (if mi
   - On kill, the case in flight is marked `timeout` (covers infinite loops) and the remaining cases are marked `skipped`.
 - **Interpreters:**
   - Python is resolved once at startup via `uv python find 3.13`, not `uv run` per save.
-  - TypeScript runs through `tsx`, so any syntax the user writes works.
+  - TypeScript runs as `node --import <tsx loader> harness.ts` with `TSX_TSCONFIG_PATH` pointing at the repo `tsconfig.json`, so any syntax the user writes works. The `tsx` CLI is not used: it runs the script in a child process that does not inherit fd 3.
+  - Tests and tools can override the content root with `ALGO_ROOT` and the interpreter with `ALGO_PYTHON`.
 - **The `lc` helper module** provides `ListNode` and `TreeNode`:
   - Python: `harness/python/lc.py`, added to `sys.path` by the harness and to `python.analysis.extraPaths` in `.vscode/settings.json`.
   - TypeScript: `harness/ts/lc.ts` via the `tsconfig.json` `paths` alias `lc`.
@@ -354,13 +368,13 @@ All of it lives in `algorithms/.claude/` and `algorithms/CLAUDE.md`, and all of 
 
 1. Never write, show, or paraphrase code or pseudocode that solves a problem or exercise whose status is not `solved` (or `revealed`). Concept templates and exercises must not be isomorphic to any problem the user has not solved.
 2. Never edit the user's `solution.*` files. Claude does not fix the user's bugs.
-3. "Why does it fail?", "help", and similar requests on an unsolved problem count as a hint request and go through `/hint`.
+3. "Why does it fail?", "help", and similar requests on an unsolved problem count as a hint request and go through `/hint`. Questions about the language itself ("¿qué hace enumerate?") are not: they get a direct answer with small generic examples unrelated to the problem, and cost no hint level, as long as the answer does not reveal the approach.
 4. Never describe hidden cases beyond what the runner already printed.
 5. Show the optimal solution only if the problem is green (examples + hidden + stress) **and** the user explicitly asks, or through `/give-up`.
 6. Chat with the user in Spanish. Write every file in English.
 7. Note style follows the student profile section (copied from `tutor/PROFILE.md`).
 
-`CLAUDE.md` also contains: a repo map, the file formats (short form, pointing to this spec), the runner commands, and the status vocabulary.
+`CLAUDE.md` also contains: a repo map, the file formats (short form, pointing to this spec), the runner commands, and the status vocabulary. As built, rules 6–7 above became their own sections (language, student profile), and two more hard rules are explicit: no approach or complexity target volunteered before green, and reference solutions only in `$TMPDIR` (§12).
 
 ### 6.2 Skills (`.claude/skills/<name>/SKILL.md`)
 
@@ -392,7 +406,8 @@ Descriptions are in English and state that the user may speak Spanish, so natura
 
 **`hint`**
 
-- *Target:* the problem the user names. If none is named and exactly one problem is `solving`, use that one; otherwise ask.
+- *Target:* the problem or exercise the user names. If none is named and exactly one item is in progress (§4.1), use that one; otherwise ask. A `todo` target becomes `solving` (`review` and `give-up` use the same rule).
+- *Not a hint:* a question about the language itself, answered as in §6.1 rule 3.
 - *Escalation:* raises `hints` by one.
   - Level 1: one Socratic question. Claude may read the user's current solution to aim it.
   - Level 2: the key idea in words. No code, no pseudocode.
@@ -413,20 +428,21 @@ Descriptions are in English and state that the user may speak Spanish, so natura
 
 **`give-up`**
 
+- Only the user can start it (`disable-model-invocation: true`): Claude never reveals a solution on its own initiative.
 - Asks for confirmation once.
 - Explains the optimal solution in chat (code allowed here, chat only).
 - Sets `status: revealed` and `solution_revealed: true`, appends to the Log, and runs `pnpm sync`.
 
 ### 6.3 Hooks (`.claude/settings.json` → `.claude/hooks/*.mjs`)
 
-Plain `.mjs` for fast startup, because `reminder` runs on every prompt.
+Plain `.mjs` for fast startup, because `reminder` runs on every prompt. `.claude/settings.json` also allow-lists the `pnpm -s` commands the skills run constantly (`test`, `sync`, `check`, `leetcode`, `fill-expected`), so they need no approval each time.
 
 - **`guard-solution.mjs` (PreToolUse)**
   - `Edit|Write|MultiEdit|NotebookEdit`: deny when the target path matches `problems/**/solution.{py,ts}` or `concepts/**/solution.{py,ts}`, with a reason citing rule 2.
-  - `Bash` (best effort): deny commands that write to such a file (redirection, `tee`, in-place `sed`/`perl`, `cp`/`mv` onto it, `rm`). `git mv` of an existing solution file is allowed.
+  - `Bash` (best effort, few false denies): deny commands that write to such a file (redirection, `tee`, in-place `sed`/`perl`, `cp`/`mv` onto it, `rm`, `dd of=`, inline `python -c`/`node -e`/`ruby -e`/`perl -e` code that names one). Also deny commands that can discard or delete the user's uncommitted solution work, with a reason saying the user must run them: recursive deletes of `problems/` or `concepts/` paths, `find -delete`/`-exec rm`, `git checkout`/`restore`/`rm` on solution files or content folders (and `.`), `git reset --hard`, `git clean -f`, and `git stash` other than `list`/`show`. Reads, runs, `git add`, `git status` and `git mv` of an existing solution file are allowed.
   - The runner creating stubs is unaffected, because it is a separate process, not a Claude tool call.
 - **`reminder.mjs` (UserPromptSubmit)**
-  - Injects a short context block: rules 1–5 in one line each, plus the problems and exercises with `status: solving` and their `hints` level (read from frontmatter).
+  - Injects a short context block: rules 1–5 in one line each, plus the problems and exercises in progress (§4.1) and their `hints` level (read from frontmatter).
   - Keeps the rules fresh in long sessions.
 
 ## 7. Scripts
@@ -447,12 +463,19 @@ Plain `.mjs` for fast startup, because `reminder` runs on every prompt.
   - Every relative link resolves.
   - No cycles in `requires`.
   - Hidden cases all have `expected`.
+  - Every `stress.ts` loads, returns within 10 s, and produces inputs that match the `cases.json` signature (§5.3).
   - Status consistency: `solved` ⇒ `solved_in` non-empty; `mastered` ⇒ "My explanation" non-empty.
 - *Warnings:* concepts referenced but not created.
 
 **`pnpm verify`** = `vitest run` (runner, script and hook tests) + `pnpm check`. The `test` script name is reserved for the problem runner (§5.1), not for vitest.
 
-**Dependencies (minimal):** `typescript`, `tsx`, `vitest`, `zod` (schemas), `yaml` (frontmatter). Colors via `node:util` `styleText`, file watching via `fs.watch`. No chalk, no chokidar.
+**`pnpm leetcode <slug|url>`** prints a JSON draft of a LeetCode problem (statement as Markdown, a draft `cases.json`, warnings), used by the `problem` skill.
+
+**Dependencies:** `typescript`, `tsx`, `vitest`, `zod` (schemas), `yaml` (frontmatter), `chokidar` (watch mode) and `node-html-markdown` (LeetCode statements). A dependency is allowed when it removes real complexity or flakiness:
+
+- `chokidar` replaced a hand-rolled `fs.watch` layer: on macOS, `fs.watch` dropped events right after starting and needed fixed sleeps; chokidar gives a `ready` signal and handles atomic saves.
+- `node-html-markdown` replaced a regex HTML-to-text converter that mangled lists, dropped `<sub>` and left entities raw.
+- Still hand-written or built in: colors via `node:util` `styleText` (no chalk), `parseArgs`, native `fetch`, the small frontmatter parser, and the `node:child_process` executor. The Python harness stays stdlib-only.
 
 ## 8. VS Code workspace settings
 
@@ -522,8 +545,9 @@ Tests exercise behavior through public interfaces, not internals.
   - Resolver: ambiguous queries list candidates and exit 1.
 - **Scripts:** a fixture tree copied to a temp dir → `sync` → compare `INDEX.md`, `concepts/INDEX.md` and auto sections against expected files. Also: idempotency, and `check` detecting a broken link, bad frontmatter, a `requires` cycle, and missing hidden `expected`.
 - **Hooks:** feed sample hook-event JSON on stdin.
-  - `guard-solution` denies Edit/Write/Bash writes to solution files and allows other paths and `git mv`.
-  - `reminder` lists `solving` problems with their hint levels.
+  - `guard-solution` denies Edit/Write/Bash writes to solution files and the destructive commands of §6.3, and allows other paths, reads, runs and `git mv`.
+  - `reminder` lists in-progress problems and exercises (§4.1) with their hint levels.
+- **Stress loading:** a generator that never returns fails fast with a `stress.ts` case-file error, both in the runner and in `pnpm check`; an edited `stress.ts` is reloaded.
 - **Skills:** not unit-testable. Manual acceptance scenarios:
   1. Paste Two Sum → folder created, `check` passes, reply lists concepts only.
   2. Ask for the solution while `solving` → refusal, pointing to `/hint`.
@@ -539,3 +563,26 @@ Tests exercise behavior through public interfaces, not internals.
 - Languages other than Python and TypeScript.
 - Custom output validators (`validate.ts`) for problems with many valid outputs beyond `any-of`. Added when the first such problem appears.
 - Spaced repetition, statistics, dashboards.
+
+## 12. Amendments after planning
+
+Decisions made while planning or building sub-project A that are now part of the design. The sections above already reflect them.
+
+| Change | Where | Why |
+|---|---|---|
+| A shared `lib/` (frontmatter parser, repo scanner, frontmatter schemas) | §3 | The runner, `sync` and `check` read the same Markdown model. |
+| `pnpm leetcode <slug\|url>` prints a JSON draft (statement as Markdown, draft `cases.json`, warnings) | §7 | The `problem` skill reuses it for every LeetCode problem, not only during the migration. |
+| Examples and hidden run in the same harness process; hidden is reported as `skipped` when an example fails | §5.3 | One process start per save instead of two (about 300 ms for TypeScript). The user sees the same result. |
+| The TypeScript harness runs as `node --import <tsx loader>` with `TSX_TSCONFIG_PATH` | §5.3 | The `tsx` CLI runs the script in a child process that does not inherit fd 3. |
+| User prints are captured in-process per case | §5.3 | Exact attribution without racing two pipes. |
+| `give-up` has `disable-model-invocation: true` | §6.2 | A solution is revealed only when the user types `/give-up`. |
+| `CLAUDE.md` gives language and profile their own sections and adds two hard rules: no approach or complexity target volunteered before green, and reference solutions only in `$TMPDIR` | §6.1 | Both were agreed during brainstorming; numbering them makes them checkable. |
+| `.claude/settings.json` allow-lists `pnpm -s test/sync/check/leetcode/fill-expected` | §6.3 | The skills run these constantly; approving each call would break the flow. |
+| `pnpm-workspace.yaml` with `allowBuilds: { esbuild: true }` | §3 | pnpm 11 fails `install` with `ERR_PNPM_IGNORED_BUILDS` otherwise. |
+| Env overrides `ALGO_ROOT` (content root) and `ALGO_PYTHON` (interpreter) | §5.3 | Tests point the CLI at a temporary repo. |
+| A fixed `patterns` vocabulary: arrays-hashing, two-pointers, sliding-window, stack, binary-search, linked-list, trees, tries, heap, backtracking, graphs, dp-1d, dp-2d, greedy, intervals, math, bit-manipulation, strings | §4.1 | `INDEX.md` groups stay consistent, and `check` rejects typos. |
+| Dependencies are allowed when they remove real complexity: `chokidar` (watch) and `node-html-markdown` (LeetCode statements) | §7 | Both replaced hand-written code that was flaky or lossy. |
+| Stress inputs are checked against the `cases.json` signature; `pnpm check` loads every `stress.ts`; stress cases are generated lazily, in a separate process with a 10 s limit | §4.3, §5.3, §7 | A malformed input gave a false green; a generator that never returns froze `watch`, `test` and `check`; generating on every save would slow watch mode. |
+| "In progress" = `status: solving`, or `status: todo` with a solution file; `hint`, `review` and `give-up` set a `todo` target to `solving` | §4.1, §6.2, §6.3 | Exercises start as `todo` and nothing flipped them, so the reminder and the hint target rule never saw them. |
+| Language questions are not hint requests | §6.1, §6.2 | The user has almost no Python experience; a question like "¿qué hace enumerate?" must not spend a hint level or be refused, as long as the answer does not reveal the approach. |
+| The Bash guard also blocks commands that can discard solution work (recursive deletes, `git checkout/restore/rm/reset --hard/clean -f/stash`, `find -delete`, inline interpreter writes) | §6.3 | These throw away the user's uncommitted work; the user runs them if they are really needed. |
