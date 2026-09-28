@@ -69,6 +69,20 @@ export function createRng(seed: number): Rng {
   };
 }
 
+/** A StressReply parsed from one line, or null when the line is not one. */
+function parseReply(line: string): StressReply | null {
+  let value: unknown;
+  try {
+    value = JSON.parse(line);
+  } catch {
+    return null;
+  }
+  if (typeof value !== "object" || value === null) return null;
+  const reply = value as { ok?: unknown; issue?: unknown };
+  if (reply.ok === true) return reply as StressReply;
+  return reply.ok === false && typeof reply.issue === "string" ? (reply as StressReply) : null;
+}
+
 /**
  * Runs stress-worker.ts on `file` and returns what the generator returned. The worker is killed
  * after `timeoutMs`. Every failure (load error, throw, timeout, crash) is a CaseFileError.
@@ -110,10 +124,9 @@ function generate(file: string, id: string, timeoutMs: number): Promise<unknown>
     child.on("close", (code, signal) =>
       settle(() => {
         if (timedOut) return reject(invalid(`stress() did not return within ${timeoutMs} ms (an infinite loop?)`));
-        let message: StressReply | null = null;
-        try {
-          message = JSON.parse(reply) as StressReply;
-        } catch {
+        // The worker's reply is the last line: a generator that writes to fd 3 itself only adds lines before it.
+        const message = parseReply(reply.trimEnd().split("\n").at(-1) ?? "");
+        if (!message) {
           const how = signal ? `signal ${signal}` : `exit code ${code}`;
           const tail = stderr.trim().split("\n").slice(-5).join("\n");
           return reject(invalid(`the generator exited without returning cases (${how})${tail ? `: ${tail}` : ""}`));

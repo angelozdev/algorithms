@@ -147,6 +147,20 @@ describe("loadStressCases", () => {
     expect((error as CaseFileError).issues[0]).toMatch(/^the generator exited without returning cases \(exit code 7\)/);
   });
 
+  it("reports a generator that writes a bogus reply as a case-file error", async () => {
+    const folder = path.join(dir, "bogus-reply");
+    write(folder, "stress.ts", 'import { writeSync } from "node:fs";\nexport default () => { writeSync(3, "null\\n"); process.exit(0); };\n');
+    const error = await loadStressCases(folder, "x").catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(CaseFileError);
+    expect((error as CaseFileError).issues[0]).toMatch(/^the generator exited without returning cases \(exit code 0\)/);
+  });
+
+  it("ignores what the generator prints, even on the reply channel", async () => {
+    const folder = path.join(dir, "noisy-channel");
+    write(folder, "stress.ts", 'import { writeSync } from "node:fs";\nexport default () => { writeSync(3, "noise\\n"); return [{ name: "n=1", input: [1] }]; };\n');
+    expect(await loadStressCases(folder, "x")).toEqual([{ name: "n=1", input: [1] }]);
+  });
+
   it("ignores what the generator prints", async () => {
     const folder = path.join(dir, "chatty");
     write(folder, "stress.ts", 'export default () => { console.log("building"); console.error("still building"); return [{ name: "n=1", input: [1] }]; };\n');
