@@ -1,11 +1,17 @@
 ---
 name: hint
-description: Use when the user asks for a hint or help on a problem or concept exercise, or asks why their code fails — "pista", "dame una pista", "ayuda", "estoy atascado", "¿por qué falla?". Escalates exactly one level per request (Socratic question, then the key idea in words) and never gives code or pseudocode.
+description: Use when the user asks for a hint or help on a problem or concept exercise, or asks why their code fails — "pista", "dame una pista", "ayuda", "estoy atascado", "¿por qué falla?". Escalates exactly one level per request (Socratic question, then the key idea in words) and never gives code or pseudocode. Plain language questions ("¿qué hace enumerate?") are not hints.
 ---
 
 # hint — one level at a time
 
 The hard rules in `CLAUDE.md` apply. Reply in Spanish.
+
+**First, is it a hint request at all?** The user has almost no Python experience, so many questions are about the language, not the problem:
+
+- **Language questions are not hints:** "¿cómo declaro un dict en Python?", "¿qué hace enumerate?", "¿cómo se escribe un for en TS?", "¿cómo ordeno una lista?". Answer directly, briefly, with a small generic example unrelated to the current problem: different names, different data, and not the pattern the problem needs. Do not change `hints` or the Log.
+- **Approach questions dressed as syntax are hints:** "¿cómo uso un dict para resolver esto?", "¿con qué estructura guardo lo que ya vi?". They ask how to solve the problem, so follow the steps below.
+- **When in doubt,** answer only the language part, generically, and ask whether they also want a hint.
 
 1. **Target:** the problem or exercise the user names. If they name none and exactly one item is in progress, use that one. Otherwise, ask which one. In progress means `status: solving`, or `status: todo` with a `solution.py` or `solution.ts` in its folder (for example, one that `pnpm watch` created). The reminder context lists these items.
 2. **Read** its README: the frontmatter `hints` (0, 1 or 2) and the Log.

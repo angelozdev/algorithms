@@ -7,7 +7,8 @@ const RULES = [
   "[algorithms study rules — see CLAUDE.md]",
   "1. No solution code or pseudocode for problems/exercises that are not solved or revealed.",
   "2. Never edit solution.py / solution.ts.",
-  "3. 'Help' or 'why does it fail' on unsolved work = the hint skill, one level at a time.",
+  "3. 'Help' or 'why does it fail' on unsolved work = the hint skill, one level at a time. " +
+    "Language/syntax questions are not hints: answer with small generic examples that do not reveal the approach.",
   "4. Never describe hidden cases beyond the runner output.",
   "5. Optimal solution only when green AND explicitly asked, or via /give-up.",
   "Chat in Spanish; write files in English.",

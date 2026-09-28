@@ -220,6 +220,7 @@ describe("reminder hook", () => {
     expect(output.hookSpecificOutput.hookEventName).toBe("UserPromptSubmit");
     const context = output.hookSpecificOutput.additionalContext as string;
     expect(context).toContain("2. Never edit solution.py / solution.ts.");
+    expect(context).toContain("Language/syntax questions are not hints");
     expect(context).toContain("In progress: lc-0001 (hints 1), hash-map/01 (hints 0).");
     expect(context).not.toContain("lc-0009");
   });
