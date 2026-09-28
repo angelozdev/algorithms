@@ -52,7 +52,7 @@ Use `pnpm -s` whenever you parse output, so pnpm's banner does not corrupt the J
 - `pnpm -s test <query> --lang all --json`: runs once, only in the languages that already have a solution file. Never omit `--lang`: the default (`py`) creates `solution.py` when it is missing. `green: true` means examples, hidden and stress all pass.
 - `pnpm watch <query> [--lang py|ts] [--open]`: for the user. Do not start it yourself.
 - `pnpm -s fill-expected <query> --ref <file outside the repo>`: fills hidden expected values.
-- `pnpm -s leetcode <slug|url>`: JSON draft of a LeetCode problem (statement text, signature, examples).
+- `pnpm -s leetcode <slug|url>`: JSON draft of a LeetCode problem: `id`, `folder`, `title`, `slug`, `difficulty`, `url`, `statement` (verbatim Markdown: paraphrase it before writing the README), `cases` (a draft `cases.json`) and `warnings`.
 - `pnpm -s sync`, then `pnpm -s check`: after any change to problems or concepts.
 - `pnpm verify`: tool tests + check.
 
