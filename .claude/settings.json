@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm -s test:*)",
+      "Bash(pnpm -s sync)",
+      "Bash(pnpm -s check)",
+      "Bash(pnpm -s leetcode:*)",
+      "Bash(pnpm -s fill-expected:*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|Bash",
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-solution.mjs\"" }]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/reminder.mjs\"" }]
+      }
+    ]
+  }
+}
