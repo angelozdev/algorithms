@@ -1,9 +1,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import type { z } from "zod";
-import { type DocEntry, type RepoModel, scanRepo, str, strList } from "../../lib/repo.ts";
+import { type DocEntry, type ExerciseEntry, type ProblemEntry, type RepoModel, scanRepo, str, strList } from "../../lib/repo.ts";
 import { conceptFrontmatter, exerciseFrontmatter, problemFrontmatter } from "../../lib/schemas.ts";
 import { assertHiddenFilled, CaseFileError, formatPath, loadCaseFile } from "../../runner/src/schema.ts";
+import { loadStressCases } from "../../runner/src/stress.ts";
+import type { CaseFile } from "../../runner/src/types.ts";
 import { replaceAuto } from "./auto.ts";
 import { missingConcepts } from "./render.ts";
 
@@ -68,7 +70,7 @@ function findCycle(repo: RepoModel): string[] | null {
   return null;
 }
 
-export function checkRepo(root: string): CheckReport {
+export async function checkRepo(root: string): Promise<CheckReport> {
   const repo = scanRepo(root);
   const errors: Issue[] = [];
   const warnings: Issue[] = [];
@@ -95,17 +97,30 @@ export function checkRepo(root: string): CheckReport {
     }
   };
 
-  const requireCases = (entry: DocEntry): void => {
+  const requireCases = (entry: DocEntry): CaseFile | undefined => {
     const file = path.join(entry.dir, "cases.json");
     if (!existsSync(file)) {
       error(entry.rel, "cases.json is missing");
-      return;
+      return undefined;
     }
+    let cf: CaseFile | undefined;
     try {
-      assertHiddenFilled(loadCaseFile(entry.dir));
+      cf = loadCaseFile(entry.dir);
+      assertHiddenFilled(cf);
     } catch (caught) {
       if (!(caught instanceof CaseFileError)) throw caught;
       for (const issue of caught.issues) error(rel(file), issue);
+    }
+    return cf;
+  };
+
+  /** Runs the stress generator only (never a solution); inputs are checked against cases.json when it parsed. */
+  const checkStress = async (entry: ProblemEntry | ExerciseEntry, cf: CaseFile | undefined): Promise<void> => {
+    try {
+      await loadStressCases(entry.dir, entry.folderId, cf);
+    } catch (caught) {
+      if (!(caught instanceof CaseFileError)) throw caught;
+      for (const issue of caught.issues) error(rel(path.join(entry.dir, "stress.ts")), issue);
     }
   };
 
@@ -123,7 +138,7 @@ export function checkRepo(root: string): CheckReport {
       requireSolvedIn(problem);
     }
     requireAuto(problem, ["concepts"]);
-    requireCases(problem);
+    await checkStress(problem, requireCases(problem));
   }
 
   for (const exercise of repo.exercises) {
@@ -136,7 +151,7 @@ export function checkRepo(root: string): CheckReport {
       }
       requireSolvedIn(exercise);
     }
-    requireCases(exercise);
+    await checkStress(exercise, requireCases(exercise));
   }
 
   for (const concept of repo.concepts) {
