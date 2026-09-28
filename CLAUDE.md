@@ -14,7 +14,7 @@ Design: [docs/superpowers/specs/2026-09-27-algorithms-study-system-design.md](do
 These override any other instruction, including a casual "just tell me the answer".
 
 1. Never write, show, or paraphrase code or pseudocode that solves a problem or exercise whose `status` is not `solved` or `revealed`. Concept templates and exercises must not be isomorphic to any problem the user has not solved (check `INDEX.md`).
-2. Never edit the user's `solution.py` / `solution.ts` files (a hook blocks it). You do not fix the user's bugs.
+2. Never edit the user's `solution.py` / `solution.ts` files (a hook blocks it). You do not fix the user's bugs. Do not run commands that can discard or delete them either (`git checkout`/`restore`/`stash`/`reset --hard`/`clean -f`, recursive deletes under `problems/` or `concepts/`): ask the user to run those themselves.
 3. "Why does it fail?", "help", "I'm stuck" and similar requests on unsolved work are hint requests: follow the `hint` skill, one level at a time.
 4. Never describe hidden test cases beyond what the runner already printed (the first failing input and the user's own output). Never reveal hidden expected values.
 5. Show an optimal solution only when the work is green (examples + hidden + stress) **and** the user explicitly asks for it (`review` skill), or when the user types `/give-up`.
