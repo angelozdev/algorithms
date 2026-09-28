@@ -132,4 +132,18 @@ describe("runTarget", () => {
     const target = makeProblem(root, "lc-0011-unfilled", { ...SUM, hidden: [{ input: [[1]] }] }, { "solution.py": PY.correct });
     await expect(runTarget(target, "py", { root })).rejects.toBeInstanceOf(CaseFileError);
   });
+
+  it("reports a stress input that does not match the signature as a case-file error", async () => {
+    const unwrapped = 'export default () => [{ name: "n=5", input: 5 }];\n';
+    const target = makeProblem(root, "lc-0012-stress-unwrapped", SUM, {
+      "solution.py": PY.correct,
+      "solution.ts": TS_CORRECT,
+      "stress.ts": unwrapped,
+    });
+    for (const lang of ["py", "ts"] as const) {
+      const run = runTarget(target, lang, { root });
+      await expect(run).rejects.toBeInstanceOf(CaseFileError);
+      await expect(run).rejects.toThrow(/stress\.ts is invalid:\n {2}- \[0\]\.input: expected an array of 1 params/);
+    }
+  });
 });

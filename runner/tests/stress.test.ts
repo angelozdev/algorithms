@@ -1,7 +1,7 @@
 import { utimesSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { CaseFileError } from "../src/schema.ts";
+import { CaseFileError, parseCaseFile } from "../src/schema.ts";
 import { createRng, loadStressCases, seedFromId } from "../src/stress.ts";
 import { removeTemp, tempDir, write } from "./helpers.ts";
 
@@ -69,6 +69,48 @@ describe("loadStressCases", () => {
     const bad = path.join(dir, "bad");
     write(bad, "stress.ts", 'export default () => [{ input: [1], limitMs: -1 }];\n');
     await expect(loadStressCases(bad, "x")).rejects.toThrow(/\[0\]\.name: required/);
+  });
+
+  it("checks every input against the signature in cases.json", async () => {
+    const pair = parseCaseFile({
+      entry: "solve",
+      params: [{ name: "nums", type: "int[]" }, { name: "k", type: "int" }],
+      returns: "int",
+      examples: [{ input: [[1], 1], expected: 1 }],
+      hidden: [],
+    });
+    const folder = path.join(dir, "arity");
+    write(
+      folder,
+      "stress.ts",
+      'export default () => [{ name: "ok", input: [[1, 2], 3] }, { name: "flat", input: [1, 2, 3] }, { name: "bare", input: 7 }];\n',
+    );
+    const error = await loadStressCases(folder, "x", pair).catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(CaseFileError);
+    expect((error as CaseFileError).message).toMatch(/^stress\.ts is invalid/);
+    expect((error as CaseFileError).issues).toEqual([
+      "[1].input: expected 2 params, got 3",
+      "[2].input: expected an array of 2 params",
+    ]);
+
+    const stack = parseCaseFile({
+      mode: "class",
+      entry: "MinStack",
+      examples: [{ input: { ops: ["MinStack", "push"], args: [[], [1]] }, expected: [null, null] }],
+      hidden: [],
+    });
+    const classFolder = path.join(dir, "class");
+    write(
+      classFolder,
+      "stress.ts",
+      'export default () => [{ name: "ok", input: { ops: ["MinStack", "push"], args: [[], [1]] } }, { name: "no-ctor", input: { ops: ["push"], args: [[1]] } }, { name: "plain", input: [1] }];\n',
+    );
+    const classError = await loadStressCases(classFolder, "x", stack).catch((caught: unknown) => caught);
+    expect(classError).toBeInstanceOf(CaseFileError);
+    expect((classError as CaseFileError).issues).toEqual([
+      '[1].input.ops[0]: expected "MinStack"',
+      '[2].input: expected { "ops": [...], "args": [...] }',
+    ]);
   });
 
   it("reports files that fail to load or whose generator throws as case-file errors", async () => {

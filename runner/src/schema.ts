@@ -60,6 +60,38 @@ export function formatPath(segments: readonly PropertyKey[]): string {
   return out || "(root)";
 }
 
+type Signature = Pick<CaseFile, "mode" | "entry" | "params">;
+
+function classInput(input: unknown): { ops: unknown[]; args: unknown[] } | null {
+  const value = input as { ops?: unknown; args?: unknown } | null;
+  if (typeof value !== "object" || value === null || !Array.isArray(value.ops) || !Array.isArray(value.args)) {
+    return null;
+  }
+  return { ops: value.ops, args: value.args };
+}
+
+/**
+ * Checks one case input against the signature: function mode takes one item per param,
+ * class mode takes { ops, args }. `where` prefixes each issue (e.g. "hidden[3]").
+ */
+export function inputIssues(signature: Signature, input: unknown, where: string): string[] {
+  if (signature.mode === "function") {
+    const count = signature.params.length;
+    if (!Array.isArray(input)) return [`${where}.input: expected an array of ${count} params`];
+    return input.length === count ? [] : [`${where}.input: expected ${count} params, got ${input.length}`];
+  }
+  const call = classInput(input);
+  if (!call) return [`${where}.input: expected { "ops": [...], "args": [...] }`];
+  const issues: string[] = [];
+  if (call.ops.length === 0 || call.ops.length !== call.args.length) {
+    issues.push(`${where}.input: ops and args must be non-empty and the same length`);
+  } else if (call.ops[0] !== signature.entry) {
+    issues.push(`${where}.input.ops[0]: expected "${signature.entry}"`);
+  }
+  if (!call.args.every(Array.isArray)) issues.push(`${where}.input.args: every entry must be an array`);
+  return issues;
+}
+
 export function parseCaseFile(raw: unknown): CaseFile {
   const parsed = caseFileSchema.safeParse(raw);
   if (!parsed.success) {
@@ -75,6 +107,7 @@ export function parseCaseFile(raw: unknown): CaseFile {
     ["examples", examples],
     ["hidden", hidden],
   ];
+  const signature: Signature = { mode, entry: data.entry, params: data.params ?? [] };
   const issues: string[] = [];
 
   examples.forEach((entry, i) => {
@@ -84,15 +117,8 @@ export function parseCaseFile(raw: unknown): CaseFile {
   if (mode === "function") {
     if (!data.params) issues.push("params: required in function mode");
     if (!data.returns) issues.push("returns: required in function mode");
-    const count = data.params?.length ?? 0;
     for (const [key, list] of lists) {
-      list.forEach((entry, i) => {
-        if (!Array.isArray(entry.input)) {
-          issues.push(`${key}[${i}].input: expected an array of ${count} params`);
-        } else if (entry.input.length !== count) {
-          issues.push(`${key}[${i}].input: expected ${count} params, got ${entry.input.length}`);
-        }
-      });
+      list.forEach((entry, i) => issues.push(...inputIssues(signature, entry.input, `${key}[${i}]`)));
     }
     const inPlace = data.inPlace;
     if (inPlace && !data.params?.some((param) => param.name === inPlace.param)) {
@@ -105,29 +131,14 @@ export function parseCaseFile(raw: unknown): CaseFile {
     for (const [key, list] of lists) {
       list.forEach((entry, i) => {
         const where = `${key}[${i}]`;
-        const input = entry.input as { ops?: unknown; args?: unknown } | null;
+        issues.push(...inputIssues(signature, entry.input, where));
+        const call = classInput(entry.input);
         if (
-          typeof input !== "object" ||
-          input === null ||
-          !Array.isArray(input.ops) ||
-          !Array.isArray(input.args)
-        ) {
-          issues.push(`${where}.input: expected { "ops": [...], "args": [...] }`);
-          return;
-        }
-        if (input.ops.length === 0 || input.ops.length !== input.args.length) {
-          issues.push(`${where}.input: ops and args must be non-empty and the same length`);
-        } else if (input.ops[0] !== data.entry) {
-          issues.push(`${where}.input.ops[0]: expected "${data.entry}"`);
-        }
-        if (!input.args.every(Array.isArray)) {
-          issues.push(`${where}.input.args: every entry must be an array`);
-        }
-        if (
+          call &&
           entry.expected !== undefined &&
-          (!Array.isArray(entry.expected) || entry.expected.length !== input.ops.length)
+          (!Array.isArray(entry.expected) || entry.expected.length !== call.ops.length)
         ) {
-          issues.push(`${where}.expected: expected one value per op (${input.ops.length})`);
+          issues.push(`${where}.expected: expected one value per op (${call.ops.length})`);
         }
       });
     }

@@ -157,7 +157,7 @@ export async function runTarget(target: Target, lang: Lang, options: RunOptions 
   result.hidden = hidden;
   if (hidden.status !== "pass") return result;
 
-  const stressCases = await loadStressCases(target.dir, target.id);
+  const stressCases = await loadStressCases(target.dir, target.id, cf);
   if (!stressCases) {
     result.stress = { status: "none", cases: [] };
     result.green = true;

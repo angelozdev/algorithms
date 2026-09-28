@@ -1,7 +1,8 @@
 import { existsSync, statSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { CaseFileError } from "./schema.ts";
+import { CaseFileError, inputIssues } from "./schema.ts";
+import type { CaseFile } from "./types.ts";
 
 export const DEFAULT_STRESS_LIMIT_MS = 2000;
 
@@ -58,7 +59,11 @@ export function createRng(seed: number): Rng {
   };
 }
 
-export async function loadStressCases(dir: string, id: string): Promise<StressCase[] | null> {
+/**
+ * Loads `<dir>/stress.ts` and calls it with an rng seeded by `id`. With `cf`, every input
+ * must also match the signature in cases.json. Returns null when the file does not exist.
+ */
+export async function loadStressCases(dir: string, id: string, cf?: CaseFile): Promise<StressCase[] | null> {
   const file = path.join(dir, "stress.ts");
   if (!existsSync(file)) return null;
   // The mtime query busts the ESM cache so watch mode sees edits. It uses integer
@@ -88,6 +93,7 @@ export async function loadStressCases(dir: string, id: string): Promise<StressCa
   cases.forEach((item: Partial<StressCase> | null, i) => {
     if (typeof item?.name !== "string" || item.name === "") issues.push(`[${i}].name: required`);
     if (item?.input === undefined) issues.push(`[${i}].input: required`);
+    else if (cf) issues.push(...inputIssues(cf, item.input, `[${i}]`));
     if (item?.limitMs !== undefined && !(typeof item.limitMs === "number" && item.limitMs > 0)) {
       issues.push(`[${i}].limitMs: must be a positive number`);
     }
