@@ -9,10 +9,10 @@ The hard rules in `CLAUDE.md` apply. Reply in Spanish.
 
 1. **Target:** as in the `hint` skill.
 2. **Run** `pnpm -s test <id> --lang all --json` and parse the array.
-3. **Not green in any language:** tell the user which phase fails in each language (load error, examples, hidden, stress) and stop. Debugging help goes through the `hint` skill.
+3. **Not green in any language:** if the target has `status: todo`, set it to `solving` and run `pnpm -s sync`. Tell the user which phase fails in each language (load error, examples, hidden, stress) and stop. Debugging help goes through the `hint` skill.
 4. **Green:** read `solution.<lang>` for each green language and work out its time and space complexity (Big-O in terms of the input names). Compare it with the best known complexity for this problem.
 5. **Update the frontmatter:**
-   - `status: solved` (also when it was `revealed`).
+   - `status: solved`, whatever it was before (`todo`, `solving` or `revealed`).
    - `solved_in`: the green languages.
    - Problems only: `complexity: { time: "O(…)", space: "O(…)", optimal: true|false }`.
    - Append a Log line: `- YYYY-MM-DD · green in py, O(n²) → better exists` or `- YYYY-MM-DD · green in py, O(n) ✓ optimal`.

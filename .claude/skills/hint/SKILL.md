@@ -7,7 +7,7 @@ description: Use when the user asks for a hint or help on a problem or concept e
 
 The hard rules in `CLAUDE.md` apply. Reply in Spanish.
 
-1. **Target:** the problem or exercise the user names. If they name none and exactly one item has `status: solving` (the reminder context lists them), use that one. Otherwise, ask which one.
+1. **Target:** the problem or exercise the user names. If they name none and exactly one item is in progress, use that one. Otherwise, ask which one. In progress means `status: solving`, or `status: todo` with a `solution.py` or `solution.ts` in its folder (for example, one that `pnpm watch` created). The reminder context lists these items.
 2. **Read** its README: the frontmatter `hints` (0, 1 or 2) and the Log.
 3. **Next level = `hints + 1`:**
    - **Level 1 — one Socratic question.** It points at the key insight without naming any steps. You may read the user's `solution.*` to aim the question at their current approach (for example, at what their inner loop keeps recomputing). Do not state the answer.
@@ -15,5 +15,5 @@ The hard rules in `CLAUDE.md` apply. Reply in Spanish.
    - **Already at level 2:** no more hints. Point to the concept notes linked in the README and to their exercises, and mention that `/give-up` exists (the user has to type it).
 4. **Already solved but not optimal** (`complexity.optimal: false`): the same ladder applies to reaching the better complexity, and the counter keeps going.
 5. **"Why does it fail?":** run `pnpm -s test <id> --lang all --json` and use only what it reports: the failing input and the user's own output or error. Never reveal other hidden inputs or any expected value.
-6. **Record:** if you gave a hint (level 1 or 2), set `hints` to that level and append `- YYYY-MM-DD · hint <level>` to the Log. If the user was already at level 2, leave `hints: 2` and append `- YYYY-MM-DD · hint refused (max level)`. Run `pnpm -s sync`.
+6. **Record:** if the target has `status: todo`, set it to `solving`. If you gave a hint (level 1 or 2), set `hints` to that level and append `- YYYY-MM-DD · hint <level>` to the Log. If the user was already at level 2, leave `hints: 2` and append `- YYYY-MM-DD · hint refused (max level)`. Run `pnpm -s sync`.
 7. **Reply** with the hint and nothing else.

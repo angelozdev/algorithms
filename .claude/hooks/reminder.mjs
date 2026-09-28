@@ -27,19 +27,30 @@ function subdirs(dir) {
     .sort();
 }
 
-function readmes(root) {
+/** Problem and exercise folders that have a README.md. */
+function itemDirs(root) {
   const dirs = [...subdirs(path.join(root, "problems"))];
   for (const concept of subdirs(path.join(root, "concepts"))) dirs.push(...subdirs(path.join(concept, "exercises")));
-  return dirs.map((dir) => path.join(dir, "README.md")).filter((file) => existsSync(file));
+  return dirs.filter((dir) => existsSync(path.join(dir, "README.md")));
+}
+
+/** In progress: status solving, or todo with a solution file (e.g. created by pnpm watch). See CLAUDE.md. */
+function inProgress(dir, text) {
+  const status = field(text, "status");
+  if (status === "solving") return true;
+  return status === "todo" && ["solution.py", "solution.ts"].some((name) => existsSync(path.join(dir, name)));
 }
 
 try {
   const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const inProgress = readmes(root)
-    .map((file) => readFileSync(file, "utf8"))
-    .filter((text) => field(text, "status") === "solving")
-    .map((text) => `${field(text, "id")} (hints ${field(text, "hints") ?? "0"})`);
-  const context = [...RULES, inProgress.length ? `In progress: ${inProgress.join(", ")}.` : "In progress: nothing."].join("\n");
+  const inProgressItems = itemDirs(root)
+    .map((dir) => ({ dir, text: readFileSync(path.join(dir, "README.md"), "utf8") }))
+    .filter(({ dir, text }) => inProgress(dir, text))
+    .map(({ text }) => `${field(text, "id")} (hints ${field(text, "hints") ?? "0"})`);
+  const context = [
+    ...RULES,
+    inProgressItems.length ? `In progress: ${inProgressItems.join(", ")}.` : "In progress: nothing.",
+  ].join("\n");
   process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: "UserPromptSubmit", additionalContext: context } }));
 } catch (error) {
   process.stderr.write(`reminder hook failed: ${error.message}\n`);

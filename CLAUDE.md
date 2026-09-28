@@ -61,6 +61,7 @@ Use `pnpm -s` whenever you parse output, so pnpm's banner does not corrupt the J
 ## Vocabulary
 
 - Problem/exercise `status`: `todo` · `solving` · `solved` · `revealed`. `hints`: 0–2.
+- **In progress** = `status: solving`, or `status: todo` with a `solution.py`/`solution.ts` in its folder (for example, created by `pnpm watch`). The reminder lists these items. `hint`, `review` and `give-up` set a `todo` item they act on to `solving` (`review` sets `solved` when it is green).
 - Concept `status`: `new` (created ahead of time) · `learning` · `mastered`.
 - `patterns` (the groups in `INDEX.md`): arrays-hashing, two-pointers, sliding-window, stack, binary-search, linked-list, trees, tries, heap, backtracking, graphs, dp-1d, dp-2d, greedy, intervals, math, bit-manipulation, strings.
 - Log lines: `- YYYY-MM-DD · <event>`, appended at the end of the README.

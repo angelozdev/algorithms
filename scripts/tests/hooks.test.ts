@@ -82,6 +82,27 @@ describe("reminder hook", () => {
     expect(context).not.toContain("lc-0009");
   });
 
+  it("counts a todo item as in progress once it has a solution file", () => {
+    const root = makeTempDir("algo-hook-");
+    put(root, "problems/lc-0070-climbing-stairs/README.md", "---\nid: lc-0070\nstatus: todo\nhints: 1\n---\n");
+    put(root, "problems/lc-0070-climbing-stairs/solution.ts", "export default function climbStairs(n: number): number {}\n");
+    put(root, "concepts/hash-map/README.md", "---\nslug: hash-map\nstatus: learning\n---\n");
+    put(root, "concepts/hash-map/exercises/01-first-repeat/README.md", "---\nid: hash-map/01\nstatus: todo\nhints: 0\n---\n");
+    put(root, "concepts/hash-map/exercises/01-first-repeat/solution.py", "class Solution:\n    pass\n");
+    put(root, "concepts/hash-map/exercises/02-most-frequent/README.md", "---\nid: hash-map/02\nstatus: todo\nhints: 0\n---\n");
+    const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: lc-0070 (hints 1), hash-map/01 (hints 0).");
+    expect(context).not.toContain("hash-map/02");
+  });
+
+  it("does not count a todo item without a solution file", () => {
+    const root = makeTempDir("algo-hook-");
+    put(root, "concepts/hash-map/exercises/02-most-frequent/README.md", "---\nid: hash-map/02\nstatus: todo\nhints: 0\n---\n");
+    put(root, "concepts/hash-map/exercises/02-most-frequent/cases.json", "{}\n");
+    const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: nothing.");
+  });
+
   it("says when nothing is in progress", () => {
     const root = makeTempDir("algo-hook-");
     const output = hook("reminder.mjs", { prompt: "hola" }, root);
