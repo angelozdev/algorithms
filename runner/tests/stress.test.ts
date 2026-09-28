@@ -51,13 +51,14 @@ describe("loadStressCases", () => {
     ]);
   });
 
-  it("reloads the file after it changes", async () => {
+  it("reloads the file after it changes, even when its mtime does not", async () => {
     const folder = path.join(dir, "reload");
+    const stamp = new Date("2026-01-01T00:00:00Z");
     const file = write(folder, "stress.ts", 'export default () => [{ name: "v1", input: [1] }];\n');
+    utimesSync(file, stamp, stamp);
     expect((await loadStressCases(folder, "x"))?.[0].name).toBe("v1");
     write(folder, "stress.ts", 'export default () => [{ name: "v2", input: [1] }];\n');
-    const later = new Date(Date.now() + 5000);
-    utimesSync(file, later, later);
+    utimesSync(file, stamp, stamp);
     expect((await loadStressCases(folder, "x"))?.[0].name).toBe("v2");
   });
 
@@ -125,5 +126,30 @@ describe("loadStressCases", () => {
     const generating = loadStressCases(throwing, "x");
     await expect(generating).rejects.toBeInstanceOf(CaseFileError);
     await expect(generating).rejects.toThrow(/stress\(\) threw: boom/);
+  });
+
+  it("stops a generator that never returns and reports it as a case-file error", async () => {
+    const folder = path.join(dir, "endless");
+    write(folder, "stress.ts", "export default () => { for (;;) {} };\n");
+    const started = Date.now();
+    const error = await loadStressCases(folder, "x", undefined, { timeoutMs: 1000 }).catch((caught: unknown) => caught);
+    expect(Date.now() - started).toBeLessThan(5000);
+    expect(error).toBeInstanceOf(CaseFileError);
+    expect((error as CaseFileError).message).toMatch(/^stress\.ts is invalid/);
+    expect((error as CaseFileError).issues).toEqual(["stress() did not return within 1000 ms (an infinite loop?)"]);
+  });
+
+  it("reports a generator process that dies as a case-file error", async () => {
+    const folder = path.join(dir, "dying");
+    write(folder, "stress.ts", "export default () => process.exit(7);\n");
+    const error = await loadStressCases(folder, "x").catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(CaseFileError);
+    expect((error as CaseFileError).issues[0]).toMatch(/^the generator exited without returning cases \(exit code 7\)/);
+  });
+
+  it("ignores what the generator prints", async () => {
+    const folder = path.join(dir, "chatty");
+    write(folder, "stress.ts", 'export default () => { console.log("building"); console.error("still building"); return [{ name: "n=1", input: [1] }]; };\n');
+    expect(await loadStressCases(folder, "x")).toEqual([{ name: "n=1", input: [1] }]);
   });
 });

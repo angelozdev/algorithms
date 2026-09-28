@@ -1,10 +1,17 @@
-import { existsSync, statSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import type { Readable } from "node:stream";
+import { fileURLToPath } from "node:url";
+import { REPO_ROOT, TSX_LOADER, TSX_TSCONFIG } from "./paths.ts";
 import { CaseFileError, inputIssues } from "./schema.ts";
 import type { CaseFile } from "./types.ts";
 
 export const DEFAULT_STRESS_LIMIT_MS = 2000;
+/** Default time limit for generating the stress cases (not for running them). */
+export const STRESS_LOAD_TIMEOUT_MS = 10_000;
+
+const WORKER = fileURLToPath(new URL("./stress-worker.ts", import.meta.url));
 
 export interface Rng {
   /** Float in [0, 1). */
@@ -22,6 +29,9 @@ export interface StressCase {
   input: unknown;
   limitMs?: number;
 }
+
+/** What stress-worker.ts sends back on fd 3. */
+export type StressReply = { ok: true; cases: unknown } | { ok: false; issue: string };
 
 /** FNV-1a 32-bit hash: a stable seed per problem id. */
 export function seedFromId(id: string): number {
@@ -60,32 +70,75 @@ export function createRng(seed: number): Rng {
 }
 
 /**
- * Loads `<dir>/stress.ts` and calls it with an rng seeded by `id`. With `cf`, every input
+ * Runs stress-worker.ts on `file` and returns what the generator returned. The worker is killed
+ * after `timeoutMs`. Every failure (load error, throw, timeout, crash) is a CaseFileError.
+ */
+function generate(file: string, id: string, timeoutMs: number): Promise<unknown> {
+  const invalid = (issue: string): CaseFileError => new CaseFileError([issue], "stress.ts");
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, ["--import", TSX_LOADER, WORKER, file, id], {
+      cwd: REPO_ROOT,
+      env: { ...process.env, TSX_TSCONFIG_PATH: TSX_TSCONFIG },
+      stdio: ["ignore", "ignore", "pipe", "pipe"],
+    });
+    let reply = "";
+    let stderr = "";
+    let timedOut = false;
+    let settled = false;
+    const settle = (action: () => void): void => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      action();
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill("SIGKILL");
+    }, timeoutMs);
+
+    const channel = child.stdio[3] as Readable;
+    channel.setEncoding("utf8");
+    channel.on("data", (chunk: string) => {
+      reply += chunk;
+    });
+    const errors = child.stdio[2] as Readable;
+    errors.setEncoding("utf8");
+    errors.on("data", (chunk: string) => {
+      stderr = (stderr + chunk).slice(-4000);
+    });
+    child.on("error", (error) => settle(() => reject(invalid(`could not start the generator: ${error.message}`))));
+    child.on("close", (code, signal) =>
+      settle(() => {
+        if (timedOut) return reject(invalid(`stress() did not return within ${timeoutMs} ms (an infinite loop?)`));
+        let message: StressReply | null = null;
+        try {
+          message = JSON.parse(reply) as StressReply;
+        } catch {
+          const how = signal ? `signal ${signal}` : `exit code ${code}`;
+          const tail = stderr.trim().split("\n").slice(-5).join("\n");
+          return reject(invalid(`the generator exited without returning cases (${how})${tail ? `: ${tail}` : ""}`));
+        }
+        if (message.ok) resolve(message.cases);
+        else reject(invalid(message.issue));
+      }),
+    );
+  });
+}
+
+/**
+ * Loads `<dir>/stress.ts` and calls it with an rng seeded by `id`, in a child process that is
+ * killed after `options.timeoutMs` (default STRESS_LOAD_TIMEOUT_MS). With `cf`, every input
  * must also match the signature in cases.json. Returns null when the file does not exist.
  */
-export async function loadStressCases(dir: string, id: string, cf?: CaseFile): Promise<StressCase[] | null> {
+export async function loadStressCases(
+  dir: string,
+  id: string,
+  cf?: CaseFile,
+  options: { timeoutMs?: number } = {},
+): Promise<StressCase[] | null> {
   const file = path.join(dir, "stress.ts");
   if (!existsSync(file)) return null;
-  // The mtime query busts the ESM cache so watch mode sees edits. It uses integer
-  // nanoseconds: a fractional mtimeMs ends the id in ".NNNN", which Vite takes as the extension.
-  const url = `${pathToFileURL(file).href}?mtime=${statSync(file, { bigint: true }).mtimeNs}`;
-  let mod: { default?: unknown };
-  try {
-    mod = (await import(url)) as { default?: unknown };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new CaseFileError([`failed to load: ${message}`], "stress.ts");
-  }
-  if (typeof mod.default !== "function") {
-    throw new CaseFileError(["expected a default export function (rng) => StressCase[]"], "stress.ts");
-  }
-  let cases: unknown;
-  try {
-    cases = (mod.default as (rng: Rng) => unknown)(createRng(seedFromId(id)));
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    throw new CaseFileError([`stress() threw: ${message}`], "stress.ts");
-  }
+  const cases = await generate(file, id, options.timeoutMs ?? STRESS_LOAD_TIMEOUT_MS);
   if (!Array.isArray(cases) || cases.length === 0) {
     throw new CaseFileError(["must return a non-empty array of { name, input, limitMs? }"], "stress.ts");
   }

@@ -94,6 +94,19 @@ describe("checkRepo", () => {
     }
   });
 
+  it("stops a stress generator that never returns and keeps checking the rest", async () => {
+    const root = makeStudyRepo();
+    put(root, "problems/lc-0001-two-sum/stress.ts", "export default () => { for (;;) {} };\n");
+    put(root, "problems/lc-0020-valid-parentheses/stress.ts", 'export default () => [{ name: "unwrapped", input: 5 }];\n');
+    const started = Date.now();
+    const errors = (await checkRepo(root, { stressLoadMs: 3000 })).errors.map((e) => `${e.file}: ${e.message}`);
+    expect(Date.now() - started).toBeLessThan(15_000);
+    expect(errors).toEqual([
+      "problems/lc-0001-two-sum/stress.ts: stress() did not return within 3000 ms (an infinite loop?)",
+      "problems/lc-0020-valid-parentheses/stress.ts: [0].input: expected an array of 1 params",
+    ]);
+  });
+
   it("exits 1 from the CLI when there are errors", () => {
     const root = makeStudyRepo();
     const run = () => spawnSync(TSX_BIN, ["scripts/check.ts"], { cwd: REPO_ROOT, env: { ...process.env, ALGO_ROOT: root }, encoding: "utf8" });

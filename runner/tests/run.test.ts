@@ -133,6 +133,18 @@ describe("runTarget", () => {
     await expect(runTarget(target, "py", { root })).rejects.toBeInstanceOf(CaseFileError);
   });
 
+  it("stops a stress generator that never returns and reports a case-file error", async () => {
+    const target = makeProblem(root, "lc-0013-stress-endless", SUM, {
+      "solution.py": PY.correct,
+      "stress.ts": "export default () => { for (;;) {} };\n",
+    });
+    const started = Date.now();
+    const run = runTarget(target, "py", { root, stressLoadMs: 1000 });
+    await expect(run).rejects.toBeInstanceOf(CaseFileError);
+    await expect(run).rejects.toThrow(/stress\.ts is invalid:\n {2}- stress\(\) did not return within 1000 ms/);
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+
   it("reports a stress input that does not match the signature as a case-file error", async () => {
     const unwrapped = 'export default () => [{ name: "n=5", input: 5 }];\n';
     const target = makeProblem(root, "lc-0012-stress-unwrapped", SUM, {

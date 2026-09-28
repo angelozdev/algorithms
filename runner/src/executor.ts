@@ -1,9 +1,7 @@
 import { execFileSync, spawn } from "node:child_process";
-import { createRequire } from "node:module";
 import path from "node:path";
 import type { Readable } from "node:stream";
-import { pathToFileURL } from "node:url";
-import { HARNESS_DIR, REPO_ROOT } from "./paths.ts";
+import { HARNESS_DIR, REPO_ROOT, TSX_LOADER, TSX_TSCONFIG } from "./paths.ts";
 import type {
   CaseRun,
   HarnessError,
@@ -29,9 +27,6 @@ export function resolvePython(): string {
   return cachedPython;
 }
 
-/** tsx loaded in-process (`node --import`), so the harness keeps fd 3. */
-const TSX_LOADER = pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href;
-
 function command(lang: Lang): { file: string; args: string[]; env: NodeJS.ProcessEnv } {
   if (lang === "py") {
     return {
@@ -43,7 +38,7 @@ function command(lang: Lang): { file: string; args: string[]; env: NodeJS.Proces
   return {
     file: process.execPath,
     args: ["--import", TSX_LOADER, path.join(HARNESS_DIR, "ts", "harness.ts")],
-    env: { ...process.env, TSX_TSCONFIG_PATH: path.join(REPO_ROOT, "tsconfig.json") },
+    env: { ...process.env, TSX_TSCONFIG_PATH: TSX_TSCONFIG },
   };
 }
 

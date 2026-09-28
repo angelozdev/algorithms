@@ -70,7 +70,12 @@ function findCycle(repo: RepoModel): string[] | null {
   return null;
 }
 
-export async function checkRepo(root: string): Promise<CheckReport> {
+export interface CheckOptions {
+  /** Time limit for each stress generator (default STRESS_LOAD_TIMEOUT_MS). */
+  stressLoadMs?: number;
+}
+
+export async function checkRepo(root: string, options: CheckOptions = {}): Promise<CheckReport> {
   const repo = scanRepo(root);
   const errors: Issue[] = [];
   const warnings: Issue[] = [];
@@ -117,7 +122,7 @@ export async function checkRepo(root: string): Promise<CheckReport> {
   /** Runs the stress generator only (never a solution); inputs are checked against cases.json when it parsed. */
   const checkStress = async (entry: ProblemEntry | ExerciseEntry, cf: CaseFile | undefined): Promise<void> => {
     try {
-      await loadStressCases(entry.dir, entry.folderId, cf);
+      await loadStressCases(entry.dir, entry.folderId, cf, { timeoutMs: options.stressLoadMs });
     } catch (caught) {
       if (!(caught instanceof CaseFileError)) throw caught;
       for (const issue of caught.issues) error(rel(path.join(entry.dir, "stress.ts")), issue);

@@ -29,6 +29,8 @@ export interface RunOptions {
   examplesWallMs?: number;
   /** Root used for the relative paths in the result (default: contentRoot()). */
   root?: string;
+  /** Time limit for generating the stress cases (default STRESS_LOAD_TIMEOUT_MS). */
+  stressLoadMs?: number;
 }
 
 export function truncateLines(text: string, max = STDOUT_MAX_LINES): string {
@@ -157,7 +159,8 @@ export async function runTarget(target: Target, lang: Lang, options: RunOptions 
   result.hidden = hidden;
   if (hidden.status !== "pass") return result;
 
-  const stressCases = await loadStressCases(target.dir, target.id, cf);
+  // Loaded lazily, in its own process: most saves never get this far, and a stuck generator is killed.
+  const stressCases = await loadStressCases(target.dir, target.id, cf, { timeoutMs: options.stressLoadMs });
   if (!stressCases) {
     result.stress = { status: "none", cases: [] };
     result.green = true;
