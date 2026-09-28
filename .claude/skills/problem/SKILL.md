@@ -85,7 +85,7 @@ export default function stress(rng: Rng): StressCase[] {
 }
 ```
 
-- Generate inputs only, and make them satisfy the problem's guarantees (for example "exactly one answer exists").
+- Generate inputs only, make them satisfy the problem's guarantees (for example "exactly one answer exists"), and never exceed the problem's own constraints: use the largest n they allow, not always 1e5.
 - `Rng` offers `int(min, max)`, `intArray(n, min, max)`, `pick(items)`, `shuffle(items)` and `next()`.
 
 ## 5. Fill the hidden expected values
