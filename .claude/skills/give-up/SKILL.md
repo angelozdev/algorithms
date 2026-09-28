@@ -9,7 +9,9 @@ disable-model-invocation: true
 Reply in Spanish.
 
 1. **Target:** as in the `hint` skill.
-2. **Ask once:** "¿Seguro? Te muestro la solución óptima y el problema queda marcado como revealed." Then wait. Anything other than a clear yes means stop: if the target has `status: todo`, set it to `solving` and run `pnpm -s sync` first.
+2. **Ask once:** "¿Seguro? Te muestro la solución óptima y el problema queda marcado como revealed." Then wait.
+   - A clear yes: go on to step 3.
+   - Anything else means stop. Before stopping, if the target has `status: todo`, set it to `solving` and run `pnpm -s sync`.
 3. **Explain in chat:**
    - the key insight;
    - the approach, step by step;
