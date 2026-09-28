@@ -286,6 +286,67 @@ describe("guard-solution hook", () => {
     expect(elsewhere("git stash")).toBe("allow");
     expect(elsewhere("git reset --hard")).toBe("allow");
   });
+
+  it("sees commands after shell keywords, launchers and function definitions", () => {
+    expectBash(
+      [
+        "if [ -d problems/x ]; then rm -rf problems/x; fi",
+        "if ! git diff --quiet; then git stash; fi",
+        "{ rm -rf problems; }",
+        "! git stash",
+        "while true; do git reset --hard; done",
+        "for f in a b; do python3 -c \"open('problems/a/solution.py', 'w')\"; done",
+        "f() { rm -rf problems; }",
+        "pnpm exec node -e \"require('fs').writeFileSync('problems/a/solution.ts', '')\"",
+        "npx tsx -e \"require('fs').rmSync('problems/a/solution.ts')\"",
+        "uv run python -c \"open('problems/a/solution.py', 'w')\"",
+        "python3 -c \"import sys; open(sys.argv[1], 'w')\" problems/a/solution.py",
+      ],
+      "deny",
+    );
+  });
+
+  it("treats a variable inside a path as any name", () => {
+    expectBash(
+      [
+        'id=lc-0001-two-sum; rm -rf "problems/$id"',
+        'rm -rf "problems/${ID}"',
+        'ls problems | while read d; do rm -rf "problems/$d"; done',
+        'rm -f "concepts/hash-map/exercises/$n/solution.py"',
+        'git checkout -- "problems/$id"',
+      ],
+      "deny",
+    );
+    expectBash(['rm -rf "$UNSET_SCRATCH_DIR/x"', 'rm -rf "problems/$id/__pycache__"'], "allow");
+  });
+
+  it("checks scripts piped into a shell", () => {
+    expectBash(["cat <<'EOF' | bash\ngit stash\nEOF", 'echo "git stash" | sh', "printf 'rm -rf problems\\n' | bash -s"], "deny");
+    expectBash(["cat notes.txt | sh -c 'wc -l'"], "allow");
+  });
+
+  it("reads a heredoc that starts inside $(…) from the next line", () => {
+    expectBash(["x=$(cat <<EOF)\nrm -rf problems\nEOF\necho ok"], "allow");
+    expectBash(["x=$(cat <<EOF)\nplain text\nEOF\nrm -rf problems"], "deny");
+  });
+
+  it("never fails open on patterns it cannot parse", () => {
+    for (const command of ["rm -rf 'x[z-a]'", "git checkout -- '[z-a]'", "find . -name '[z-a]' -delete"]) {
+      const run = spawnSync(process.execPath, [path.join(HOOKS, "guard-solution.mjs")], {
+        input: JSON.stringify({ tool_name: "Bash", tool_input: { command } }),
+        env: { ...process.env, CLAUDE_PROJECT_DIR: PROJECT },
+        encoding: "utf8",
+      });
+      expect(run.stderr, command).toBe("");
+      expect(JSON.parse(run.stdout).hookSpecificOutput.permissionDecision, command).toBe("deny");
+    }
+  });
+
+  it("keeps the earlier cwd checks for other repositories", () => {
+    const elsewhere = (command: string) => decision({ tool_name: "Bash", cwd: "/tmp/other-repo", tool_input: { command } });
+    expect(elsewhere("git stash")).toBe("allow");
+    expect(elsewhere("git reset --hard")).toBe("allow");
+  });
 });
 
 describe("reminder hook", () => {

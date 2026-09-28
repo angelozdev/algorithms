@@ -31,7 +31,12 @@ const INTERPRETER = /^(?:python[\d.]*|node|tsx|bun|ruby|perl)$/;
 /** Flags whose next word is code: python -c, node -e/-p/--eval, ruby/perl -e (also -ne, -pe…). */
 const CODE_FLAG = /^(?:-[a-z]{0,3}[cep]|--eval|--print)$/;
 /** Words that run the command after them. */
-const WRAPPERS = new Set(["sudo", "env", "nohup", "time", "exec", "command", "builtin", "nice", "timeout", "xargs"]);
+const WRAPPERS = new Set(["sudo", "env", "nohup", "time", "exec", "command", "builtin", "nice", "timeout", "xargs", "npx", "bunx", "uvx"]);
+/** Package managers whose `exec`/`dlx`/`run`/`x` subcommand runs the command after it (pnpm exec node, uv run python). */
+const LAUNCHERS = new Set(["pnpm", "npm", "yarn", "bun", "uv"]);
+const LAUNCH = new Set(["exec", "dlx", "run", "x"]);
+/** Shell words that come before a command: if cond; then cmd; fi, while …; do cmd; done, { cmd; }, ! cmd. */
+const KEYWORDS = new Set(["if", "then", "else", "elif", "do", "while", "until", "{", "!", "function"]);
 
 const WRITE_REASON =
   "Blocked by the study rules (CLAUDE.md rule 2): solution.py / solution.ts belong to the user. " +
@@ -59,10 +64,11 @@ function deny(reason) {
 /** @returns {Segment[]} */
 function parse(src) {
   let i = 0;
+  // Heredocs wait for the end of the current line, even when they start inside $(…) that closes on it.
+  const pending = [];
 
   const list = (closer) => {
     const segments = [];
-    const pending = [];
     let segment = { stages: [], nested: [] };
     let stage = { words: [], heredocs: [] };
     let word = "";
@@ -234,14 +240,23 @@ function parse(src) {
 
 // ─── Paths ───────────────────────────────────────────────────────────────────────────────────────
 
-/** `word` with ~, $CLAUDE_PROJECT_DIR and known $VARS expanded, or null when it cannot be known. */
+const EXPANSION = /\$\(\(.*?\)\)|\$\(…\)|\$\{([^}]*)\}|\$([A-Za-z_][A-Za-z0-9_]*|[0-9@*#?$!-])/g;
+
+/**
+ * `word` with ~, $CLAUDE_PROJECT_DIR and known $VARS expanded. Any other expansion inside the path
+ * ("problems/$id") counts as "*", any name. A path that starts with one ("$SCRATCH/x") cannot be known: null.
+ */
 function expand(word, where) {
-  if (word.includes("$(") || word.includes("$((")) return null;
-  let out = word === "~" || word.startsWith("~/") ? os.homedir() + word.slice(1) : word;
-  out = out.replace(/\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?/g, (match, name) =>
-    name === "CLAUDE_PROJECT_DIR" ? where.projectDir : (process.env[name] ?? match),
-  );
-  return out.includes("$") ? null : out;
+  let unknownStart = false;
+  const home = word === "~" || word.startsWith("~/") ? os.homedir() + word.slice(1) : word;
+  const out = home.replace(EXPANSION, (match, braced, bare, offset) => {
+    const name = braced ?? bare ?? "";
+    if (name === "CLAUDE_PROJECT_DIR") return where.projectDir;
+    if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(name) && process.env[name] !== undefined) return process.env[name];
+    if (offset === 0) unknownStart = true;
+    return "*";
+  });
+  return unknownStart ? null : out;
 }
 
 /** The absolute path `word` names, or null. An unknown cwd counts as the project root (the careful guess). */
@@ -269,7 +284,11 @@ function globToRegExp(glob) {
       i = close;
     } else out += c.replace(/[.+^${}()|[\]\\]/g, "\\$&");
   }
-  return new RegExp(`^${out}$`);
+  try {
+    return new RegExp(`^${out}$`);
+  } catch {
+    return /^/; // a class the shell would reject (e.g. [z-a]): assume it can match anything
+  }
 }
 
 const couldBeSolution = (glob) => SOLUTION_NAMES.some((name) => globToRegExp(glob).test(name));
@@ -318,8 +337,12 @@ function commandOf(words) {
   let viaXargs = false;
   while (i < words.length) {
     const base = path.basename(words[i]);
-    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[i])) {
-      i++;
+    const next = words.slice(i + 1).find((word) => !word.startsWith("-"));
+    if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[i]) || KEYWORDS.has(words[i]) || /^[\w.-]+\(\)$/.test(words[i])) {
+      i++; // an assignment, a keyword, or a function definition: name() { cmd; }
+    } else if (LAUNCHERS.has(base) && LAUNCH.has(next ?? "")) {
+      i = words.indexOf(next, i + 1) + 1;
+      while (i < words.length && words[i].startsWith("-")) i++;
     } else if (WRAPPERS.has(base)) {
       viaXargs ||= base === "xargs";
       i++;
@@ -426,6 +449,9 @@ function inlineCodeWrites(segment, index, command, stage) {
   args.forEach((arg, i) => {
     if (CODE_FLAG.test(arg) || arg === "<<<") code.push(args[i + 1] ?? "");
   });
+  // python3 -c "…open(sys.argv[1], 'w')" problems/a/solution.py: the code's own arguments count too.
+  const codeAt = args.findIndex((arg) => CODE_FLAG.test(arg));
+  if (codeAt >= 0) code.push(...args.slice(codeAt + 2));
   // Code piped in: `… | python3` or `… | python3 -`, but not `… | python3 -c "…"`, which reads its data from the pipe.
   const script = operands(args).filter((arg) => !code.includes(arg));
   const readsStdin = args.includes("-") || (index > 0 && code.length === 0 && script.length === 0);
@@ -457,6 +483,12 @@ function segmentReason(segment, where) {
     if (SHELLS.has(command.name)) {
       const flag = command.args.findIndex((arg) => /^-[a-z]*c[a-z]*$/.test(arg));
       const scripts = [...(flag >= 0 ? [command.args[flag + 1] ?? ""] : []), ...stage.heredocs];
+      // `… | bash` runs what the earlier stages print: check their heredocs and words (printf '…\n' included).
+      if (flag < 0 && index > 0 && operands(command.args).length === 0) {
+        for (const previous of segment.stages.slice(0, index)) {
+          scripts.push(...previous.heredocs, ...previous.words.map((word) => word.replaceAll("\\n", "\n")));
+        }
+      }
       for (const script of scripts) {
         const reason = bashReason(script, where);
         if (reason) return reason;
