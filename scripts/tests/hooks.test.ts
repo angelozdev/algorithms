@@ -205,6 +205,87 @@ describe("guard-solution hook", () => {
       "allow",
     );
   });
+
+  it("denies rm with globs that reach solution files, and recursive rm of the project or above", () => {
+    expectBash(
+      [
+        "rm -f problems/*/solution.*",
+        "rm problems/lc-0001-two-sum/solution.*",
+        "rm concepts/hash-map/exercises/*/solution.{py,ts}",
+        "rm problems/lc-0001-two-sum/*",
+        "rm -f problems/x/*.py",
+        "rm -rf .",
+        "rm -rf *",
+        "rm -rf /work/algorithms",
+        "rm -rf /work/*",
+        "echo x | xargs rm -f problems/x/solution.py",
+      ],
+      "deny",
+    );
+    expect(decision({ tool_name: "Bash", cwd: "/work", tool_input: { command: "rm -rf algorithms" } })).toBe("deny");
+  });
+
+  it("follows cd inside the command", () => {
+    expectBash(
+      [
+        "cd problems && rm -rf lc-0001-two-sum",
+        "cd /work/algorithms/problems && rm -rf lc-0001-two-sum",
+        "cd concepts/hash-map; rm -r exercises",
+        "cd problems/lc-0001-two-sum && rm *",
+        "(cd problems && rm -rf lc-0001-two-sum)",
+        "cd problems && git checkout .",
+        "cd problems && find . -name '*.pyc' -delete",
+      ],
+      "deny",
+    );
+    expectBash(
+      [
+        "cd /tmp/scratch && rm -rf problems",
+        "cd runner && git checkout .",
+        "cd runner && rm -rf tests/.tmp",
+        "cd /tmp/other-repo && git stash",
+        "(cd /tmp/scratch && rm -rf problems)",
+      ],
+      "allow",
+    );
+  });
+
+  it("only reads heredocs and quoted text as commands where a shell would", () => {
+    expectBash(
+      [
+        'echo "use a <<b here-doc"\necho x > problems/a/solution.py',
+        'python3 -c "print(1<<a)"\nrm -rf problems/x',
+        "echo \"open('problems/a/solution.py', 'w').write('')\" | python3",
+        "git checkout -- '*.py'",
+        'echo "$(git stash)"',
+        "find . -delete",
+        "find . -name '*.py' -delete",
+      ],
+      "deny",
+    );
+    expectBash(
+      [
+        'git commit -m "fix\n\nNow git stash and git reset --hard are denied."',
+        'git commit -m "a; git stash drops work"',
+        'git commit -m "$(cat <<\'EOF\'\nfix(claude): deny "git stash" (and rm -rf problems/x)\n\n1) git reset --hard; 2) git clean -fd\nEOF\n)"',
+        'echo "rm -rf problems && git stash"',
+        "cat problems/a/solution.py && python3 -c \"print(1)\"",
+        "cat problems/a/solution.py | python3 -c \"import sys; print(len(sys.stdin.read()))\"",
+        "pnpm -s test lc-0001 --lang all --json 2>&1 | head -50",
+        "rm -r problems/lc-0001-two-sum/__pycache__",
+        "rm -rf problems/lc-0001-two-sum/*.bak",
+        "git rm --cached problems/a/solution.py",
+        "git rm -r --cached problems/lc-0001-two-sum",
+        "git clean -fdX runner/tests/.tmp",
+        "git -C /tmp/other-repo stash",
+        "git -C /tmp/other-repo reset --hard",
+      ],
+      "allow",
+    );
+    const elsewhere = (command: string) => decision({ tool_name: "Bash", cwd: "/tmp/other-repo", tool_input: { command } });
+    expect(elsewhere("git stash")).toBe("allow");
+    expect(elsewhere("git reset --hard")).toBe("allow");
+  });
 });
 
 describe("reminder hook", () => {
