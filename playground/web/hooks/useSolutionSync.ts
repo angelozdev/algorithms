@@ -18,6 +18,10 @@ export interface SolutionSync {
   code: string | null;
   state: SaveState;
   error: string | null;
+  /** The editor has text that is not on disk yet: an edit waiting for autosave, a save on its way, a failed save or a conflict. */
+  unsaved: boolean;
+  /** A save failed (the server did not answer, or answered with an error) and none has succeeded since. Typing on does not clear it. */
+  failing: boolean;
   /** What is on disk while state is "conflict". */
   conflict: SolutionData | null;
   edit(code: string): void;
@@ -53,6 +57,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
   const [state, setState] = useState<SaveState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<SolutionData | null>(null);
+  const [failing, setFailing] = useState(false);
   const tracked = useRef<Tracked>({ loaded: false, code: "", base: "", dirty: false, failed: false, conflict: null });
   const queue = useRef<Promise<boolean>>(Promise.resolve(true));
   const latest = useRef({ source, onReloaded });
@@ -112,6 +117,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     setState("saving");
     try {
       const result = await latest.current.source.save(sent, t.base);
+      setFailing(false); // the server answered
       if (!result.ok) {
         t.conflict = result.current;
         if (!mounted.current) {
@@ -136,6 +142,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
       }
       setError((reason as Error).message);
       setState("error");
+      setFailing(true);
       return false;
     }
   }, []);
@@ -229,5 +236,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     return queueSave();
   }, [queueSave]);
 
-  return { code, state, error, conflict, edit, flush, diskChanged, takeDisk, keepMine };
+  // Every state but "saved" (and "loading", before there is any text) means an edit the disk does not have yet.
+  const unsaved = code !== null && state !== "saved" && state !== "loading";
+  return { code, state, error, unsaved, failing, conflict, edit, flush, diskChanged, takeDisk, keepMine };
 }

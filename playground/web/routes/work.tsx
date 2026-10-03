@@ -19,8 +19,8 @@ import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.tsx";
 import { useConnected, useRepoEvents } from "../events.tsx";
-import { useConfirmLeave } from "../hooks/useConfirmLeave.ts";
 import { type SaveState, useSolutionSync } from "../hooks/useSolutionSync.ts";
+import { useUnsavedGuard } from "../hooks/useUnsavedGuard.ts";
 import { pickLang, readRememberedLang, rememberLang } from "../lang.ts";
 import { cn } from "../lib/cn.ts";
 
@@ -111,7 +111,7 @@ function WorkHeader(props: {
   running: boolean;
   canRun: boolean;
   onRun(): void;
-  /** Why the language cannot change now (the editor has text that is not on disk), or null. */
+  /** Why the language cannot change now (the editor has text that is not on disk and nothing will save it by itself), or null. */
   langLock: string | null;
 }) {
   const { target } = props;
@@ -217,11 +217,8 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
     [target.id, lang],
   );
   const sync = useSolutionSync(source, () => toast("Reloaded from disk"));
-  // Text only in memory: a conflict waits for the user, and a failed save is only retried by an edit, ⌘S or Run.
-  // Leaving now would lose it, so the language switch is locked and leaving the page asks first.
-  const unsaved = sync.code !== null && (sync.state === "conflict" || sync.state === "error");
-  const langLock = !unsaved ? null : sync.state === "conflict" ? "Resolve the conflict first" : "Not saved yet: press ⌘S to retry first";
-  useConfirmLeave(unsaved, `You have unsaved changes in solution.${lang}. Leave anyway?`);
+  // Text only in memory that nothing will save by itself locks the language switch and makes leaving ask first.
+  const langLock = useUnsavedGuard(sync, connected, `solution.${lang}`);
   const [tab, setTab] = useState<PanelTab>("tests");
   // Kept across a re-run (and a failed one) so the previous result stays visible, dimmed, while running.
   const [result, setResult] = useState<RunResult | null>(null);

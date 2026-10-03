@@ -282,6 +282,43 @@ describe("useSolutionSync", () => {
     expect(file.saves).toEqual(["typed just before closing"]);
   });
 
+  it("says the text is not on disk from the first keystroke until a save of it answers", async () => {
+    const { source } = fakeFile("start");
+    const { result } = await mount(source);
+    expect(result.current).toMatchObject({ unsaved: false, failing: false });
+    act(() => result.current.edit("a"));
+    expect(result.current).toMatchObject({ state: "pending", unsaved: true, failing: false });
+    await wait(AUTOSAVE_MS);
+    expect(result.current).toMatchObject({ state: "saved", unsaved: false, failing: false });
+  });
+
+  it("keeps reporting a failed save while the user types on, until a save succeeds", async () => {
+    const { file, source } = fakeFile("start");
+    source.save.mockRejectedValue(new Error("server offline"));
+    const { result } = await mount(source);
+    act(() => result.current.edit("a"));
+    await wait(AUTOSAVE_MS);
+    expect(result.current).toMatchObject({ state: "error", unsaved: true, failing: true });
+
+    // Each keystroke starts a new 500 ms wait; the text is no safer during it.
+    act(() => result.current.edit("ab"));
+    expect(result.current).toMatchObject({ state: "pending", unsaved: true, failing: true });
+    await wait(AUTOSAVE_MS - 1);
+    expect(result.current).toMatchObject({ unsaved: true, failing: true });
+    await wait(1);
+    expect(result.current).toMatchObject({ state: "error", unsaved: true, failing: true });
+
+    source.save.mockImplementation(async (code: string) => {
+      file.text = code;
+      file.saves.push(code);
+      return { ok: true, version: `v:${code}` };
+    });
+    act(() => result.current.edit("abc"));
+    await wait(AUTOSAVE_MS);
+    expect(result.current).toMatchObject({ state: "saved", unsaved: false, failing: false });
+    expect(file.saves).toEqual(["abc"]);
+  });
+
   it("reports a failed save and retries on flush", async () => {
     const { file, source } = fakeFile("start");
     source.save.mockRejectedValueOnce(new Error("server offline"));
