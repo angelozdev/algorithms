@@ -25,7 +25,26 @@ interface ConceptViewProps {
   save?: (text: string) => Promise<void>;
 }
 
-function ExplanationSection({ text, readmePath, editable, save }: { text: string; readmePath: string; editable: boolean; save?: (text: string) => Promise<void> }) {
+interface ExplanationProps {
+  /** The section's text on disk; null when the README has no such section or cannot be read. */
+  text: string | null;
+  /** The README cannot be read now: ConceptView already shows why. */
+  broken: boolean;
+  readmePath: string;
+  editable: boolean;
+  save?: (text: string) => Promise<void>;
+}
+
+/** Why an open draft cannot be saved right now, or null. The draft stays open either way, so no text is lost. */
+function unsavable(text: string | null, broken: boolean): string | null {
+  if (broken) return "The README cannot be read right now, so this text cannot be saved. Copy your text somewhere safe, or fix the README and press Save.";
+  if (text === null) {
+    return 'The README no longer has a "My explanation" section, so this text cannot be saved. Copy your text somewhere safe, or put the section back (pnpm check) and press Save.';
+  }
+  return null;
+}
+
+function ExplanationSection({ text, broken, readmePath, editable, save }: ExplanationProps) {
   const [draft, setDraft] = useState<string | null>(null);
   /** The section's text on disk that the draft is based on: what it started from, or what a conflict last reported. */
   const [base, setBase] = useState("");
@@ -34,7 +53,7 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
   useConfirmLeave(draft !== null && draft !== base, "You have unsaved changes in My explanation. Leave anyway?");
 
   const submit = async () => {
-    if (draft === null || !save) return;
+    if (draft === null || !save || text === null || broken) return;
     // Live events refresh `text` (and the version the page saves with) while the draft is open, so the
     // server's version check alone would accept this save and drop the other text. Changes to other
     // sections (pnpm sync, a status change) leave `text` alone and save without a conflict.
@@ -56,6 +75,16 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
     }
   };
 
+  if (draft === null && broken) return null;
+  if (draft === null && text === null) {
+    return (
+      <p className="my-4 text-sm text-amber-700 dark:text-amber-400">
+        This concept has no "My explanation" section. Run <code>pnpm check</code>.
+      </p>
+    );
+  }
+  const problem = draft === null ? null : unsavable(text, broken);
+
   return (
     <section aria-labelledby="my-explanation" className="markdown">
       <h2 id="my-explanation" className="flex items-center gap-2">
@@ -65,8 +94,8 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
             size="sm"
             variant="outline"
             onClick={() => {
-              setDraft(text);
-              setBase(text);
+              setDraft(text ?? "");
+              setBase(text ?? "");
             }}
           >
             ✎ Edit
@@ -89,6 +118,11 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
               <Markdown source={draft} readmePath={readmePath} />
             </section>
           </div>
+          {problem && (
+            <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
+              {problem}
+            </p>
+          )}
           {error && (
             <div role="alert" className="rounded-md border border-red-300 bg-red-50 p-2 text-sm dark:border-red-800 dark:bg-red-950">
               {error.issues.length > 0 ? (
@@ -112,7 +146,7 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
             >
               Cancel
             </Button>
-            <Button onClick={() => void submit()} disabled={saving}>
+            <Button onClick={() => void submit()} disabled={saving || problem !== null}>
               {saving ? "Saving…" : "Save"}
             </Button>
           </div>
@@ -123,24 +157,19 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
 }
 
 export function ConceptView({ concept, editable, onConcept, save }: ConceptViewProps) {
-  if (concept.readmeError) {
-    return (
-      <p role="alert" className="text-sm text-red-600">
-        {concept.readme}: {concept.readmeError}
-      </p>
-    );
-  }
+  const broken = concept.readmeError !== null;
   return (
     <article>
-      <Markdown source={concept.before} readmePath={concept.readme} onConcept={onConcept} />
-      {concept.explanation === null ? (
-        <p className="my-4 text-sm text-amber-700 dark:text-amber-400">
-          This concept has no "My explanation" section. Run <code>pnpm check</code>.
+      {broken ? (
+        <p role="alert" className="text-sm text-red-600">
+          {concept.readme}: {concept.readmeError}
         </p>
       ) : (
-        <ExplanationSection text={concept.explanation} readmePath={concept.readme} editable={editable} save={save} />
+        <Markdown source={concept.before} readmePath={concept.readme} onConcept={onConcept} />
       )}
-      <Markdown source={concept.after} readmePath={concept.readme} onConcept={onConcept} />
+      {/* Always in the same place, so a draft open in it survives a README that breaks or loses the section on disk. */}
+      <ExplanationSection text={broken ? null : concept.explanation} broken={broken} readmePath={concept.readme} editable={editable} save={save} />
+      {!broken && <Markdown source={concept.after} readmePath={concept.readme} onConcept={onConcept} />}
     </article>
   );
 }

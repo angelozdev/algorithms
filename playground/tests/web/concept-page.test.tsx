@@ -88,4 +88,20 @@ describe("concept page", () => {
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Hash map text.");
     expect(requests.filter((request) => request.method === "PUT")).toEqual([]);
   });
+
+  it("keeps the concept and an open draft when a refresh fails, and says so", async () => {
+    const { client } = await renderApp("/c/array");
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
+    answer = (url, method) =>
+      method === "GET" && new URL(url, "http://localhost").pathname === "/api/concept"
+        ? Response.json({ error: "README unreadable" }, { status: 500 })
+        : Response.json({ error: "unexpected request" }, { status: 500 });
+    // What a live event does when the README changes on disk.
+    await act(() => client.invalidateQueries({ queryKey: keys.concept(ARRAY.slug) }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("README unreadable");
+    expect(screen.getByRole("heading", { name: "Array" })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Array text. Mine.");
+    expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
 });

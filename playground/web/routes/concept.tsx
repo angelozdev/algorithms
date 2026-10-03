@@ -18,7 +18,9 @@ function ConceptContent({ slug }: { slug: string }) {
   const concept = useQuery(conceptQuery(slug));
 
   if (concept.isPending) return <p className="p-6 text-sm text-neutral-500">Loading…</p>;
-  if (concept.isError) {
+  // A failed refresh (a live event refetches the concept) keeps the last data: replacing the page with the
+  // error would throw away an open "My explanation" draft.
+  if (concept.isError && !concept.data) {
     if (concept.error instanceof ApiError && concept.error.status === 404) return <NotFound message={`There is no concept "${slug}".`} />;
     return (
       <p role="alert" className="p-6 text-sm text-red-600">
@@ -46,6 +48,11 @@ function ConceptContent({ slug }: { slug: string }) {
         </Link>
         <Badge>{concept.data.status}</Badge>
       </nav>
+      {concept.isError && (
+        <p role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
+          Could not refresh this concept ({concept.error.message}). Showing the last version loaded.
+        </p>
+      )}
       <ConceptView concept={concept.data} editable save={save} />
     </main>
   );

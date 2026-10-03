@@ -136,6 +136,39 @@ describe("ConceptView", () => {
     confirm.mockRestore();
   });
 
+  it("keeps an open draft when the README loses the section, warns, and saves once the section is back", async () => {
+    const save = vi.fn(async (_text: string) => {});
+    const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, save);
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
+    act(() => page.show({ ...CONCEPT, explanation: null, version: "v2" }));
+    expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Old text. Mine.");
+    expect(screen.getByRole("alert")).toHaveTextContent('The README no longer has a "My explanation" section');
+    expect(screen.getByRole("alert")).toHaveTextContent("Copy your text");
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    act(() => page.show({ ...CONCEPT, explanation: "Old text.", version: "v3" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(save).toHaveBeenCalledExactlyOnceWith("Old text. Mine.");
+  });
+
+  it("keeps an open draft when the README breaks while editing, and closes only on Cancel", async () => {
+    const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, async () => {});
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
+    act(() => page.show({ ...CONCEPT, readmeError: "frontmatter: bad", before: "", explanation: null, after: "", version: "v2" }));
+    expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Old text. Mine.");
+    const alerts = screen.getAllByRole("alert").map((alert) => alert.textContent);
+    expect(alerts).toEqual([expect.stringContaining("frontmatter: bad"), expect.stringContaining("Copy your text")]);
+    expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
+
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("frontmatter: bad");
+    expect(screen.queryByRole("button", { name: "✎ Edit" })).not.toBeInTheDocument();
+  });
+
   it("explains a missing section and a broken README", async () => {
     const view = await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: null }} editable />);
     expect(screen.getByText(/has no "My explanation" section/)).toBeInTheDocument();
