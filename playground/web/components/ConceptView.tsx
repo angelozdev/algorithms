@@ -1,12 +1,21 @@
 import { useState } from "react";
 import type { ConceptData } from "../../server/types.ts";
 import { ApiError } from "../api.ts";
+import { useConfirmLeave } from "../hooks/useConfirmLeave.ts";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { Markdown } from "./Markdown.tsx";
 import { Button } from "./ui/button.tsx";
 
 export const CONFLICT_MESSAGE =
   "The README changed on disk while you were editing. Your text is still here: press Save again to put it in My explanation, or Cancel to keep the version on disk.";
+
+/** The server refused a save (409) because the README changed on disk; `current` is the section's text there now. */
+export class ExplanationConflict extends ApiError {
+  constructor(readonly current: string) {
+    super(409, CONFLICT_MESSAGE);
+    this.name = "ExplanationConflict";
+  }
+}
 
 interface ConceptViewProps {
   concept: ConceptData;
@@ -18,17 +27,29 @@ interface ConceptViewProps {
 
 function ExplanationSection({ text, readmePath, editable, save }: { text: string; readmePath: string; editable: boolean; save?: (text: string) => Promise<void> }) {
   const [draft, setDraft] = useState<string | null>(null);
+  /** The section's text on disk that the draft is based on: what it started from, or what a conflict last reported. */
+  const [base, setBase] = useState("");
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   const [saving, setSaving] = useState(false);
+  useConfirmLeave(draft !== null && draft !== base, "You have unsaved changes in My explanation. Leave anyway?");
 
   const submit = async () => {
     if (draft === null || !save) return;
+    // Live events refresh `text` (and the version the page saves with) while the draft is open, so the
+    // server's version check alone would accept this save and drop the other text. Changes to other
+    // sections (pnpm sync, a status change) leave `text` alone and save without a conflict.
+    if (text !== base) {
+      setBase(text); // the next Save is the user's explicit "keep mine"
+      setError({ message: CONFLICT_MESSAGE, issues: [] });
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
       await save(draft);
       setDraft(null);
     } catch (reason) {
+      if (reason instanceof ExplanationConflict) setBase(reason.current);
       setError({ message: (reason as Error).message, issues: reason instanceof ApiError ? reason.issues : [] });
     } finally {
       setSaving(false);
@@ -40,7 +61,14 @@ function ExplanationSection({ text, readmePath, editable, save }: { text: string
       <h2 id="my-explanation" className="flex items-center gap-2">
         My explanation
         {editable && draft === null && (
-          <Button size="sm" variant="outline" onClick={() => setDraft(text)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setDraft(text);
+              setBase(text);
+            }}
+          >
             ✎ Edit
           </Button>
         )}

@@ -1,9 +1,10 @@
-import { screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { ConceptData } from "../../server/types.ts";
 import { ApiError } from "../../web/api.ts";
-import { ConceptView } from "../../web/components/ConceptView.tsx";
+import { CONFLICT_MESSAGE, ConceptView, ExplanationConflict } from "../../web/components/ConceptView.tsx";
 import { renderWithRouter } from "./render.tsx";
 
 // CodeMirror needs layout APIs that jsdom lacks; a textarea stands in for it here. The end-to-end tests use the real editor.
@@ -26,6 +27,18 @@ const CONCEPT: ConceptData = {
   version: "v1",
   readmeError: null,
 };
+
+/** The concept page: live events replace the concept it shows while a draft is open (`page.show`). */
+async function renderLivePage(initial: ConceptData, save: (text: string) => Promise<void>) {
+  const page = { show: (_concept: ConceptData) => {} };
+  function Page() {
+    const [concept, setConcept] = useState(initial);
+    page.show = setConcept;
+    return <ConceptView concept={concept} editable save={save} />;
+  }
+  await renderWithRouter(<Page />);
+  return page;
+}
 
 describe("ConceptView", () => {
   it("shows the note around the section; read-only in the side pane", async () => {
@@ -61,6 +74,66 @@ describe("ConceptView", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Use ### or deeper for headings.");
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("## Mine");
+  });
+
+  it("does not save over a section that changed on disk while the draft was open; the next Save keeps mine", async () => {
+    const save = vi.fn(async (_text: string) => {});
+    const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, save);
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    const editor = screen.getByRole("textbox", { name: "My explanation" });
+    await userEvent.clear(editor);
+    await userEvent.type(editor, "Mine.");
+    act(() => page.show({ ...CONCEPT, explanation: "Written in VS Code.", version: "v2" }));
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(CONFLICT_MESSAGE);
+    expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Mine.");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(save).toHaveBeenCalledExactlyOnceWith("Mine.");
+    expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument();
+  });
+
+  it("after the server refuses a save because the README changed (409), the next Save keeps mine", async () => {
+    const save = vi.fn(async (_text: string) => {});
+    const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, save);
+    // What the concept page does on a 409: show the README now on disk, then report the conflict.
+    save.mockImplementationOnce(async () => {
+      act(() => page.show({ ...CONCEPT, explanation: "Written in VS Code.", version: "v2" }));
+      throw new ExplanationConflict("Written in VS Code.");
+    });
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(CONFLICT_MESSAGE);
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(save).toHaveBeenLastCalledWith("Old text. Mine.");
+    expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument();
+  });
+
+  it("asks before leaving the page while the draft has unsaved changes", async () => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
+    const { router } = await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old text." }} editable save={async () => {}} />);
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
+    await act(async () => router.history.push("/p/lc-0001"));
+    await waitFor(() => expect(confirm).toHaveBeenCalledExactlyOnceWith("You have unsaved changes in My explanation. Leave anyway?"));
+    expect(router.history.location.pathname).toBe("/");
+    expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Old text. Mine.");
+    confirm.mockReturnValue(true);
+    await act(async () => router.history.push("/p/lc-0001"));
+    await waitFor(() => expect(router.history.location.pathname).toBe("/p/lc-0001"));
+    confirm.mockRestore();
+  });
+
+  it("leaves without asking when the draft is unchanged", async () => {
+    const confirm = vi.spyOn(window, "confirm");
+    const { router } = await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old text." }} editable save={async () => {}} />);
+    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await act(async () => router.history.push("/p/lc-0001"));
+    await waitFor(() => expect(router.history.location.pathname).toBe("/p/lc-0001"));
+    expect(confirm).not.toHaveBeenCalled();
+    confirm.mockRestore();
   });
 
   it("explains a missing section and a broken README", async () => {

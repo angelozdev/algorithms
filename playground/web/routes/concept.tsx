@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { ApiError, conceptQuery, keys, putExplanation } from "../api.ts";
-import { CONFLICT_MESSAGE, ConceptView } from "../components/ConceptView.tsx";
+import { ConceptView, ExplanationConflict } from "../components/ConceptView.tsx";
 import { NotFound } from "../components/NotFound.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 
@@ -26,7 +26,7 @@ export function ConceptPage() {
     if (!result.ok) {
       // Show the fresh README; the next Save uses its version.
       queryClient.setQueryData(keys.concept(slug), result.current);
-      throw new ApiError(409, CONFLICT_MESSAGE);
+      throw new ExplanationConflict(result.current.explanation ?? "");
     }
     await queryClient.invalidateQueries({ queryKey: keys.concept(slug) });
     toast.success("My explanation saved");
