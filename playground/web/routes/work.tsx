@@ -18,6 +18,7 @@ import { NotFound } from "../components/NotFound.tsx";
 import { solutionSaveLabel, StatusBar } from "../components/StatusBar.tsx";
 import { TestsPanel } from "../components/TestsPanel.tsx";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
+import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.tsx";
 import { useConnected, useRepoEvents } from "../events.tsx";
@@ -274,7 +275,14 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
             <Panel id="panels" minSize="15%">
               <Tabs value={tab} onValueChange={(value) => setTab(value as PanelTab)} className="flex h-full flex-col gap-0">
                 <TabsList variant="line" className="w-full justify-start border-b px-2">
-                  <TabsTrigger value="tests">Tests{result ? ` ${result.examples.passed}/${result.examples.total}` : ""}</TabsTrigger>
+                  <TabsTrigger value="tests">
+                    Tests
+                    {result && (
+                      <Badge variant={result.examples.passed === result.examples.total ? "success" : "destructive"} className="font-mono">
+                        {result.examples.passed}/{result.examples.total}
+                      </Badge>
+                    )}
+                  </TabsTrigger>
                   <TabsTrigger value="custom">Custom input</TabsTrigger>
                   <TabsTrigger value="console">Console</TabsTrigger>
                 </TabsList>

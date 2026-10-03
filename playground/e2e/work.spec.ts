@@ -20,8 +20,11 @@ test("shows what a failing example expected and what the code returned", async (
   await page.goto("/p/lc-0001");
   await replaceCode(page, "class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        return [0, 0]\n");
   await page.getByRole("button", { name: "Run", exact: true }).click();
-  await expect(page.getByText("nums=[3,2,4], target=6")).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText(/Hidden · skipped until the examples pass/)).toBeVisible();
+  const failures = page.getByRole("table", { name: "Failures" });
+  await expect(failures).toContainText("nums=[3,2,4], target=6", { timeout: 20_000 });
+  await expect(failures).toContainText("[1,2]");
+  await expect(page.getByRole("button", { name: /^Example 2: failed/ })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Hidden: skipped until the examples pass" })).toBeVisible();
 });
 
 test("the editor never suggests anything", async ({ page }) => {
@@ -49,7 +52,8 @@ test("keeps the previous result visible while a second run is in flight", async 
   await replaceCode(page, TWO_SUM_PY);
   await page.keyboard.press("ControlOrMeta+Enter");
   await expect(page.getByText(/Green in py/)).toBeVisible({ timeout: 20_000 });
-  await expect(page.getByText("Example 1")).toBeVisible();
+  const firstExample = page.getByRole("img", { name: /^Example 1: passed/ });
+  await expect(firstExample).toBeVisible();
   // A local run is too fast for "Running…" to be reliably observable; delay the second one so the
   // in-flight state is a stable window instead of a race against the test's own polling.
   await page.route("**/api/run", async (route) => {
@@ -61,8 +65,7 @@ test("keeps the previous result visible while a second run is in flight", async 
   await expect(page.locator("p", { hasText: "Running" })).toBeVisible();
   // A snapshot, not an auto-retrying assertion: the delayed run would otherwise finish and repopulate
   // the panel before a polling `toBeVisible()` times out, masking a result that went blank in between.
-  const duringRun = await page.locator('[role="tabpanel"]').first().innerText();
-  expect(duringRun).toContain("Example 1"); // the previous result stays, dimmed, while the new run is in flight
+  expect(await firstExample.count()).toBe(1); // the previous result stays, dimmed, while the new run is in flight
   await expect(page.getByText(/Green in py/)).toBeVisible({ timeout: 20_000 });
 });
 

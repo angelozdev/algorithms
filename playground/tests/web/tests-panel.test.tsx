@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import type { RunResult } from "../../../runner/src/types.ts";
 import { ConsolePanel } from "../../web/components/ConsolePanel.tsx";
@@ -30,21 +31,27 @@ function result(overrides: Partial<RunResult> = {}): RunResult {
 const panel = (props: Partial<TestsPanelProps>) =>
   render(<TestsPanel result={null} running={false} elapsedMs={0} stale={false} caseError={null} paramNames={["nums", "target"]} {...props} />);
 
+const cells = (row: HTMLElement) => within(row).getAllByRole("cell").map((cell) => cell.textContent);
+const tableRows = (name: string) => within(screen.getByRole("table", { name })).getAllByRole("row").slice(1);
+
 describe("TestsPanel", () => {
-  it("invites a first run", () => {
+  it("invites a first run with the shortcuts", () => {
     panel({});
-    expect(screen.getByText(/Press ▶ Run/)).toBeInTheDocument();
+    expect(screen.getByText("Run the tests")).toBeInTheDocument();
+    expect(screen.getByText("Or try your own input")).toBeInTheDocument();
   });
 
   it("shows a green run and points to /review", () => {
     panel({ result: result() });
     expect(screen.getByText(/Green in py/)).toBeInTheDocument();
     expect(screen.getByText("/review")).toBeInTheDocument();
-    expect(screen.getByText("0.20 ms")).toBeInTheDocument();
-    expect(screen.getByText("83 ms")).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Example 1: passed, 0.20 ms" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: "Example 2: passed, 83 ms" })).toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Failures" })).not.toBeInTheDocument();
+    expect(screen.getByText("No stress cases")).toBeInTheDocument();
   });
 
-  it("shows a failing example with named input, expected and got, and skips hidden", () => {
+  it("puts a failing example in the failures table, and its chip jumps there", async () => {
     const failing = result({
       green: false,
       examples: {
@@ -59,11 +66,12 @@ describe("TestsPanel", () => {
       stress: { status: "skipped", cases: [] },
     });
     panel({ result: failing });
-    expect(screen.getByText("nums=[3,2,4], target=6")).toBeInTheDocument();
-    expect(screen.getByText("[1,2]")).toBeInTheDocument();
-    expect(screen.getByText("[0,0]")).toBeInTheDocument();
-    expect(screen.getByText(/Hidden · skipped until the examples pass/)).toBeInTheDocument();
+    const [row] = tableRows("Failures");
+    expect(cells(row!)).toEqual(["2", "nums=[3,2,4], target=6", "[1,2]", "[0,0]"]);
+    expect(screen.getByRole("img", { name: "Hidden: skipped until the examples pass" })).toBeInTheDocument();
     expect(screen.queryByText(/Green/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Example 2: failed, 0.30 ms" }));
+    expect(row).toHaveFocus();
   });
 
   it("shows the first hidden failure with the input and the user's output, never an expected value", () => {
@@ -74,13 +82,29 @@ describe("TestsPanel", () => {
         stress: { status: "skipped", cases: [] },
       }),
     });
-    expect(screen.getByText(/Hidden · 2\/3 passed/)).toBeInTheDocument();
-    expect(screen.getByText("nums=[5,5], target=10")).toBeInTheDocument();
-    expect(screen.getByText("[0,0]")).toBeInTheDocument();
-    expect(screen.queryByText("expected", { exact: true })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Hidden: 2 of 3 passed" })).toBeInTheDocument();
+    expect(cells(tableRows("Failures")[0]!)).toEqual(["Hidden", "nums=[5,5], target=10", "hidden", "[0,0]"]);
   });
 
-  it("shows a load error with its trace", () => {
+  it("shows an exception with its trace under its row", () => {
+    panel({
+      result: result({
+        green: false,
+        examples: {
+          passed: 0,
+          total: 1,
+          cases: [{ id: 1, status: "error", input: [[1], 1], expected: [0, 0], error: { kind: "exception", message: "IndexError: list index out of range", trace: "line 3, in twoSum" }, ms: 1, stdout: "" }],
+        },
+        hidden: { status: "skipped", passed: 0, total: 3, firstFailure: null },
+        stress: { status: "skipped", cases: [] },
+      }),
+    });
+    expect(cells(tableRows("Failures")[0]!)).toEqual(["1", "nums=[1], target=1", "[0,0]", "error"]);
+    expect(screen.getByText("exception: IndexError: list index out of range")).toBeInTheDocument();
+    expect(screen.getByText("line 3, in twoSum")).toBeInTheDocument();
+  });
+
+  it("shows a load error with its trace instead of the results", () => {
     panel({
       result: result({
         green: false,
@@ -94,6 +118,7 @@ describe("TestsPanel", () => {
     expect(within(alert).getByText("Could not load solution.py")).toBeInTheDocument();
     expect(within(alert).getByText("load: SyntaxError: expected ':'")).toBeInTheDocument();
     expect(within(alert).getByText('File "solution.py", line 2')).toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "Results" })).not.toBeInTheDocument();
   });
 
   it("shows stress timings, slow cases and timeouts", () => {
@@ -110,16 +135,19 @@ describe("TestsPanel", () => {
         },
       }),
     });
-    expect(screen.getByText("83 ms / 2000 ms")).toBeInTheDocument();
-    expect(screen.getByText("2400 ms / 2000 ms · too slow")).toBeInTheDocument();
-    expect(screen.getByText("timeout (> 2000 ms)")).toBeInTheDocument();
+    expect(tableRows("Stress").map(cells)).toEqual([
+      ["n=1e5 random", "83 ms", "2000 ms", "passed"],
+      ["n=1e5 sorted", "2400 ms", "2000 ms", "too slow"],
+      ["worst case", "—", "2000 ms", "timeout"],
+    ]);
+    expect(screen.getByRole("button", { name: "Stress n=1e5 sorted: too slow, 2400 ms of 2000 ms" })).toBeInTheDocument();
   });
 
   it("shows a case-file error, a stale result and the running time", () => {
     panel({ result: result(), caseError: "cases.json is invalid:\n  - entry: required", stale: true, running: true, elapsedMs: 1234 });
     expect(screen.getByText(/Case file error/)).toBeInTheDocument();
     expect(screen.getByText(/entry: required/)).toBeInTheDocument();
-    expect(screen.getByText("cases changed — run again")).toBeInTheDocument();
+    expect(screen.getByText("Cases changed — run again")).toBeInTheDocument();
     expect(screen.getByText("Running… 1.2 s")).toBeInTheDocument();
   });
 });
