@@ -157,7 +157,7 @@ The tokens are CSS variables with shadcn's names, set in `styles.css` and expose
 
 ### 4.3 Problems: the grouped table
 
-The table is built with TanStack Table (`@tanstack/react-table`), following shadcn's Data Table pattern.
+The table is built from a pure list model (filter, facets, sort, group) and shadcn's `table` component. TanStack Table is not used (amendment A4, §13).
 
 **Columns**
 
@@ -466,3 +466,18 @@ Each step ends with `pnpm verify` and `pnpm e2e` green.
   - retrying a first load that failed;
   - a heartbeat for a hung server;
   - a "restarted, reload" toast.
+
+## 13. Amendments (2026-10-03, approved by the user with the implementation plan)
+
+These come from the probes run while planning. They take precedence over the sections above. Details: the plan's "Deviations from the spec" table, `docs/superpowers/plans/2026-10-03-playground-ui.md`.
+
+| # | Amendment |
+|---|---|
+| A1 | `components.json` is written by hand (shadcn's manual setup), and components are added with `shadcn add`. `shadcn init` cannot detect Vite inside `playground/`. |
+| A2 | `cn` comes from shadcn's `cn` package, which the 4.21 CLI imports in every component. `lib/cn.ts`, `clsx` and `tailwind-merge` are removed. |
+| A3 | `collapsible` and `checkbox` are not added. Groups fold with a disclosure button (`aria-expanded`), because a Radix Collapsible `<div>` is invalid inside `<table>`. The faceted filter uses a check icon. |
+| A4 | No TanStack Table. A pure model (`web/home/model.ts`) filters, sorts and groups, and shadcn's `table` renders. |
+| A5 | Each tooltip wrapper (`Hint`) brings its own `TooltipProvider` instead of one at the root, so components work on their own in tests. |
+| A6 | Ligatures are off for mono text and in the editor (`->` and `<=` stay as typed). |
+| A7 | The generated `sonner.tsx` drops `next-themes` and uses `theme="system"`. |
+
