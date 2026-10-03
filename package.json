@@ -16,7 +16,8 @@
     "sync": "tsx scripts/sync.ts",
     "check": "tsx scripts/check.ts",
     "play": "tsx playground/cli.ts",
-    "verify": "vitest run && tsc --noEmit && tsc -p playground && tsx scripts/check.ts"
+    "verify": "vitest run && tsc --noEmit && tsc -p playground && tsx scripts/check.ts",
+    "e2e": "playwright test -c playground/playwright.config.ts"
   },
   "dependencies": {
     "@codemirror/lang-javascript": "^6.2.5",
@@ -58,6 +59,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

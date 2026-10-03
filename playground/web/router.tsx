@@ -4,6 +4,7 @@ import { ConnectionBanner } from "./components/ConnectionBanner.tsx";
 import { NotFound } from "./components/NotFound.tsx";
 import { ConceptPage } from "./routes/concept.tsx";
 import { HomePage } from "./routes/home.tsx";
+import { ExercisePage, ProblemPage } from "./routes/work.tsx";
 
 export const rootRoute = createRootRoute({
   component: () => (
@@ -17,8 +18,8 @@ export const rootRoute = createRootRoute({
 });
 
 export const homeRoute = createRoute({ getParentRoute: () => rootRoute, path: "/", component: HomePage });
-export const problemRoute = createRoute({ getParentRoute: () => rootRoute, path: "/p/$id" });
-export const exerciseRoute = createRoute({ getParentRoute: () => rootRoute, path: "/e/$concept/$nn" });
+export const problemRoute = createRoute({ getParentRoute: () => rootRoute, path: "/p/$id", component: ProblemPage });
+export const exerciseRoute = createRoute({ getParentRoute: () => rootRoute, path: "/e/$concept/$nn", component: ExercisePage });
 export const conceptRoute = createRoute({ getParentRoute: () => rootRoute, path: "/c/$slug", component: ConceptPage });
 
 export const routeTree = rootRoute.addChildren([homeRoute, problemRoute, exerciseRoute, conceptRoute]);
