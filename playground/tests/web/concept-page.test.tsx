@@ -33,10 +33,12 @@ const HASH_MAP = concept("hash-map", "Hash map", "Hash map text.");
 
 /** Every request the page sends; the tests answer them one by one. */
 let requests: { method: string; url: string; body: string | null }[] = [];
-let answer: (url: string, method: string) => Response = () => Response.json({ error: "unexpected request" }, { status: 500 });
+const unexpected = () => Response.json({ error: "unexpected request" }, { status: 500 });
+let answer: (url: string, method: string) => Response = unexpected;
 
 beforeEach(() => {
   requests = [];
+  answer = unexpected;
   // jsdom has no matchMedia; the app's toaster follows the system theme with it.
   vi.stubGlobal("matchMedia", (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} }));
   vi.stubGlobal(
@@ -96,7 +98,7 @@ describe("concept page", () => {
     answer = (url, method) =>
       method === "GET" && new URL(url, "http://localhost").pathname === "/api/concept"
         ? Response.json({ error: "README unreadable" }, { status: 500 })
-        : Response.json({ error: "unexpected request" }, { status: 500 });
+        : unexpected();
     // What a live event does when the README changes on disk.
     await act(() => client.invalidateQueries({ queryKey: keys.concept(ARRAY.slug) }));
     expect(await screen.findByRole("alert")).toHaveTextContent("README unreadable");

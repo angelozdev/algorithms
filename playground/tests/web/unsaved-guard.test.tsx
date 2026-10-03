@@ -103,15 +103,16 @@ describe("useUnsavedGuard", () => {
     expect(await tryToLeave(router, confirm)).toBe(false);
   });
 
-  it("never asks while typing with a healthy server: leaving saves the text on the way out", async () => {
+  it("never asks while typing with a healthy server, and the autosave still takes the text", async () => {
     const confirm = vi.spyOn(window, "confirm");
-    const { source } = server();
+    const { state, source } = server();
     const { view, router } = await renderEditor(source, true);
     act(() => view.sync.edit("typing"));
     expect(view.sync.state).toBe("pending");
     expect(view.lock).toBeNull();
     expect(await tryToLeave(router, confirm)).toBe(false);
     expect(router.history.location.pathname).toBe("/elsewhere");
+    await waitFor(() => expect(state.saves).toEqual(["typing"]));
   });
 
   it("asks while a conflict waits for the user, connected or not", async () => {
