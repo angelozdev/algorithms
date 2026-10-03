@@ -62,14 +62,18 @@ export class EventHub {
 
   private start(): void {
     // Watching the root (not problems/ and concepts/) keeps working when those folders do not exist yet.
-    // Polling (not native fs events): under concurrent load (many test files touching the filesystem at
-    // once) native watching occasionally never reports a change at all; polling retries every interval,
-    // so a missed tick still catches up on the next one. The content root is small, so the cost is tiny.
+    // Polling (not native fs events): on macOS, chokidar watches existing files via kqueue (live immediately),
+    // but a directory's FSEvents stream — the only path that reports a file newly created inside it — goes
+    // live asynchronously, some time after "ready" fires. A file created in that window is dropped for good,
+    // not delayed, and a browser subscribing right after a page load can easily lose a save that way. Polling
+    // does not depend on that stream being live: it just re-stats on a timer, so it cannot miss a write this
+    // way. The interval is 300ms in production (cost scales with the number of files under problems/ and
+    // concepts/, so this stays cheap); CHOKIDAR_INTERVAL lets tests run it faster (see events.test.ts).
     const watcher = watch(this.root, {
       ignoreInitial: true,
       alwaysStat: true,
       usePolling: true,
-      interval: 50,
+      interval: 300,
       ignored: (file) => {
         const rel = path.relative(this.root, file);
         if (rel === "") return false;
@@ -78,7 +82,9 @@ export class EventHub {
       },
     });
     this.watcher = watcher;
-    // chokidar is ready once its fs watchers exist; libuv arms them a loop turn later.
+    // chokidar only emits "ready" once every discovered path's poll timer is already registered, so the
+    // extra loop turns below are not load-bearing; they are a small inherited margin, kept for parity
+    // with the non-polling form of this wait.
     this.ready = new Promise((resolve) => watcher.once("ready", () => setImmediate(() => setImmediate(resolve))));
     watcher.on("all", (kind, file, stats) => this.changed(kind, file, stats));
   }

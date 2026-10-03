@@ -6,6 +6,10 @@ import { classify } from "../../server/events.ts";
 import { contentVersion } from "../../server/solutions.ts";
 import { type App, call, makeRepo, PY_SUM, removeRepos } from "./helpers.ts";
 
+// EventHub polls every 300ms in production (cheap for a large content root); chokidar reads this env var
+// at watch() time and lets it override that, so tests do not wait 300ms per step.
+process.env.CHOKIDAR_INTERVAL = "50";
+
 afterEach(removeRepos);
 
 /** Reads Server-Sent Events from a response body, skipping comments. */
