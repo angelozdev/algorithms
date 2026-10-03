@@ -14,5 +14,5 @@
     }
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "archive"]
+  "exclude": ["node_modules", "archive", "playground/web", "playground/tests/web", "playground/e2e/.tmp"]
 }
