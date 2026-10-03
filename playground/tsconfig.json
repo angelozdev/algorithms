@@ -9,7 +9,8 @@
     "noEmit": true,
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "paths": { "@/*": ["./web/*"] }
   },
   "include": ["./**/*.ts", "./**/*.tsx"],
   "exclude": ["./e2e/.tmp"]

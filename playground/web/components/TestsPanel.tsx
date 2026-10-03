@@ -1,6 +1,6 @@
 import { formatNamedInput, formatOutput } from "../../../runner/src/format.ts";
 import type { ExampleResult, RunResult, StressCaseResult } from "../../../runner/src/types.ts";
-import { cn } from "../lib/cn.ts";
+import { cn } from "cn";
 import { DISPLAY_MAX, ErrorBox, formatMs } from "./RunDetails.tsx";
 import { Badge } from "./ui/badge.tsx";
 
@@ -142,7 +142,7 @@ export function TestsPanel({ result, running, elapsedMs, stale, caseError, param
       {!result && !running && !caseError && <p className="text-neutral-500">Press ▶ Run (⌘↵) to test your code.</p>}
       {result && (
         <div className={cn("space-y-3", running && "opacity-50")}>
-          {stale && <Badge tone="amber">cases changed — run again</Badge>}
+          {stale && <Badge variant="warning">cases changed — run again</Badge>}
           {result.green && (
             <p className="rounded-md bg-green-50 p-2 font-medium text-green-800 dark:bg-green-950 dark:text-green-300">
               ✅ Green in {result.lang}. Ask Claude for <code>/review</code> in the terminal to mark it solved.

@@ -8,6 +8,8 @@ const here = (file: string): string => fileURLToPath(new URL(file, import.meta.u
 
 export default defineConfig({
   root: here("./web"),
+  // Generated shadcn components import each other through "@/" (components.json).
+  resolve: { alias: { "@": here("./web") } },
   server: {
     // Vite's own CORS middleware runs ahead of Hono's (even ahead of @hono/vite-dev-server) and would
     // otherwise answer a cross-origin request and its preflight with Access-Control-Allow-Origin, letting

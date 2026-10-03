@@ -1,7 +1,7 @@
 import { createRootRoute, createRoute, createRouter, Outlet } from "@tanstack/react-router";
-import { Toaster } from "sonner";
 import { ConnectionBanner } from "./components/ConnectionBanner.tsx";
 import { NotFound } from "./components/NotFound.tsx";
+import { Toaster } from "./components/ui/sonner.tsx";
 import { ConceptPage } from "./routes/concept.tsx";
 import { HomePage } from "./routes/home.tsx";
 import { ExercisePage, ProblemPage } from "./routes/work.tsx";
@@ -11,7 +11,7 @@ export const rootRoute = createRootRoute({
     <div className="flex h-dvh flex-col">
       <ConnectionBanner />
       <Outlet />
-      <Toaster position="bottom-right" theme="system" richColors />
+      <Toaster position="bottom-right" />
     </div>
   ),
   notFoundComponent: () => <NotFound />,

@@ -62,6 +62,7 @@ describe("CustomInputPanel", () => {
     expect(screen.getByRole("textbox", { name: "nums" })).toHaveValue("[5]");
     await userEvent.click(screen.getByRole("button", { name: "Reset" }));
     expect(screen.getByRole("textbox", { name: "nums" })).toHaveValue("[2,7,11,15]");
+    expect(run).not.toHaveBeenCalled(); // Reset never runs the code
     again.unmount();
 
     render(<CustomInputPanel targetId="lc-0002" signature={SIG} exampleInput={EXAMPLE} run={run} />);

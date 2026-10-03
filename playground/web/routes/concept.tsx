@@ -46,7 +46,7 @@ function ConceptContent({ slug }: { slug: string }) {
         <Link to="/" className="text-neutral-500 hover:underline">
           ← Home
         </Link>
-        <Badge>{concept.data.status}</Badge>
+        <Badge variant="secondary">{concept.data.status}</Badge>
       </nav>
       {concept.isError && (
         <p role="alert" className="mb-4 rounded-md border border-red-300 bg-red-50 p-2 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">

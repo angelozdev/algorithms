@@ -19,6 +19,9 @@ export const BASIC_SETUP: BasicSetupOptions = {
   foldKeymap: false,
 };
 
+/** The app's mono font, without ligatures: `->` and `<=` stay as typed. */
+const MONO_FONT = EditorView.theme({ ".cm-scroller": { fontFamily: "var(--font-mono-stack)", fontVariantLigatures: "none" } });
+
 function language(lang: EditorLanguage): Extension {
   if (lang === "py") return python();
   if (lang === "ts") return javascript({ typescript: true });
@@ -43,6 +46,7 @@ export function CodeEditor({ value, onChange, lang, bindings = NO_BINDINGS, aria
   const extensions = useMemo(
     () => [
       language(lang),
+      MONO_FONT,
       // Keep the browser from adding its own help (spellcheck, autocorrect, writing suggestions).
       EditorView.contentAttributes.of({
         "aria-label": ariaLabel,

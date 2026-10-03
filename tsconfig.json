@@ -10,7 +10,8 @@
     "skipLibCheck": true,
     "types": ["node"],
     "paths": {
-      "lc": ["./runner/harness/ts/lc.ts"]
+      "lc": ["./runner/harness/ts/lc.ts"],
+      "@/*": ["./playground/web/*"]
     }
   },
   "include": ["**/*.ts"],

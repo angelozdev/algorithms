@@ -160,7 +160,7 @@ function CustomInputForm({ targetId, signature, exampleInput, run, ref }: Custom
         <Button type="submit" disabled={pending}>
           {pending ? "Running…" : "Run custom input"} <kbd className="text-xs opacity-70">⇧⌘↵</kbd>
         </Button>
-        <Button variant="outline" onClick={reset}>
+        <Button type="button" variant="outline" onClick={reset}>
           Reset
         </Button>
       </div>

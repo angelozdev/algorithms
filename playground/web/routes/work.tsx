@@ -22,7 +22,7 @@ import { useConnected, useRepoEvents } from "../events.tsx";
 import { type SaveState, useSolutionSync } from "../hooks/useSolutionSync.ts";
 import { useUnsavedGuard } from "../hooks/useUnsavedGuard.ts";
 import { pickLang, readRememberedLang, rememberLang } from "../lang.ts";
-import { cn } from "../lib/cn.ts";
+import { cn } from "cn";
 
 type PanelTab = "tests" | "custom" | "console";
 
@@ -96,10 +96,10 @@ function SaveIndicator({ state, connected }: { state: SaveState; connected: bool
   );
 }
 
-function statusTone(status: TargetData["status"]) {
-  if (status === "solved") return "green" as const;
-  if (status === "revealed") return "amber" as const;
-  return "neutral" as const;
+function statusVariant(status: TargetData["status"]) {
+  if (status === "solved") return "success" as const;
+  if (status === "revealed") return "warning" as const;
+  return "outline" as const;
 }
 
 function WorkHeader(props: {
@@ -123,8 +123,8 @@ function WorkHeader(props: {
       <h1 className="font-semibold">
         {target.id} {target.title}
       </h1>
-      {target.difficulty && <Badge>{target.difficulty}</Badge>}
-      <Badge tone={statusTone(target.status)}>{target.status}</Badge>
+      {target.difficulty && <Badge variant="outline">{target.difficulty}</Badge>}
+      <Badge variant={statusVariant(target.status)}>{target.status}</Badge>
       <span className="text-xs text-neutral-500">hints {target.hints}</span>
       {target.url && (
         <a href={target.url} target="_blank" rel="noreferrer" aria-label="Open the original problem" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
@@ -133,7 +133,7 @@ function WorkHeader(props: {
       )}
       <div className="ml-auto flex items-center gap-3">
         <Tabs value={props.lang} onValueChange={(value) => props.onLang(value as Lang)}>
-          <TabsList aria-label="Language" className="border-b-0">
+          <TabsList aria-label="Language">
             <TabsTrigger value="py" disabled={props.langLock !== null} title={props.langLock ?? undefined} className={cn(props.langLock && "cursor-not-allowed opacity-50")}>
               py
             </TabsTrigger>
@@ -336,13 +336,13 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
             </Panel>
             <Separator className={cn("h-1", separator)} />
             <Panel id="panels" minSize="15%">
-              <Tabs value={tab} onValueChange={(value) => setTab(value as PanelTab)} className="flex h-full flex-col">
-                <TabsList>
+              <Tabs value={tab} onValueChange={(value) => setTab(value as PanelTab)} className="flex h-full flex-col gap-0">
+                <TabsList variant="line" className="w-full justify-start border-b px-2">
                   <TabsTrigger value="tests">Tests{result ? ` ${result.examples.passed}/${result.examples.total}` : ""}</TabsTrigger>
                   <TabsTrigger value="custom">Custom input</TabsTrigger>
                   <TabsTrigger value="console">Console</TabsTrigger>
                 </TabsList>
-                <TabsContent value="tests">
+                <TabsContent value="tests" className="min-h-0 overflow-auto">
                   <TestsPanel
                     result={result}
                     running={run.isPending}
@@ -353,10 +353,10 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
                   />
                 </TabsContent>
                 {/* Always mounted, so its fields and last result survive tab switches and ⇧⌘↵ works from the editor. */}
-                <TabsContent value="custom" forceMount>
+                <TabsContent value="custom" forceMount className="min-h-0 overflow-auto data-[state=inactive]:hidden">
                   <CustomInputPanel ref={custom} targetId={target.id} signature={target.signature} exampleInput={target.exampleInput} run={runCustom} />
                 </TabsContent>
-                <TabsContent value="console">
+                <TabsContent value="console" className="min-h-0 overflow-auto">
                   <ConsolePanel result={result} />
                 </TabsContent>
               </Tabs>

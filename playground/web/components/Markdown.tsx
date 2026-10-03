@@ -12,7 +12,7 @@ import python from "shiki/langs/python.mjs";
 import typescript from "shiki/langs/typescript.mjs";
 import githubDark from "shiki/themes/github-dark.mjs";
 import githubLight from "shiki/themes/github-light.mjs";
-import { cn } from "../lib/cn.ts";
+import { cn } from "cn";
 import { routeForLink } from "../links.ts";
 
 // Created once, synchronously: react-markdown runs its plugins synchronously.
@@ -65,7 +65,7 @@ function MarkdownLink({
 
 export function Markdown({ source, readmePath, onConcept, className }: MarkdownProps) {
   return (
-    <div className={cn("markdown", className)}>
+    <div className={cn("prose prose-sm max-w-none", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[[rehypeShikiFromHighlighter, highlighter, SHIKI]]}

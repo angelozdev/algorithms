@@ -76,3 +76,18 @@ test("disables the language switch while a conflict is open", async ({ page }) =
   await expect(tsTab).toBeDisabled();
   await expect(tsTab).toHaveAttribute("title", "Resolve the conflict first");
 });
+
+test("the editor shows code exactly as typed, in the app's mono font", async ({ page }) => {
+  await page.goto("/p/lc-0001");
+  const scroller = page.locator(".cm-scroller");
+  await expect(scroller).toHaveCSS("font-family", /JetBrains Mono/);
+  await expect(scroller).toHaveCSS("font-variant-ligatures", "none");
+});
+
+test("the custom input fields stay hidden until their tab is open", async ({ page }) => {
+  await page.goto("/p/lc-0001");
+  await expect(page.getByRole("textbox", { name: "solution.py" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "nums" })).toBeHidden();
+  await page.getByRole("tab", { name: "Custom input" }).click();
+  await expect(page.getByRole("textbox", { name: "nums" })).toBeVisible();
+});

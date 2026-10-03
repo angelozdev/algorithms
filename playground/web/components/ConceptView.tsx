@@ -86,7 +86,7 @@ function ExplanationSection({ text, broken, readmePath, editable, save }: Explan
   const problem = draft === null ? null : unsavable(text, broken);
 
   return (
-    <section aria-labelledby="my-explanation" className="markdown">
+    <section aria-labelledby="my-explanation" className="prose prose-sm max-w-none">
       <h2 id="my-explanation" className="flex items-center gap-2">
         My explanation
         {editable && draft === null && (
