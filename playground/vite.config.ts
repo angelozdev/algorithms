@@ -9,6 +9,10 @@ const here = (file: string): string => fileURLToPath(new URL(file, import.meta.u
 export default defineConfig({
   root: here("./web"),
   server: {
+    // Vite's own CORS middleware runs ahead of Hono's (even ahead of @hono/vite-dev-server) and would
+    // otherwise answer a cross-origin request and its preflight with Access-Control-Allow-Origin, letting
+    // any page on the machine read /api responses. The app is same-origin; nothing needs CORS (spec §7).
+    cors: false,
     fs: {
       // Vite's default deny list (checked against the installed Vite), plus the files this playground
       // must never serve: cases.json (hidden expected values) and stress.ts (hidden stress inputs). Vite's

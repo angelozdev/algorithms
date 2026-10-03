@@ -1,9 +1,25 @@
 import { spawnSync } from "node:child_process";
+import http from "node:http";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { REPO_ROOT, TSX_BIN } from "../../../runner/src/paths.ts";
 import { makeProblem, removeTemp, tempDir } from "../../../runner/tests/helpers.ts";
 import { startPlayground } from "../../start.ts";
+
+/**
+ * A raw request via node:http. fetch() forbids setting an `Origin` header (the Fetch spec treats it as a
+ * forbidden request header), so this is the only way to probe how the server answers a cross-origin request.
+ */
+function rawRequest(url: string, options: http.RequestOptions): Promise<{ status: number; headers: http.IncomingHttpHeaders }> {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, options, (res) => {
+      res.resume();
+      res.on("end", () => resolve({ status: res.statusCode ?? 0, headers: res.headers }));
+    });
+    req.on("error", reject);
+    req.end();
+  });
+}
 
 const root = tempDir();
 afterAll(() => removeTemp(root));
@@ -36,6 +52,21 @@ describe("pnpm play", () => {
       const fsRes = await fetch(new URL(`/@fs${casesPath}`, server.url));
       expect(fsRes.status).not.toBe(200);
       expect(await fsRes.text()).not.toContain('"entry": "solve"');
+
+      // spec §7: no CORS headers are sent, so another page (any port is "local" to the Host guard) cannot
+      // read the response. Vite's own cors middleware runs ahead of Hono's and would otherwise approve it.
+      const healthUrl = new URL("/api/health", server.url).href;
+      const getRes = await rawRequest(healthUrl, { method: "GET", headers: { Origin: "http://localhost:3000" } });
+      expect(getRes.headers["access-control-allow-origin"]).toBeUndefined();
+      const preflight = await rawRequest(healthUrl, {
+        method: "OPTIONS",
+        headers: {
+          Origin: "http://localhost:3000",
+          "Access-Control-Request-Method": "PUT",
+          "Access-Control-Request-Headers": "content-type",
+        },
+      });
+      expect(preflight.headers["access-control-allow-origin"]).toBeUndefined();
     } finally {
       await server.close();
     }
