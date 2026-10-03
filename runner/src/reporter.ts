@@ -1,32 +1,16 @@
 import path from "node:path";
 import { styleText } from "node:util";
+import { formatInput, formatOutput, truncate } from "./format.ts";
 import type { ExampleResult, HarnessError, RunResult, StressCaseResult } from "./types.ts";
+
+export { formatInput, formatOutput };
 
 type Paint = (text: string) => string;
 
 const WIDTH = 77;
-const MAX_VALUE = 100;
 const green: Paint = (text) => styleText("green", text);
 const red: Paint = (text) => styleText("red", text);
 const dim: Paint = (text) => styleText("gray", text);
-
-function truncate(text: string, max = MAX_VALUE): string {
-  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
-}
-
-/** Positional arguments as the user would write them: `[2,7,11,15], 9`. */
-export function formatInput(input: unknown): string {
-  const text = Array.isArray(input) ? input.map((arg) => JSON.stringify(arg)).join(", ") : JSON.stringify(input);
-  return truncate(text ?? "undefined");
-}
-
-export function formatOutput(output: unknown): string {
-  if (output && typeof output === "object" && !Array.isArray(output) && "param" in output) {
-    const { ret, param } = output as { ret: unknown; param: unknown };
-    return truncate(`returned ${JSON.stringify(ret)}, array is now ${JSON.stringify(param)}`);
-  }
-  return truncate(JSON.stringify(output) ?? "undefined");
-}
 
 function ms(value: number | undefined): string {
   if (value === undefined) return "";

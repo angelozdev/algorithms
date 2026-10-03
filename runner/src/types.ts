@@ -147,3 +147,14 @@ export interface RunResult {
   stress: StressResult;
   green: boolean;
 }
+
+/** One run of the user's code on an input of their own. Nothing is judged, so there is no expected value. */
+export interface CustomResult {
+  /** The solution did not load (syntax error, missing entry…). */
+  fatal: HarnessError | null;
+  output?: unknown;
+  error?: HarnessError;
+  ms?: number;
+  /** Prints, cut to 20 lines. */
+  stdout: string;
+}

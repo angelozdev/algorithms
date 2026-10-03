@@ -40,7 +40,7 @@ export function truncateLines(text: string, max = STDOUT_MAX_LINES): string {
   return `${lines.slice(0, max).join("\n")}\n… ${lines.length - max} more lines\n`;
 }
 
-function timeoutError(limitMs: number): HarnessError {
+export function timeoutError(limitMs: number): HarnessError {
   return { kind: "timeout", message: `exceeded the ${limitMs} ms time limit`, trace: "" };
 }
 
