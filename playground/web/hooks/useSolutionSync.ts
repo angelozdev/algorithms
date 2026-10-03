@@ -27,8 +27,11 @@ export interface SolutionSync {
   edit(code: string): void;
   /** Saves any pending edit now. Resolves true when the disk has exactly what the editor shows. */
   flush(): Promise<boolean>;
-  /** A solution event from the server: the file on disk now has `version`. */
-  diskChanged(version: string): void;
+  /**
+   * A solution event from the server: the file on disk now has `version`. Without a version (the live connection
+   * came back, and changes made meanwhile were never reported), it checks the disk. Either way only a clean editor reloads.
+   */
+  diskChanged(version?: string): void;
   /** Resolve a conflict by loading what is on disk. */
   takeDisk(): void;
   /** Resolve a conflict by saving the editor's text over it. */
@@ -190,7 +193,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
   }, [debounced, queueSave]);
 
   const diskChanged = useCallback(
-    (version: string) => {
+    (version?: string) => {
       const t = tracked.current;
       // Own saves come back with the version we already have; dirty covers a save still on its way.
       if (!t.loaded || version === t.base || t.conflict || t.dirty || debounced.isPending()) return;

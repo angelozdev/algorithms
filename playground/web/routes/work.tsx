@@ -233,11 +233,14 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
     if ((event.kind === "cases" || event.kind === "stress") && event.target === target.id) setStale(true);
   });
 
-  // Saves what piled up while the server was unreachable.
-  const { flush } = sync;
+  // When the live connection comes back: send what piled up while the server was unreachable, and reload a clean
+  // editor whose file changed meanwhile (no event reported it).
+  const { flush, diskChanged } = sync;
   useEffect(() => {
-    if (connected) void flush();
-  }, [connected, flush]);
+    if (!connected) return;
+    void flush();
+    diskChanged();
+  }, [connected, flush, diskChanged]);
 
   const run = useMutation({
     scope: { id: `${target.id}:${lang}` },

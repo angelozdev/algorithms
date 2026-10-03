@@ -127,6 +127,22 @@ describe("useSolutionSync", () => {
     expect(onReloaded).toHaveBeenCalledTimes(1);
   });
 
+  it("after a reconnect (no version known), reloads a clean editor only if the file changed meanwhile", async () => {
+    const { source, writeOutside } = fakeFile("start");
+    const onReloaded = vi.fn();
+    const { result } = await mount(source, onReloaded);
+    act(() => result.current.diskChanged());
+    await settle();
+    expect(result.current).toMatchObject({ code: "start", state: "saved" });
+    expect(onReloaded).not.toHaveBeenCalled();
+
+    writeOutside("edited in VS Code while the server was down");
+    act(() => result.current.diskChanged());
+    await settle();
+    expect(result.current).toMatchObject({ code: "edited in VS Code while the server was down", state: "saved" });
+    expect(onReloaded).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps a clean editor's text unchanged and reports a failed reload instead of losing it silently", async () => {
     const { source } = fakeFile("start");
     const { result } = await mount(source);
