@@ -42,6 +42,22 @@ test("a conflict keeps both versions until the user picks one", async ({ page })
   await expect.poll(readSolution).toContain("# mine");
 });
 
+test("Use disk version replaces the buffer and closes the conflict without touching the file", async ({ page }) => {
+  await page.goto("/p/lc-0001");
+  const editor = page.getByRole("textbox", { name: "solution.py" });
+  await expect(editor).toContainText("def twoSum");
+  await editor.click();
+  await page.keyboard.press("ControlOrMeta+End");
+  await page.keyboard.insertText("\n# mine\n");
+  writeFileSync(SOLUTION, "# theirs\n"); // lands before the 500 ms autosave
+  await expect(page.getByText("solution.py changed on disk.")).toBeVisible();
+  await page.getByRole("button", { name: "Use disk version" }).click();
+  await expect(editor).toContainText("# theirs");
+  await expect(page.getByText("solution.py changed on disk.")).toHaveCount(0);
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("✓ saved");
+  expect(readSolution()).toBe("# theirs\n");
+});
+
 test("a concept link opens next to the editor, and Back returns to the statement", async ({ page }) => {
   await page.goto("/p/lc-0001");
   await page.getByRole("button", { name: "Hash map" }).click();
