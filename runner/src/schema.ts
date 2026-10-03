@@ -170,6 +170,18 @@ export function parseCaseFile(raw: unknown): CaseFile {
   };
 }
 
+/**
+ * A short, content-free description of a JSON.parse() failure. V8 sometimes quotes a slice of the
+ * source around the error (e.g. `Unexpected token ']', "...pected":[1,2,3,]}]}" is not valid JSON`),
+ * which could leak part of a hidden expected value through this error message. Keep only the
+ * position V8 reports (when it reports one); never forward anything else from its message.
+ */
+export function jsonParseIssue(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  const position = message.match(/at position \d+(?: \(line \d+ column \d+\))?/);
+  return position ? `invalid JSON: ${position[0]}` : "invalid JSON";
+}
+
 export function loadRawCaseFile(dir: string): Record<string, unknown> {
   const file = path.join(dir, "cases.json");
   let text: string;
@@ -182,7 +194,7 @@ export function loadRawCaseFile(dir: string): Record<string, unknown> {
   try {
     raw = JSON.parse(text);
   } catch (error) {
-    throw new CaseFileError([`invalid JSON: ${(error as Error).message}`]);
+    throw new CaseFileError([jsonParseIssue(error)]);
   }
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw new CaseFileError(["the top level must be a JSON object"]);

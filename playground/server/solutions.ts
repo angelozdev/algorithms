@@ -39,8 +39,12 @@ export function writeSolution(target: Target, lang: Lang, code: string, baseVers
   return { ok: true, version: contentVersion(code) };
 }
 
-/** A broken cases.json becomes `422 { error }`; anything else rethrows for app.onError to handle. */
-function caseFileError422(c: Context, error: unknown): Response {
+/**
+ * A broken cases.json becomes `422 { error }`; anything else rethrows for app.onError to handle.
+ * No return type annotation: it must infer `c.json(...)`'s exact TypedResponse, not the generic
+ * `Response` DOM type, or the typed Hono client loses the 200 response's shape on every caller.
+ */
+function caseFileError422(c: Context, error: unknown) {
   if (error instanceof CaseFileError) return c.json({ error: error.message }, 422);
   throw error;
 }

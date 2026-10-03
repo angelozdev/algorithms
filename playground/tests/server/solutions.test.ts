@@ -14,6 +14,12 @@ const SOLUTION = "problems/lc-0001-two-sum/solution.py";
 // `.json()` returns `Promise<unknown>` rather than DOM's `Promise<any>`. Cast once per call site.
 const json = <T>(res: Response): Promise<T> => res.json() as Promise<T>;
 
+// An unquoted (Python-style) hidden expected value: V8 quotes a slice of the source around the
+// error token, which would otherwise put part of this sentinel into the CaseFileError message
+// (`Unexpected token 'S', ..."expected":SECRET-424"... is not valid JSON` on Node 24).
+const SECRET_LEAK_CASES_JSON =
+  '{"entry":"solve","params":[{"name":"nums","type":"int[]"}],"returns":"int","examples":[{"input":[[1,2]],"expected":3}],"hidden":[{"input":[[5,5]],"expected":SECRET-4242}]}';
+
 describe("GET/PUT /api/solution", () => {
   it("creates the stub on first read, then saves new code when the version matches", async () => {
     const root = makeRepo();
@@ -128,5 +134,37 @@ describe("POST /api/run-custom", () => {
     expect(res.status).toBe(422);
     expect((await json<ApiErrorBody>(res)).issues).toEqual(["custom.input: expected 1 params, got 2"]);
     expect((await call(app, "/api/run-custom", { json: { id: "lc-0001", lang: "py" } })).status).toBe(400);
+  });
+});
+
+describe("anti-spoiler: a broken cases.json never leaks part of a hidden expected value", () => {
+  it("keeps the sentinel out of every response that reports the parse error", async () => {
+    const root = makeRepo();
+    writeFileSync(path.join(root, "problems/lc-0001-two-sum/cases.json"), SECRET_LEAK_CASES_JSON);
+    const app = createApp({ root });
+
+    const noSecret = async (res: Response) => {
+      const text = await res.text();
+      expect(text).not.toContain("SECRET-4242");
+      expect(text).not.toContain("SECRET-424");
+      return text;
+    };
+
+    const solution = await call(app, "/api/solution?id=lc-0001&lang=py");
+    expect(solution.status).toBe(422);
+    await noSecret(solution);
+
+    const run = await call(app, "/api/run", { json: { id: "lc-0001", lang: "py" } });
+    expect(run.status).toBe(422);
+    await noSecret(run);
+
+    const runCustom = await call(app, "/api/run-custom", { json: { id: "lc-0001", lang: "py", input: [[1, 2]] } });
+    expect(runCustom.status).toBe(422);
+    await noSecret(runCustom);
+
+    const target = await call(app, "/api/target?id=lc-0001");
+    expect(target.status).toBe(200);
+    const targetText = await noSecret(target);
+    expect(JSON.parse(targetText).caseError).toContain("invalid JSON");
   });
 });
