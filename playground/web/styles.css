@@ -1,0 +1,67 @@
+@import "tailwindcss" source(".");
+
+@theme {
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+body {
+  @apply bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+}
+
+/* Code blocks colored by Shiki with both themes; the operating system picks one. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+}
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark);
+    background-color: var(--shiki-dark-bg);
+  }
+}
+
+/* Rendered README Markdown. */
+.markdown {
+  @apply text-sm leading-relaxed;
+}
+.markdown h1 {
+  @apply mb-3 text-xl font-semibold;
+}
+.markdown h2 {
+  @apply mt-6 mb-2 text-base font-semibold;
+}
+.markdown h3 {
+  @apply mt-4 mb-2 font-semibold;
+}
+.markdown p,
+.markdown ul,
+.markdown ol,
+.markdown table,
+.markdown pre {
+  @apply my-2;
+}
+.markdown ul {
+  @apply list-disc pl-5;
+}
+.markdown ol {
+  @apply list-decimal pl-5;
+}
+.markdown :not(pre) > code {
+  @apply rounded bg-neutral-100 px-1 font-mono text-[0.85em] dark:bg-neutral-800;
+}
+.markdown pre {
+  @apply overflow-x-auto rounded-md p-3 font-mono text-xs;
+}
+.markdown table {
+  @apply border-collapse text-xs;
+}
+.markdown th,
+.markdown td {
+  @apply border border-neutral-300 px-2 py-1 dark:border-neutral-700;
+}
+.markdown a,
+.markdown .concept-link {
+  @apply text-blue-700 underline dark:text-blue-400;
+}
