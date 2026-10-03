@@ -174,6 +174,28 @@ describe("useSolutionSync", () => {
     expect(file.saves).toEqual(["typed just before leaving"]);
   });
 
+  it("reports a conflict that only resolves after unmount instead of losing the edit silently", async () => {
+    const { file, source, writeOutside } = fakeFile("start");
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("typed just before leaving"));
+    writeOutside("someone else's edit");
+    unmount();
+    await settle();
+    expect(file.saves).toEqual([]); // the flush-on-exit save lost the version race; nothing was written
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("changed on disk"));
+  });
+
+  it("reports a save error that only resolves after unmount instead of losing the edit silently", async () => {
+    const { file, source } = fakeFile("start");
+    source.save.mockRejectedValueOnce(new Error("server offline"));
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("typed just before leaving"));
+    unmount();
+    await settle();
+    expect(file.saves).toEqual([]);
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("server offline"));
+  });
+
   it("saves the last edit when the tab closes", async () => {
     const { file, source } = fakeFile("start");
     const { result } = await mount(source);

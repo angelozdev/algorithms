@@ -58,6 +58,16 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     latest.current = { source, onReloaded };
   });
 
+  // A save that is still running when the editor closes (unmount flushes it) can resolve after there is
+  // no one left to show its result. Only a mounted hook can rely on state; an unmounted one must toast instead.
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
     source.load().then(
@@ -88,6 +98,11 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
       const result = await latest.current.source.save(sent, t.base);
       if (!result.ok) {
         t.conflict = result.current;
+        if (!mounted.current) {
+          // Nothing shows the conflict banner any more; say so, or the edit is lost without a trace.
+          toast.error("Your last edit was not saved: the file changed on disk.");
+          return false;
+        }
         setConflict(result.current);
         setState("conflict");
         return false;
@@ -98,6 +113,10 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
       setState(t.dirty ? "pending" : "saved");
       return !t.dirty;
     } catch (reason) {
+      if (!mounted.current) {
+        toast.error(`Your last edit was not saved: ${(reason as Error).message}`);
+        return false;
+      }
       setError((reason as Error).message);
       setState("error");
       return false;
