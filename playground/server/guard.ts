@@ -22,9 +22,12 @@ export function isLocalOrigin(origin: string): boolean {
 /**
  * Only this machine may use the API: the Host must be local (blocks DNS rebinding), and a write that says
  * where it comes from must come from a local page. hono/csrf alone only checks form-encoded requests.
+ * Browsers mark a request another site sends (even a GET from an <img>, which creates a stub) with
+ * `Sec-Fetch-Site: cross-site`; curl and the tests send no such header.
  */
 export const hostGuard: MiddlewareHandler = async (c, next) => {
   if (!isLocalHost(c.req.header("host"))) return c.json({ error: "Forbidden: not a local host" }, 403);
+  if (c.req.header("sec-fetch-site") === "cross-site") return c.json({ error: "Forbidden: request from another site" }, 403);
   const origin = c.req.header("origin");
   if (origin !== undefined && !SAFE_METHOD.test(c.req.method) && !isLocalOrigin(origin)) {
     return c.json({ error: "Forbidden: request from another site" }, 403);

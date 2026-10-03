@@ -1,10 +1,13 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { afterAll, afterEach, describe, expect, it } from "vitest";
 import { removeTemp, tempDir } from "../../../runner/tests/helpers.ts";
 import { createApp } from "../../server/app.ts";
-import { call, HOST } from "./helpers.ts";
+import { call, HOST, makeRepo, removeRepos } from "./helpers.ts";
 
 const root = tempDir();
 afterAll(() => removeTemp(root));
+afterEach(removeRepos);
 const app = createApp({ root });
 
 describe("guard", () => {
@@ -31,5 +34,20 @@ describe("guard", () => {
       body: "a=1",
     });
     expect(form.status).toBe(403);
+  });
+
+  it("rejects any request a browser marks as sent from another site, so a cross-site GET cannot create a stub", async () => {
+    const repo = makeRepo();
+    const repoApp = createApp({ root: repo });
+    const stub = path.join(repo, "problems/lc-0001-two-sum/solution.ts");
+    const crossSite = await call(repoApp, "/api/solution?id=lc-0001&lang=ts", { headers: { "sec-fetch-site": "cross-site" } });
+    expect(crossSite.status).toBe(403);
+    expect(await crossSite.json()).toEqual({ error: expect.any(String) });
+    expect(existsSync(stub)).toBe(false);
+    for (const site of ["same-origin", "same-site", "none"]) {
+      expect((await call(repoApp, "/api/health", { headers: { "sec-fetch-site": site } })).status, site).toBe(200);
+    }
+    expect((await call(repoApp, "/api/solution?id=lc-0001&lang=ts", { headers: { "sec-fetch-site": "same-origin" } })).status).toBe(200);
+    expect(existsSync(stub)).toBe(true);
   });
 });
