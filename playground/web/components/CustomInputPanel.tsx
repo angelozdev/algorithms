@@ -1,10 +1,15 @@
+import { CircleX, LoaderCircle, Play, RotateCcw } from "lucide-react";
 import { type Ref, useId, useImperativeHandle, useState } from "react";
 import { formatOutput } from "../../../runner/src/format.ts";
 import type { CustomResult } from "../../../runner/src/types.ts";
 import type { Signature } from "../../server/types.ts";
 import { ApiError } from "../api.ts";
+import { shortcut } from "../lib/keys.ts";
 import { DISPLAY_MAX, ErrorBox, formatMs } from "./RunDetails.tsx";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert.tsx";
 import { Button } from "./ui/button.tsx";
+import { Kbd } from "./ui/kbd.tsx";
+import { Textarea } from "./ui/textarea.tsx";
 
 export interface CustomInputHandle {
   submit(): Promise<void>;
@@ -56,13 +61,14 @@ function CustomResultView({ result }: { result: CustomResult }) {
       {result.error ? (
         <ErrorBox error={result.error} />
       ) : (
-        <p>
-          <span className="text-neutral-500">Output</span> <code className="font-mono">{formatOutput(result.output, DISPLAY_MAX)}</code>{" "}
-          <span className="text-xs text-neutral-500">{formatMs(result.ms)}</span>
+        <p className="flex items-center gap-2">
+          <span className="text-muted-foreground">Output</span>
+          <code className="font-mono">{formatOutput(result.output, DISPLAY_MAX)}</code>
+          <span className="text-xs text-muted-foreground">{formatMs(result.ms)}</span>
         </p>
       )}
       {result.stdout && (
-        <pre aria-label="Prints" className="whitespace-pre-wrap rounded bg-neutral-100 p-2 font-mono text-xs dark:bg-neutral-900">
+        <pre aria-label="Prints" className="rounded-md bg-muted p-2 font-mono text-xs whitespace-pre-wrap">
           {result.stdout}
         </pre>
       )}
@@ -128,7 +134,7 @@ function CustomInputForm({ targetId, signature, exampleInput, run, ref }: Custom
 
   return (
     <form
-      className="space-y-3 p-3 text-sm"
+      className="space-y-3 p-3 text-[13px]"
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
@@ -136,21 +142,21 @@ function CustomInputForm({ targetId, signature, exampleInput, run, ref }: Custom
     >
       {names.map((name) => (
         <div key={name}>
-          <label htmlFor={`${id}-${name}`} className="font-mono text-xs text-neutral-500">
+          <label htmlFor={`${id}-${name}`} className="font-mono text-xs text-muted-foreground">
             {name}
           </label>
-          <textarea
+          <Textarea
             id={`${id}-${name}`}
             value={texts[name] ?? ""}
             onChange={(event) => update(name, event.target.value)}
             rows={1}
             aria-invalid={errors[name] ? true : undefined}
             aria-describedby={errors[name] ? `${id}-${name}-error` : undefined}
-            className="mt-0.5 block w-full resize-y rounded-md border border-neutral-300 bg-transparent p-1.5 font-mono text-xs dark:border-neutral-700"
+            className="mt-1 min-h-8 resize-y font-mono text-xs"
             {...NO_WRITING_AIDS}
           />
           {errors[name] && (
-            <p id={`${id}-${name}-error`} className="mt-0.5 text-xs text-red-600">
+            <p id={`${id}-${name}-error`} className="mt-1 text-xs text-destructive">
               {errors[name]}
             </p>
           )}
@@ -158,23 +164,30 @@ function CustomInputForm({ targetId, signature, exampleInput, run, ref }: Custom
       ))}
       <div className="flex gap-2">
         <Button type="submit" disabled={pending}>
-          {pending ? "Running…" : "Run custom input"} <kbd className="text-xs opacity-70">⇧⌘↵</kbd>
+          {pending ? <LoaderCircle aria-hidden className="animate-spin" /> : <Play aria-hidden />}
+          {pending ? "Running…" : "Run custom input"}
+          <Kbd>{shortcut("custom")}</Kbd>
         </Button>
+        {/* type="button": shadcn's Button has no default type, and inside this form it would submit (run the code). */}
         <Button type="button" variant="outline" onClick={reset}>
+          <RotateCcw aria-hidden />
           Reset
         </Button>
       </div>
       {failure && (
-        <div role="alert" className="rounded-md border border-red-300 bg-red-50 p-2 text-xs dark:border-red-800 dark:bg-red-950">
-          <p>{failure.issues.length > 0 ? "The server could not use this input:" : failure.message}</p>
+        <Alert variant="destructive">
+          <CircleX aria-hidden />
+          <AlertTitle>{failure.issues.length > 0 ? "The server could not use this input:" : failure.message}</AlertTitle>
           {failure.issues.length > 0 && (
-            <ul className="mt-1 list-disc pl-5 font-mono">
-              {failure.issues.map((issue) => (
-                <li key={issue}>{issue}</li>
-              ))}
-            </ul>
+            <AlertDescription>
+              <ul className="list-disc pl-5 font-mono">
+                {failure.issues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            </AlertDescription>
           )}
-        </div>
+        </Alert>
       )}
       {result && <CustomResultView result={result} />}
     </form>
@@ -183,7 +196,7 @@ function CustomInputForm({ targetId, signature, exampleInput, run, ref }: Custom
 
 export function CustomInputPanel(props: CustomInputPanelProps) {
   if (!props.signature) {
-    return <p className="p-3 text-sm text-neutral-500">Custom input needs a valid cases.json. See the Tests tab.</p>;
+    return <p className="p-3 text-sm text-muted-foreground">Custom input needs a valid cases.json. See the Tests tab.</p>;
   }
   return <CustomInputForm {...props} signature={props.signature} />;
 }

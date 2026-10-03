@@ -64,7 +64,7 @@ test("a concept link opens next to the editor, and Back returns to the statement
   await expect(page.getByRole("heading", { name: "Intuition" })).toBeVisible();
   await expect(page.getByText("Statement › hash-map")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "solution.py" })).toBeVisible();
-  await page.getByRole("button", { name: "← Back" }).click();
+  await page.getByRole("button", { name: "Back" }).click();
   await expect(page.getByRole("heading", { name: "1. Two Sum" })).toBeVisible();
 });
 

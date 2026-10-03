@@ -173,6 +173,6 @@ describe("ConsolePanel", () => {
 
   it("explains where prints appear", () => {
     render(<ConsolePanel result={null} />);
-    expect(screen.getByText(/Prints from your code appear here/)).toBeInTheDocument();
+    expect(screen.getByText("Nothing printed yet — print() / console.log output shows up here.")).toBeInTheDocument();
   });
 });

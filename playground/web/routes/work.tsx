@@ -1,7 +1,7 @@
 import type { KeyBinding } from "@codemirror/view";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { CircleX, TriangleAlert } from "lucide-react";
+import { ArrowLeft, CircleX, TriangleAlert } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
@@ -20,6 +20,7 @@ import { TestsPanel } from "../components/TestsPanel.tsx";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
 import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
+import { Skeleton } from "../components/ui/skeleton.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.tsx";
 import { useConnected, useRepoEvents } from "../events.tsx";
 import { useSolutionSync } from "../hooks/useSolutionSync.ts";
@@ -44,21 +45,46 @@ export function ExercisePage() {
   return <WorkPage key={id} id={id} />;
 }
 
+function WorkSkeleton() {
+  return (
+    <div aria-busy="true" aria-label="Loading" className="flex min-h-0 flex-1 flex-col">
+      <div className="flex h-10 items-center gap-3 border-b px-3">
+        <Skeleton className="h-4 w-72" />
+        <Skeleton className="ml-auto h-6 w-32" />
+      </div>
+      <div className="flex min-h-0 flex-1">
+        <div className="w-2/5 space-y-2 p-4">
+          <Skeleton className="h-6 w-40" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-5/6" />
+        </div>
+        <Skeleton className="m-4 flex-1" />
+      </div>
+    </div>
+  );
+}
+
+function LoadError({ message }: { message: string }) {
+  return (
+    <Alert variant="destructive" className="m-6 w-auto">
+      <TriangleAlert aria-hidden />
+      <AlertTitle>Could not load this page</AlertTitle>
+      <AlertDescription>{message}</AlertDescription>
+    </Alert>
+  );
+}
+
 function WorkPage({ id }: { id: string }) {
   const target = useQuery(targetQuery(id));
   const [chosen, setChosen] = useState<Lang | null>(null);
-  if (target.isPending) return <p className="p-6 text-sm text-neutral-500">Loading…</p>;
+  if (target.isPending) return <WorkSkeleton />;
   // A failed refresh (a live event refetches the target) keeps the last data: unmounting the workspace for it
   // would throw away the editor and any text it has not saved yet.
   if (target.isError && !target.data) {
     if (target.error instanceof ApiError && target.error.status === 404) {
       return <NotFound message={`There is no problem or exercise "${id}".`} />;
     }
-    return (
-      <p role="alert" className="p-6 text-sm text-red-600">
-        {target.error.message}
-      </p>
-    );
+    return <LoadError message={target.error.message} />;
   }
   const lang = chosen ?? pickLang(target.data.solutions, readRememberedLang());
   // Freeze the first choice: a solution file created later must not switch the editor's language.
@@ -104,14 +130,15 @@ function ConflictAlert({ file, onDisk, onMine }: { file: string; onDisk(): void;
 
 function SideConcept({ slug, onConcept }: { slug: string; onConcept(slug: string): void }) {
   const concept = useQuery(conceptQuery(slug));
-  if (concept.isPending) return <p className="text-sm text-neutral-500">Loading…</p>;
-  if (concept.isError) {
+  if (concept.isPending) {
     return (
-      <p role="alert" className="text-sm text-red-600">
-        {concept.error.message}
-      </p>
+      <div aria-busy="true" aria-label="Loading" className="space-y-2">
+        <Skeleton className="h-6 w-40" />
+        <Skeleton className="h-4 w-full" />
+      </div>
     );
   }
+  if (concept.isError) return <LoadError message={concept.error.message} />;
   return <ConceptView concept={concept.data} editable={false} onConcept={onConcept} />;
 }
 
@@ -120,12 +147,13 @@ function StatementPane({ target, trail, onConcept, onBack }: { target: TargetDat
   if (slug) {
     return (
       <div>
-        <nav aria-label="Concept trail" className="mb-3 flex items-center gap-2 text-xs text-neutral-500">
+        <nav aria-label="Concept trail" className="mb-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Button size="sm" variant="ghost" onClick={onBack}>
-            ← Back
+            <ArrowLeft aria-hidden />
+            Back
           </Button>
           <span>Statement › {trail.join(" › ")}</span>
-          <Link to="/c/$slug" params={{ slug }} className="ml-auto underline">
+          <Link to="/c/$slug" params={{ slug }} className="ml-auto text-primary underline underline-offset-2">
             Open the concept page
           </Link>
         </nav>
@@ -135,9 +163,12 @@ function StatementPane({ target, trail, onConcept, onBack }: { target: TargetDat
   }
   if (target.readmeError) {
     return (
-      <p role="alert" className="text-sm text-red-600">
-        {target.readme || "README.md"}: {target.readmeError}
-      </p>
+      <Alert variant="destructive">
+        <TriangleAlert aria-hidden />
+        <AlertDescription>
+          {target.readme || "README.md"}: {target.readmeError}
+        </AlertDescription>
+      </Alert>
     );
   }
   return <Markdown source={target.markdown} readmePath={target.readme} onConcept={onConcept} />;
@@ -231,7 +262,8 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
   useHotkeys("mod+shift+enter", () => latest.current.custom(), { preventDefault: true, enableOnFormTags: true });
   useHotkeys("mod+s", () => latest.current.save(), { preventDefault: true, enableOnFormTags: true });
 
-  const separator = "bg-neutral-200 transition-colors hover:bg-blue-400 dark:bg-neutral-800";
+  // 1 px lines that turn blue on hover or drag; a wider invisible strip keeps them easy to grab.
+  const separator = "relative bg-border transition-colors hover:bg-primary active:bg-primary after:absolute";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -253,7 +285,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         </Alert>
       )}
       <Group orientation="horizontal" className="min-h-0 flex-1" defaultLayout={columns.defaultLayout} onLayoutChanged={columns.onLayoutChanged}>
-        <Panel id="statement" defaultSize="40%" minSize="20%" className="overflow-y-auto p-4">
+        <Panel id="statement" defaultSize="40%" minSize="20%" className="overflow-y-auto bg-card p-4">
           <StatementPane
             target={target}
             trail={trail}
@@ -261,17 +293,24 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
             onBack={() => setTrail((current) => current.slice(0, -1))}
           />
         </Panel>
-        <Separator className={cn("w-1", separator)} />
+        <Separator className={cn("w-px after:inset-y-0 after:-inset-x-1", separator)} />
         <Panel id="code" minSize="30%">
           <Group orientation="vertical" defaultLayout={rows.defaultLayout} onLayoutChanged={rows.onLayoutChanged}>
             <Panel id="editor" defaultSize="60%" minSize="20%">
               {sync.code === null ? (
-                <p className="p-4 text-sm text-neutral-500">{sync.error ?? "Loading…"}</p>
+                sync.error ? (
+                  <Alert variant="destructive" className="m-4 w-auto">
+                    <CircleX aria-hidden />
+                    <AlertDescription>{sync.error}</AlertDescription>
+                  </Alert>
+                ) : (
+                  <Skeleton aria-busy="true" aria-label="Loading the editor" className="m-4 h-40" />
+                )
               ) : (
                 <CodeEditor lang={lang} value={sync.code} onChange={sync.edit} bindings={bindings} ariaLabel={`solution.${lang}`} className="h-full" autoFocus />
               )}
             </Panel>
-            <Separator className={cn("h-1", separator)} />
+            <Separator className={cn("h-px after:inset-x-0 after:-inset-y-1", separator)} />
             <Panel id="panels" minSize="15%">
               <Tabs value={tab} onValueChange={(value) => setTab(value as PanelTab)} className="flex h-full flex-col gap-0">
                 <TabsList variant="line" className="w-full justify-start border-b px-2">
