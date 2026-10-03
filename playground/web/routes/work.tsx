@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
 import { toast } from "sonner";
-import type { Lang } from "../../../runner/src/types.ts";
+import type { Lang, RunResult } from "../../../runner/src/types.ts";
 import type { TargetData } from "../../server/types.ts";
 import { ApiError, conceptQuery, getSolution, keys, putSolution, runCustomInput, runTests, targetQuery } from "../api.ts";
 import { CodeEditor } from "../components/CodeEditor.tsx";
@@ -108,6 +108,8 @@ function WorkHeader(props: {
   running: boolean;
   canRun: boolean;
   onRun(): void;
+  /** A conflict banner is open: switching the language would abandon it without saving. */
+  conflicted: boolean;
 }) {
   const { target } = props;
   return (
@@ -129,8 +131,12 @@ function WorkHeader(props: {
       <div className="ml-auto flex items-center gap-3">
         <Tabs value={props.lang} onValueChange={(value) => props.onLang(value as Lang)}>
           <TabsList aria-label="Language" className="border-b-0">
-            <TabsTrigger value="py">py</TabsTrigger>
-            <TabsTrigger value="ts">ts</TabsTrigger>
+            <TabsTrigger value="py" disabled={props.conflicted} title={props.conflicted ? "Resolve the conflict first" : undefined} className={cn(props.conflicted && "cursor-not-allowed opacity-50")}>
+              py
+            </TabsTrigger>
+            <TabsTrigger value="ts" disabled={props.conflicted} title={props.conflicted ? "Resolve the conflict first" : undefined} className={cn(props.conflicted && "cursor-not-allowed opacity-50")}>
+              ts
+            </TabsTrigger>
           </TabsList>
         </Tabs>
         <SaveIndicator state={props.saveState} connected={props.connected} />
@@ -209,6 +215,8 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
   );
   const sync = useSolutionSync(source, () => toast("Reloaded from disk"));
   const [tab, setTab] = useState<PanelTab>("tests");
+  // Kept across a re-run (and a failed one) so the previous result stays visible, dimmed, while running.
+  const [result, setResult] = useState<RunResult | null>(null);
   const [stale, setStale] = useState(false);
   const [trail, setTrail] = useState<string[]>([]);
   const custom = useRef<CustomInputHandle>(null);
@@ -233,7 +241,8 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
       return runTests(target.id, lang);
     },
     onMutate: () => setTab("tests"),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setResult(data);
       setStale(false);
       void queryClient.invalidateQueries({ queryKey: keys.target(target.id) });
     },
@@ -290,6 +299,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         running={run.isPending}
         canRun={canRun}
         onRun={actions.run}
+        conflicted={sync.conflict !== null}
       />
       {sync.conflict && <ConflictBanner file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={() => void sync.keepMine()} />}
       {sync.state === "error" && sync.error && (
@@ -320,13 +330,13 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
             <Panel id="panels" minSize="15%">
               <Tabs value={tab} onValueChange={(value) => setTab(value as PanelTab)} className="flex h-full flex-col">
                 <TabsList>
-                  <TabsTrigger value="tests">Tests{run.data ? ` ${run.data.examples.passed}/${run.data.examples.total}` : ""}</TabsTrigger>
+                  <TabsTrigger value="tests">Tests{result ? ` ${result.examples.passed}/${result.examples.total}` : ""}</TabsTrigger>
                   <TabsTrigger value="custom">Custom input</TabsTrigger>
                   <TabsTrigger value="console">Console</TabsTrigger>
                 </TabsList>
                 <TabsContent value="tests">
                   <TestsPanel
-                    result={run.data ?? null}
+                    result={result}
                     running={run.isPending}
                     elapsedMs={elapsed}
                     stale={stale}
@@ -339,7 +349,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
                   <CustomInputPanel ref={custom} targetId={target.id} signature={target.signature} exampleInput={target.exampleInput} run={runCustom} />
                 </TabsContent>
                 <TabsContent value="console">
-                  <ConsolePanel result={run.data ?? null} />
+                  <ConsolePanel result={result} />
                 </TabsContent>
               </Tabs>
             </Panel>

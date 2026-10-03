@@ -185,6 +185,33 @@ describe("useSolutionSync", () => {
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("changed on disk"));
   });
 
+  it("warns when the editor closes while an already-open conflict was never resolved", async () => {
+    const { source, writeOutside } = fakeFile("start");
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("mine"));
+    writeOutside("theirs");
+    await wait(AUTOSAVE_MS);
+    // The conflict is already open and shown (not racing with unmount this time); edit() stopped
+    // scheduling autosave the moment it appeared, so nothing else would ever warn about this edit.
+    expect(result.current.state).toBe("conflict");
+    unmount();
+    await settle();
+    expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("changed on disk"));
+  });
+
+  it("does not warn on unmount once the editor's text matches the disk version shown in the conflict", async () => {
+    const { source, writeOutside } = fakeFile("start");
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("mine"));
+    writeOutside("theirs");
+    await wait(AUTOSAVE_MS);
+    expect(result.current.state).toBe("conflict");
+    act(() => result.current.edit("theirs")); // retyped to match disk by hand, without clicking either button
+    unmount();
+    await settle();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it("reports a save error that only resolves after unmount instead of losing the edit silently", async () => {
     const { file, source } = fakeFile("start");
     source.save.mockRejectedValueOnce(new Error("server offline"));

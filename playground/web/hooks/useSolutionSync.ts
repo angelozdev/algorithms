@@ -65,6 +65,13 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     mounted.current = true;
     return () => {
       mounted.current = false;
+      // A conflict already open when the editor closes is never retried: edit() skips autosave while
+      // t.conflict is set, so flushOnExit has nothing pending to send. Warn only when the text shown
+      // still differs from what is on disk; equal text means there is nothing left to lose.
+      const t = tracked.current;
+      if (t.conflict && t.code !== t.conflict.code) {
+        toast.error("Your last edit was not saved: the file changed on disk.");
+      }
     };
   }, []);
 
