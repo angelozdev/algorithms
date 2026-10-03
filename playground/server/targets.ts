@@ -34,6 +34,7 @@ export function homeData(root: string): HomeData {
       title: str(p.data.title, p.folder),
       difficulty: str(p.data.difficulty) || null,
       patterns: strList(p.data.patterns),
+      concepts: strList(p.data.concepts),
       status: itemStatus(p.data.status),
       inProgress: isInProgress(p),
       error: p.error,

@@ -19,8 +19,8 @@ describe("GET /api/home", () => {
     const { status, body } = await json(await call(createApp({ root }), "/api/home"));
     expect(status).toBe(200);
     expect(body.problems).toEqual([
-      { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], status: "solved", inProgress: false, error: null },
-      { id: "lc-0020", title: "Valid Parentheses", difficulty: "easy", patterns: ["stack"], status: "todo", inProgress: true, error: null },
+      { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], concepts: ["hash-map"], status: "solved", inProgress: false, error: null },
+      { id: "lc-0020", title: "Valid Parentheses", difficulty: "easy", patterns: ["stack"], concepts: [], status: "todo", inProgress: true, error: null },
     ]);
     expect(body.groups).toEqual([
       { pattern: "arrays-hashing", ids: ["lc-0001"] },
@@ -44,6 +44,17 @@ describe("GET /api/home", () => {
     const broken = body.problems.find((p: { id: string }) => p.id === "lc-0030");
     expect(broken.title).toBe("lc-0030-broken");
     expect(broken.error).toMatch(/^frontmatter:/);
+  });
+
+  it("gives a problem whose concepts field is not a list no concepts", async () => {
+    const root = makeRepo();
+    put(
+      root,
+      "problems/lc-0035-search-insert-position/README.md",
+      "---\nid: lc-0035\ntitle: Search Insert Position\ndifficulty: easy\npatterns: [binary-search]\nconcepts: binary-search\nstatus: todo\n---\n# 35. Search Insert Position\n",
+    );
+    const { body } = await json(await call(createApp({ root }), "/api/home"));
+    expect(body.problems.find((p: { id: string }) => p.id === "lc-0035").concepts).toEqual([]);
   });
 
   it("works on an empty repo", async () => {
