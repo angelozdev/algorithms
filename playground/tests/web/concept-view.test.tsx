@@ -47,13 +47,13 @@ describe("ConceptView", () => {
     expect(screen.getByRole("heading", { name: "My explanation" })).toBeInTheDocument();
     expect(screen.getByText("Not written yet.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "lc-0001 · Two Sum" })).toHaveAttribute("href", "/p/lc-0001");
-    expect(screen.queryByRole("button", { name: "✎ Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
 
   it("edits the explanation with a live preview and saves it", async () => {
     const save = vi.fn(async () => {});
     await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old text." }} editable save={save} />);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     const editor = screen.getByRole("textbox", { name: "My explanation" });
     expect(editor).toHaveValue("Old text.");
     await userEvent.clear(editor);
@@ -69,7 +69,7 @@ describe("ConceptView", () => {
       throw new ApiError(422, "Use ### or deeper for headings.", ["Use ### or deeper for headings."]);
     });
     await renderWithRouter(<ConceptView concept={CONCEPT} editable save={save} />);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), "## Mine");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Use ### or deeper for headings.");
@@ -79,7 +79,7 @@ describe("ConceptView", () => {
   it("does not save over a section that changed on disk while the draft was open; the next Save keeps mine", async () => {
     const save = vi.fn(async (_text: string) => {});
     const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, save);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     const editor = screen.getByRole("textbox", { name: "My explanation" });
     await userEvent.clear(editor);
     await userEvent.type(editor, "Mine.");
@@ -101,7 +101,7 @@ describe("ConceptView", () => {
       act(() => page.show({ ...CONCEPT, explanation: "Written in VS Code.", version: "v2" }));
       throw new ExplanationConflict("Written in VS Code.");
     });
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(CONFLICT_MESSAGE);
@@ -114,7 +114,7 @@ describe("ConceptView", () => {
   it("asks before leaving the page while the draft has unsaved changes", async () => {
     const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
     const { router } = await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old text." }} editable save={async () => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
     await act(async () => router.history.push("/p/lc-0001"));
     await waitFor(() => expect(confirm).toHaveBeenCalledExactlyOnceWith("You have unsaved changes in My explanation. Leave anyway?"));
@@ -129,7 +129,7 @@ describe("ConceptView", () => {
   it("leaves without asking when the draft is unchanged", async () => {
     const confirm = vi.spyOn(window, "confirm");
     const { router } = await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old text." }} editable save={async () => {}} />);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await act(async () => router.history.push("/p/lc-0001"));
     await waitFor(() => expect(router.history.location.pathname).toBe("/p/lc-0001"));
     expect(confirm).not.toHaveBeenCalled();
@@ -139,7 +139,7 @@ describe("ConceptView", () => {
   it("keeps an open draft when the README loses the section, warns, and saves once the section is back", async () => {
     const save = vi.fn(async (_text: string) => {});
     const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, save);
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
     act(() => page.show({ ...CONCEPT, explanation: null, version: "v2" }));
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Old text. Mine.");
@@ -155,7 +155,7 @@ describe("ConceptView", () => {
 
   it("keeps an open draft when the README breaks while editing, and closes only on Cancel", async () => {
     const page = await renderLivePage({ ...CONCEPT, explanation: "Old text." }, async () => {});
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
     act(() => page.show({ ...CONCEPT, readmeError: "frontmatter: bad", before: "", explanation: null, after: "", version: "v2" }));
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Old text. Mine.");
@@ -166,7 +166,7 @@ describe("ConceptView", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent("frontmatter: bad");
-    expect(screen.queryByRole("button", { name: "✎ Edit" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
   });
 
   it("explains a missing section and a broken README", async () => {
@@ -175,5 +175,23 @@ describe("ConceptView", () => {
     view.unmount();
     await renderWithRouter(<ConceptView concept={{ ...CONCEPT, readmeError: "frontmatter: bad" }} editable />);
     expect(screen.getByRole("alert")).toHaveTextContent("frontmatter: bad");
+  });
+
+  it("saves with the keyboard shortcut", async () => {
+    const save = vi.fn(async () => {});
+    await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old." }} editable save={save} />);
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " New.");
+    await userEvent.keyboard("{Control>}s{/Control}");
+    await waitFor(() => expect(save).toHaveBeenCalledWith("Old. New."));
+  });
+
+  it("tells the page whether the draft has unsaved changes", async () => {
+    const onDraft = vi.fn();
+    await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old." }} editable save={vi.fn(async () => {})} onDraft={onDraft} />);
+    expect(onDraft).toHaveBeenLastCalledWith({ open: false, dirty: false, saving: false, failed: false });
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), "!");
+    expect(onDraft).toHaveBeenLastCalledWith({ open: true, dirty: true, saving: false, failed: false });
   });
 });

@@ -77,7 +77,7 @@ describe("concept page", () => {
   it("closes the open draft when another concept opens, so it can never be saved into that concept", async () => {
     vi.spyOn(window, "confirm").mockReturnValue(true); // the user agrees to leave the unsaved draft
     const { router } = await renderApp("/c/array");
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Draft for Array.");
 
     await act(() => router.navigate({ to: "/c/$slug", params: { slug: "hash-map" } }));
@@ -86,14 +86,14 @@ describe("concept page", () => {
     expect(screen.queryByRole("button", { name: "Save" })).not.toBeInTheDocument();
     expect(screen.getByText("Hash map text.")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Hash map text.");
     expect(requests.filter((request) => request.method === "PUT")).toEqual([]);
   });
 
   it("keeps the concept and an open draft when a refresh fails, and says so", async () => {
     const { client } = await renderApp("/c/array");
-    await userEvent.click(screen.getByRole("button", { name: "✎ Edit" }));
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
     await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " Mine.");
     answer = (url, method) =>
       method === "GET" && new URL(url, "http://localhost").pathname === "/api/concept"

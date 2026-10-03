@@ -1,10 +1,15 @@
-import { useState } from "react";
+import { CircleX, Pencil, TriangleAlert } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useHotkeys } from "react-hotkeys-hook";
 import type { ConceptData } from "../../server/types.ts";
 import { ApiError } from "../api.ts";
 import { useConfirmLeave } from "../hooks/useConfirmLeave.ts";
+import { shortcut } from "../lib/keys.ts";
 import { CodeEditor } from "./CodeEditor.tsx";
 import { Markdown } from "./Markdown.tsx";
+import { Alert, AlertDescription } from "./ui/alert.tsx";
 import { Button } from "./ui/button.tsx";
+import { Kbd } from "./ui/kbd.tsx";
 
 export const CONFLICT_MESSAGE =
   "The README changed on disk while you were editing. Your text is still here: press Save again to put it in My explanation, or Cancel to keep the version on disk.";
@@ -17,12 +22,25 @@ export class ExplanationConflict extends ApiError {
   }
 }
 
+/** Where the "My explanation" draft stands, for the page's status bar. */
+export interface DraftState {
+  open: boolean;
+  /** The draft differs from the text it started from. */
+  dirty: boolean;
+  saving: boolean;
+  /** The last Save failed (a conflict included) and no Save has succeeded since. */
+  failed: boolean;
+}
+
+export const CLOSED_DRAFT: DraftState = { open: false, dirty: false, saving: false, failed: false };
+
 interface ConceptViewProps {
   concept: ConceptData;
   /** The concept page can edit "My explanation"; the work view's side pane cannot. */
   editable: boolean;
   onConcept?: (slug: string) => void;
   save?: (text: string) => Promise<void>;
+  onDraft?: (draft: DraftState) => void;
 }
 
 interface ExplanationProps {
@@ -33,6 +51,7 @@ interface ExplanationProps {
   readmePath: string;
   editable: boolean;
   save?: (text: string) => Promise<void>;
+  onDraft?: (draft: DraftState) => void;
 }
 
 /** Why an open draft cannot be saved right now, or null. The draft stays open either way, so no text is lost. */
@@ -44,13 +63,20 @@ function unsavable(text: string | null, broken: boolean): string | null {
   return null;
 }
 
-function ExplanationSection({ text, broken, readmePath, editable, save }: ExplanationProps) {
+function ExplanationSection({ text, broken, readmePath, editable, save, onDraft }: ExplanationProps) {
   const [draft, setDraft] = useState<string | null>(null);
   /** The section's text on disk that the draft is based on: what it started from, or what a conflict last reported. */
   const [base, setBase] = useState("");
   const [error, setError] = useState<{ message: string; issues: string[] } | null>(null);
   const [saving, setSaving] = useState(false);
   useConfirmLeave(draft !== null && draft !== base, "You have unsaved changes in My explanation. Leave anyway?");
+
+  const open = draft !== null;
+  const dirty = draft !== null && draft !== base;
+  const failed = error !== null;
+  useEffect(() => {
+    onDraft?.({ open, dirty, saving, failed });
+  }, [onDraft, open, dirty, saving, failed]);
 
   const submit = async () => {
     if (draft === null || !save || text === null || broken) return;
@@ -75,10 +101,17 @@ function ExplanationSection({ text, broken, readmePath, editable, save }: Explan
     }
   };
 
+  // ⌘S / Ctrl+S saves the open draft, also from inside the editor.
+  const latestSubmit = useRef(submit);
+  useLayoutEffect(() => {
+    latestSubmit.current = submit;
+  });
+  useHotkeys("mod+s", () => void latestSubmit.current(), { enabled: open, preventDefault: true, enableOnFormTags: true, enableOnContentEditable: true });
+
   if (draft === null && broken) return null;
   if (draft === null && text === null) {
     return (
-      <p className="my-4 text-sm text-amber-700 dark:text-amber-400">
+      <p className="my-4 text-sm text-warning">
         This concept has no "My explanation" section. Run <code>pnpm check</code>.
       </p>
     );
@@ -86,89 +119,103 @@ function ExplanationSection({ text, broken, readmePath, editable, save }: Explan
   const problem = draft === null ? null : unsavable(text, broken);
 
   return (
-    <section aria-labelledby="my-explanation" className="prose prose-sm max-w-none">
-      <h2 id="my-explanation" className="flex items-center gap-2">
-        My explanation
+    <section aria-labelledby="my-explanation" className="not-prose my-6 rounded-lg border bg-card">
+      <div className="flex items-center gap-2 border-b px-4 py-2">
+        <h2 id="my-explanation" className="text-sm font-semibold">
+          My explanation
+        </h2>
         {editable && draft === null && (
           <Button
             size="sm"
             variant="outline"
+            className="ml-auto"
             onClick={() => {
               setDraft(text ?? "");
               setBase(text ?? "");
             }}
           >
-            ✎ Edit
+            <Pencil aria-hidden />
+            Edit
           </Button>
         )}
-      </h2>
-      {draft === null ? (
-        text ? (
-          <Markdown source={text} readmePath={readmePath} />
+      </div>
+      <div className="p-4">
+        {draft === null ? (
+          text ? (
+            <Markdown source={text} readmePath={readmePath} />
+          ) : (
+            <p className="text-muted-foreground italic">{editable ? "Not written yet. Explain the concept in your own words." : "Not written yet."}</p>
+          )
         ) : (
-          <p className="italic text-neutral-500">{editable ? "Not written yet. Explain the concept in your own words." : "Not written yet."}</p>
-        )
-      ) : (
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="h-64 overflow-hidden rounded-md border border-neutral-300 dark:border-neutral-700">
-              <CodeEditor lang="md" value={draft} onChange={setDraft} ariaLabel="My explanation" className="h-full" autoFocus />
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="h-64 overflow-hidden rounded-md border">
+                <CodeEditor lang="md" value={draft} onChange={setDraft} ariaLabel="My explanation" className="h-full" autoFocus />
+              </div>
+              <section aria-label="Preview" className="h-64 overflow-y-auto rounded-md border border-dashed p-3">
+                <Markdown source={draft} readmePath={readmePath} />
+              </section>
             </div>
-            <section aria-label="Preview" className="h-64 overflow-y-auto rounded-md border border-dashed border-neutral-300 p-2 dark:border-neutral-700">
-              <Markdown source={draft} readmePath={readmePath} />
-            </section>
-          </div>
-          {problem && (
-            <p role="alert" className="rounded-md border border-amber-300 bg-amber-50 p-2 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-              {problem}
-            </p>
-          )}
-          {error && (
-            <div role="alert" className="rounded-md border border-red-300 bg-red-50 p-2 text-sm dark:border-red-800 dark:bg-red-950">
-              {error.issues.length > 0 ? (
-                <ul className="list-disc pl-5">
-                  {error.issues.map((issue) => (
-                    <li key={issue}>{issue}</li>
-                  ))}
-                </ul>
-              ) : (
-                error.message
-              )}
+            {problem && (
+              <Alert variant="warning">
+                <TriangleAlert aria-hidden />
+                <AlertDescription className="text-foreground">{problem}</AlertDescription>
+              </Alert>
+            )}
+            {error && (
+              <Alert variant="destructive">
+                <CircleX aria-hidden />
+                <AlertDescription>
+                  {error.issues.length > 0 ? (
+                    <ul className="list-disc pl-5">
+                      {error.issues.map((issue) => (
+                        <li key={issue}>{issue}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    error.message
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setDraft(null);
+                  setError(null);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button aria-label="Save" onClick={() => void submit()} disabled={saving || problem !== null}>
+                {saving ? "Saving…" : "Save"}
+                <Kbd>{shortcut("save")}</Kbd>
+              </Button>
             </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setDraft(null);
-                setError(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button onClick={() => void submit()} disabled={saving || problem !== null}>
-              {saving ? "Saving…" : "Save"}
-            </Button>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </section>
   );
 }
 
-export function ConceptView({ concept, editable, onConcept, save }: ConceptViewProps) {
+export function ConceptView({ concept, editable, onConcept, save, onDraft }: ConceptViewProps) {
   const broken = concept.readmeError !== null;
   return (
     <article>
       {broken ? (
-        <p role="alert" className="text-sm text-red-600">
-          {concept.readme}: {concept.readmeError}
-        </p>
+        <Alert variant="destructive">
+          <TriangleAlert aria-hidden />
+          <AlertDescription>
+            {concept.readme}: {concept.readmeError}
+          </AlertDescription>
+        </Alert>
       ) : (
         <Markdown source={concept.before} readmePath={concept.readme} onConcept={onConcept} />
       )}
       {/* Always in the same place, so a draft open in it survives a README that breaks or loses the section on disk. */}
-      <ExplanationSection text={broken ? null : concept.explanation} broken={broken} readmePath={concept.readme} editable={editable} save={save} />
+      <ExplanationSection text={broken ? null : concept.explanation} broken={broken} readmePath={concept.readme} editable={editable} save={save} onDraft={onDraft} />
       {!broken && <Markdown source={concept.after} readmePath={concept.readme} onConcept={onConcept} />}
     </article>
   );

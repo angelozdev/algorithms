@@ -72,11 +72,11 @@ test("My explanation is saved into the README and nothing else changes", async (
   const before = readFileSync(repoFile("concepts/hash-map/README.md"), "utf8");
   const text = "Un mapa hash convierte la clave en una posición. 🎟️";
   await page.goto("/c/hash-map");
-  await page.getByRole("button", { name: "✎ Edit" }).click();
+  await page.getByRole("button", { name: "Edit" }).click();
   await page.getByRole("textbox", { name: "My explanation" }).click();
   await page.keyboard.insertText(text);
   await page.getByRole("button", { name: "Save", exact: true }).click();
-  await expect(page.getByRole("button", { name: "✎ Edit" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
   await expect(page.getByText(text)).toBeVisible();
   expect(readFileSync(repoFile("concepts/hash-map/README.md"), "utf8")).toBe(
     before.replace(`${EXPLANATION_NOTE}\n\n## Problems`, `${EXPLANATION_NOTE}\n\n${text}\n\n## Problems`),
