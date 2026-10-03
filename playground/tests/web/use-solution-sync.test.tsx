@@ -133,6 +133,7 @@ describe("useSolutionSync", () => {
     source.load.mockRejectedValueOnce(new Error("disk unreadable"));
     act(() => result.current.diskChanged("v:someone-else"));
     await settle();
+    expect(source.load).toHaveBeenCalledTimes(2); // once on mount, once for this reload attempt
     expect(result.current.code).toBe("start");
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("disk unreadable"));
   });
