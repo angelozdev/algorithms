@@ -1,149 +1,87 @@
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { useState } from "react";
-import type { HomeData, HomeProblem, ItemStatus } from "../../server/types.ts";
+import { getRouteApi, useNavigate } from "@tanstack/react-router";
+import { Inbox, TriangleAlert } from "lucide-react";
+import type { HomeData } from "../../server/types.ts";
 import { homeQuery } from "../api.ts";
-import { StatusIcon } from "../components/StatusIcon.tsx";
-import { targetLink } from "../links.ts";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
+import { Skeleton } from "../components/ui/skeleton.tsx";
+import { ConceptList } from "../home/ConceptList.tsx";
+import { ContinueCards } from "../home/ContinueCards.tsx";
+import { HomeHeader } from "../home/HomeHeader.tsx";
+import { conceptRows, continueItems, problemList } from "../home/model.ts";
+import { ProblemTable } from "../home/ProblemTable.tsx";
+import type { HomeSearch, SortKey } from "../home/search.ts";
+import { SectionTitle } from "../home/SectionTitle.tsx";
 
-interface Item {
-  id: string;
-  title: string;
-  status: ItemStatus;
-  inProgress: boolean;
-  error: string | null;
-  detail?: string | null;
+const route = getRouteApi("/");
+
+export interface HomeViewProps {
+  data: HomeData;
+  search: HomeSearch;
+  /** Changes part of the view; the page writes it to the URL. */
+  onSearch(change: Partial<HomeSearch>): void;
 }
 
-const sectionTitle = "mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500";
+export function HomeView({ data, search, onSearch }: HomeViewProps) {
+  const list = problemList(data, search);
+  const solved = data.problems.filter((problem) => problem.status === "solved").length;
+  const sortBy = (key: SortKey) => onSearch(search.sort === key ? { dir: search.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: "asc" });
 
-function ItemRow({ item }: { item: Item }) {
   return (
-    <li className="flex items-baseline gap-2 py-0.5 text-sm">
-      <StatusIcon status={item.status} inProgress={item.inProgress} />
-      <Link {...targetLink(item.id)} className="hover:underline">
-        {item.id} {item.title}
-      </Link>
-      {item.detail && <span className="text-xs text-neutral-500">· {item.detail}</span>}
-      {item.error && (
-        <span className="text-xs text-amber-700 dark:text-amber-400" title={item.error}>
-          ⚠ {item.error}
-        </span>
-      )}
-    </li>
+    <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-6 py-6 text-[13px]">
+      <HomeHeader solved={solved} total={data.problems.length} query={search.q} onQuery={(q) => onSearch({ q })} />
+      <ContinueCards items={continueItems(data, search.q)} />
+      <section aria-labelledby="home-problems" className="mb-8">
+        <SectionTitle id="home-problems">Problems</SectionTitle>
+        {data.problems.length === 0 ? (
+          <p className="flex items-center gap-2 text-muted-foreground">
+            <Inbox aria-hidden className="size-4" />
+            No problems yet. Paste one into Claude Code to start.
+          </p>
+        ) : (
+          <ProblemTable groups={list.groups} grouped={search.group !== "none"} concepts={data.concepts} sort={search.sort} dir={search.dir} onSort={sortBy} />
+        )}
+      </section>
+      <ConceptList rows={conceptRows(data, search.q)} hasConcepts={data.concepts.length > 0} />
+    </main>
   );
 }
 
-export function HomeView({ data }: { data: HomeData }) {
-  const [search, setSearch] = useState("");
-  const query = search.trim().toLowerCase();
-  const matches = (id: string, title: string) =>
-    query === "" || id.toLowerCase().includes(query) || title.toLowerCase().includes(query);
-  const problems = new Map(data.problems.map((p) => [p.id, p]));
-  const exercises = data.concepts.flatMap((c) => c.exercises);
-  const inProgress: Item[] = [...data.problems, ...exercises].filter((item) => item.inProgress && matches(item.id, item.title));
-  const solved = data.problems.filter((p) => p.status === "solved").length;
-  const concepts = data.concepts.filter((c) => matches(c.slug, c.title) || c.exercises.some((e) => matches(e.id, e.title)));
-
+function HomeSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-6 py-8">
-      <header className="mb-8 flex items-center gap-4">
-        <h1 className="text-xl font-semibold">Algorithms</h1>
-        <input
-          type="search"
-          aria-label="Search"
-          placeholder="Search…"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="h-8 w-56 rounded-md border border-neutral-300 bg-transparent px-2 text-sm dark:border-neutral-700"
-        />
-        <span className="ml-auto text-sm text-neutral-500">
-          {solved}/{data.problems.length} solved
-        </span>
-      </header>
-
-      {inProgress.length > 0 && (
-        <section aria-labelledby="home-in-progress" className="mb-8">
-          <h2 id="home-in-progress" className={sectionTitle}>
-            In progress
-          </h2>
-          <ul>
-            {inProgress.map((item) => (
-              <ItemRow key={item.id} item={item} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      <section aria-labelledby="home-problems" className="mb-8">
-        <h2 id="home-problems" className={sectionTitle}>
-          Problems
-        </h2>
-        {data.problems.length === 0 && <p className="text-sm text-neutral-500">No problems yet. Paste one into Claude Code to start.</p>}
-        {data.groups.map((group) => {
-          const items = group.ids
-            .map((id) => problems.get(id))
-            .filter((p): p is HomeProblem => p !== undefined && matches(p.id, p.title));
-          if (items.length === 0) return null;
-          return (
-            <div key={group.pattern} className="mb-4">
-              <h3 className="mb-1 text-sm font-medium">{group.pattern}</h3>
-              <ul>
-                {items.map((p) => (
-                  <ItemRow key={p.id} item={{ ...p, detail: p.difficulty }} />
-                ))}
-              </ul>
-            </div>
-          );
-        })}
-      </section>
-
-      <section aria-labelledby="home-concepts" className="mb-8">
-        <h2 id="home-concepts" className={sectionTitle}>
-          Concepts
-        </h2>
-        {data.concepts.length === 0 && <p className="text-sm text-neutral-500">No concepts yet.</p>}
-        <ul>
-          {concepts.map((c) => {
-            const done = c.exercises.filter((e) => e.status === "solved").length;
-            const rows = c.exercises.filter((e) => matches(e.id, e.title));
-            return (
-              <li key={c.slug} className="py-0.5 text-sm">
-                <Link to="/c/$slug" params={{ slug: c.slug }} className="hover:underline">
-                  {c.title}
-                </Link>
-                <span className="text-xs text-neutral-500">
-                  {" "}
-                  · {c.status} · {done}/{c.exercises.length} exercises
-                </span>
-                {c.error && <span className="ml-2 text-xs text-amber-700 dark:text-amber-400">⚠ {c.error}</span>}
-                {rows.length > 0 && (
-                  <ul className="ml-5">
-                    {rows.map((e) => (
-                      <ItemRow key={e.id} item={e} />
-                    ))}
-                  </ul>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-
-      <p className="text-xs text-neutral-500">○ todo · ⏳ in progress · ✅ solved · 👁 revealed</p>
+    <main aria-busy="true" aria-label="Loading" className="mx-auto w-full max-w-5xl flex-1 px-6 py-6">
+      <Skeleton className="mb-6 h-8 w-80" />
+      <div className="mb-8 grid grid-cols-3 gap-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-20" />
+        ))}
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton key={i} className="h-6" />
+        ))}
+      </div>
     </main>
   );
 }
 
 export function HomePage() {
   const home = useQuery(homeQuery());
-  if (home.isPending) return <p className="p-6 text-sm text-neutral-500">Loading…</p>;
+  const search = route.useSearch();
+  const navigate = useNavigate({ from: "/" });
+  // The search box replaces the history entry, so typing does not add one per keystroke. Other changes push one,
+  // so Back returns to the previous view.
+  const onSearch = (change: Partial<HomeSearch>) => void navigate({ search: (current) => ({ ...current, ...change }), replace: "q" in change });
+
+  if (home.isPending) return <HomeSkeleton />;
   if (home.isError) {
     return (
-      <p role="alert" className="p-6 text-sm text-red-600">
-        {home.error.message}
-      </p>
+      <Alert variant="destructive" className="m-6 w-auto">
+        <TriangleAlert aria-hidden />
+        <AlertTitle>Could not load the problems</AlertTitle>
+        <AlertDescription>{home.error.message}</AlertDescription>
+      </Alert>
     );
   }
-  return <HomeView data={home.data} />;
+  return <HomeView data={home.data} search={search} onSearch={onSearch} />;
 }

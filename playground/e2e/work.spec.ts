@@ -7,7 +7,7 @@ test.beforeEach(() => resetRepo());
 
 test("goes from the home page to a green run with ⌘↵", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("link", { name: "lc-0001 Two Sum" }).click();
+  await page.getByRole("link", { name: "Two Sum" }).click();
   await expect(page).toHaveURL(/\/p\/lc-0001$/);
   await expect(page.getByRole("heading", { name: "1. Two Sum" })).toBeVisible();
   await replaceCode(page, TWO_SUM_PY);
