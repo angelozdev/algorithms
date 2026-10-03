@@ -8,6 +8,12 @@ import { Badge } from "../components/ui/badge.tsx";
 
 export function ConceptPage() {
   const { slug } = useParams({ from: "/c/$slug" });
+  // Keyed by slug, like the work view: a "My explanation" draft belongs to one concept, and going to another
+  // concept must start a fresh page instead of carrying the draft (and its Save) over to it.
+  return <ConceptContent key={slug} slug={slug} />;
+}
+
+function ConceptContent({ slug }: { slug: string }) {
   const queryClient = useQueryClient();
   const concept = useQuery(conceptQuery(slug));
 
