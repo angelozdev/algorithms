@@ -105,3 +105,15 @@ export function scanRepo(root: string): RepoModel {
   }
   return { root, problems, exercises, concepts };
 }
+
+/**
+ * In progress: status solving, or todo with a solution file (created by pnpm watch or the playground).
+ * The reminder hook (.claude/hooks/reminder.mjs) applies the same rule in plain JavaScript.
+ */
+export function isInProgress(entry: Pick<DocEntry, "dir" | "data">): boolean {
+  if (entry.data.status === "solving") return true;
+  return (
+    entry.data.status === "todo" &&
+    ["solution.py", "solution.ts"].some((name) => existsSync(path.join(entry.dir, name)))
+  );
+}
