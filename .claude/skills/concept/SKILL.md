@@ -69,7 +69,7 @@ related: []
 5. **Sync:** `pnpm -s sync && pnpm -s check`.
 6. **Reply (in Spanish):**
    - A short summary of the idea.
-   - The exercise list, each with `pnpm watch <slug>/<NN> --open`.
+   - The exercise list, each with `pnpm play <slug>/<NN>` (web) or `pnpm watch <slug>/<NN> --open` (terminal).
    - An offer to walk through the Intuition together.
    - If they accept, teach Socratically: ask, wait, and build on their answer. Never lecture for more than a few lines at a time.
 

@@ -44,6 +44,12 @@ const WRITE_REASON =
 const DISCARD_REASON =
   "Blocked by the study rules (CLAUDE.md rule 2): this command can discard or delete the user's uncommitted solution work " +
   "(solution.py / solution.ts under problems/ or concepts/). Do not run it; if it is really needed, the user must run it themselves.";
+const PLAYGROUND_REASON =
+  "Blocked by the study rules (CLAUDE.md rule 2): the playground API (pnpm play) reads and writes the user's solution files " +
+  'and their "My explanation". Do not call /api/solution or /api/concept/explanation. If the user asked for help, follow the hint skill.';
+/** Playground routes that touch the user's files (reading a solution creates its stub). */
+const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation)\b/;
+const HTTP_CLIENTS = new Set(["curl", "wget", "http", "https", "xh", "xhs"]);
 
 function deny(reason) {
   process.stdout.write(
@@ -441,7 +447,7 @@ function deletesSolutions(command, segmentWords, where) {
   });
 }
 
-/** Does an interpreter in stage `index` run inline or stdin code that names a solution file? */
+/** Does an interpreter in stage `index` run inline or stdin code that names a solution file or the playground API? */
 function inlineCodeWrites(segment, index, command, stage) {
   if (!INTERPRETER.test(command.name)) return false;
   const { args } = command;
@@ -456,7 +462,7 @@ function inlineCodeWrites(segment, index, command, stage) {
   const script = operands(args).filter((arg) => !code.includes(arg));
   const readsStdin = args.includes("-") || (index > 0 && code.length === 0 && script.length === 0);
   if (readsStdin) code.push(...segment.stages.slice(0, index).flatMap((previous) => previous.words));
-  return code.some((text) => MENTIONS_SOLUTION.test(text));
+  return code.some((text) => MENTIONS_SOLUTION.test(text) || PLAYGROUND_FILES.test(text));
 }
 
 /** The segment as text for BASH_WRITES: words with spaces inside (messages, code) become "_". */
@@ -501,6 +507,7 @@ function segmentReason(segment, where) {
     if ((command.name === "git" && gitDiscards(command.args, where)) || deletesSolutions(command, segmentWords, where)) {
       return DISCARD_REASON;
     }
+    if (HTTP_CLIENTS.has(command.name) && command.args.some((arg) => PLAYGROUND_FILES.test(arg))) return PLAYGROUND_REASON;
     if (inlineCodeWrites(segment, index, command, stage)) return WRITE_REASON;
   }
   const text = segmentText(segment);

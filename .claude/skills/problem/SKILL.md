@@ -109,7 +109,7 @@ Run `pnpm -s sync && pnpm -s check`, and fix every error you introduced.
 
 Only this:
 
-- The problem title, its folder, and how to start: `pnpm watch <id> --open` (add `--lang ts` for TypeScript).
+- The problem title, its folder, and how to start: `pnpm play <id>` (web) or `pnpm watch <id> --open` (terminal; add `--lang ts` for TypeScript).
 - The concepts, one per line: `- two-pointers — learning` / `- greedy — **falta** → ¿lo creamos?`
 - The prerequisites that are not mastered, if any.
 
