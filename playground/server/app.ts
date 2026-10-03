@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { contentRoot } from "../../runner/src/paths.ts";
+import { conceptRoutes } from "./concepts.ts";
 import { formCsrf, hostGuard } from "./guard.ts";
 import { solutionRoutes } from "./solutions.ts";
 import { targetRoutes } from "./targets.ts";
@@ -15,7 +16,8 @@ export function createApp(ctx: ServerContext) {
     .use("/api/*", hostGuard, formCsrf)
     .get("/api/health", (c) => c.json({ ok: true as const }, 200))
     .route("/api", targetRoutes(ctx.root))
-    .route("/api", solutionRoutes(ctx.root));
+    .route("/api", solutionRoutes(ctx.root))
+    .route("/api", conceptRoutes(ctx.root));
   app.onError((error, c) => {
     if (error instanceof HTTPException) return error.getResponse();
     console.error(error);
