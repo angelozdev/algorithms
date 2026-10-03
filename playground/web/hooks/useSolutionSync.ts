@@ -39,6 +39,8 @@ interface Tracked {
   base: string;
   /** The editor has text that is not on disk yet (true until a save of it answers). */
   dirty: boolean;
+  /** The last save threw (server down) and no save has started since: the text is only in memory. */
+  failed: boolean;
   conflict: SolutionData | null;
 }
 
@@ -51,7 +53,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
   const [state, setState] = useState<SaveState>("loading");
   const [error, setError] = useState<string | null>(null);
   const [conflict, setConflict] = useState<SolutionData | null>(null);
-  const tracked = useRef<Tracked>({ loaded: false, code: "", base: "", dirty: false, conflict: null });
+  const tracked = useRef<Tracked>({ loaded: false, code: "", base: "", dirty: false, failed: false, conflict: null });
   const queue = useRef<Promise<boolean>>(Promise.resolve(true));
   const latest = useRef({ source, onReloaded });
   useEffect(() => {
@@ -71,6 +73,12 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
       const t = tracked.current;
       if (t.conflict && t.code !== t.conflict.code) {
         toast.error("Your last edit was not saved: the file changed on disk.");
+      } else if (t.loaded && t.dirty && t.failed && !t.conflict && !debounced.isPending()) {
+        // A failed save is only retried by the next edit, ⌘S, Run or a reconnect, none of which can happen
+        // any more: try once more, so a second failure reaches the after-unmount toast in save(). A pending
+        // debounce is still visible here (this cleanup runs before useDebouncedCallback's flushOnExit) and
+        // sends itself. `debounced` and `queueSave` are stable, so the first render's references are fine.
+        void queueSave();
       }
     };
   }, []);
@@ -80,7 +88,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     source.load().then(
       (data) => {
         if (cancelled) return;
-        tracked.current = { loaded: true, code: data.code, base: data.version, dirty: false, conflict: null };
+        tracked.current = { loaded: true, code: data.code, base: data.version, dirty: false, failed: false, conflict: null };
         setCode(data.code);
         setState("saved");
       },
@@ -100,6 +108,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
     if (!t.loaded || t.conflict) return false;
     if (!t.dirty) return true;
     const sent = t.code;
+    t.failed = false;
     setState("saving");
     try {
       const result = await latest.current.source.save(sent, t.base);
@@ -120,6 +129,7 @@ export function useSolutionSync(source: SolutionSource, onReloaded?: () => void)
       setState(t.dirty ? "pending" : "saved");
       return !t.dirty;
     } catch (reason) {
+      t.failed = true;
       if (!mounted.current) {
         toast.error(`Your last edit was not saved: ${(reason as Error).message}`);
         return false;

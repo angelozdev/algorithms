@@ -19,6 +19,7 @@ import { Badge } from "../components/ui/badge.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.tsx";
 import { useConnected, useRepoEvents } from "../events.tsx";
+import { useConfirmLeave } from "../hooks/useConfirmLeave.ts";
 import { type SaveState, useSolutionSync } from "../hooks/useSolutionSync.ts";
 import { pickLang, readRememberedLang, rememberLang } from "../lang.ts";
 import { cn } from "../lib/cn.ts";
@@ -42,7 +43,9 @@ function WorkPage({ id }: { id: string }) {
   const target = useQuery(targetQuery(id));
   const [chosen, setChosen] = useState<Lang | null>(null);
   if (target.isPending) return <p className="p-6 text-sm text-neutral-500">Loading…</p>;
-  if (target.isError) {
+  // A failed refresh (a live event refetches the target) keeps the last data: unmounting the workspace for it
+  // would throw away the editor and any text it has not saved yet.
+  if (target.isError && !target.data) {
     if (target.error instanceof ApiError && target.error.status === 404) {
       return <NotFound message={`There is no problem or exercise "${id}".`} />;
     }
@@ -108,8 +111,8 @@ function WorkHeader(props: {
   running: boolean;
   canRun: boolean;
   onRun(): void;
-  /** A conflict banner is open: switching the language would abandon it without saving. */
-  conflicted: boolean;
+  /** Why the language cannot change now (the editor has text that is not on disk), or null. */
+  langLock: string | null;
 }) {
   const { target } = props;
   return (
@@ -131,10 +134,10 @@ function WorkHeader(props: {
       <div className="ml-auto flex items-center gap-3">
         <Tabs value={props.lang} onValueChange={(value) => props.onLang(value as Lang)}>
           <TabsList aria-label="Language" className="border-b-0">
-            <TabsTrigger value="py" disabled={props.conflicted} title={props.conflicted ? "Resolve the conflict first" : undefined} className={cn(props.conflicted && "cursor-not-allowed opacity-50")}>
+            <TabsTrigger value="py" disabled={props.langLock !== null} title={props.langLock ?? undefined} className={cn(props.langLock && "cursor-not-allowed opacity-50")}>
               py
             </TabsTrigger>
-            <TabsTrigger value="ts" disabled={props.conflicted} title={props.conflicted ? "Resolve the conflict first" : undefined} className={cn(props.conflicted && "cursor-not-allowed opacity-50")}>
+            <TabsTrigger value="ts" disabled={props.langLock !== null} title={props.langLock ?? undefined} className={cn(props.langLock && "cursor-not-allowed opacity-50")}>
               ts
             </TabsTrigger>
           </TabsList>
@@ -214,6 +217,11 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
     [target.id, lang],
   );
   const sync = useSolutionSync(source, () => toast("Reloaded from disk"));
+  // Text only in memory: a conflict waits for the user, and a failed save is only retried by an edit, ⌘S or Run.
+  // Leaving now would lose it, so the language switch is locked and leaving the page asks first.
+  const unsaved = sync.code !== null && (sync.state === "conflict" || sync.state === "error");
+  const langLock = !unsaved ? null : sync.state === "conflict" ? "Resolve the conflict first" : "Not saved yet: press ⌘S to retry first";
+  useConfirmLeave(unsaved, `You have unsaved changes in solution.${lang}. Leave anyway?`);
   const [tab, setTab] = useState<PanelTab>("tests");
   // Kept across a re-run (and a failed one) so the previous result stays visible, dimmed, while running.
   const [result, setResult] = useState<RunResult | null>(null);
@@ -299,7 +307,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         running={run.isPending}
         canRun={canRun}
         onRun={actions.run}
-        conflicted={sync.conflict !== null}
+        langLock={langLock}
       />
       {sync.conflict && <ConflictBanner file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={() => void sync.keepMine()} />}
       {sync.state === "error" && sync.error && (

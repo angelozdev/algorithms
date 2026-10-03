@@ -223,6 +223,54 @@ describe("useSolutionSync", () => {
     expect(toast.error).toHaveBeenCalledWith(expect.stringContaining("server offline"));
   });
 
+  it("tries a failed save once more when the editor closes, and reports it if that fails too", async () => {
+    const { file, source } = fakeFile("start");
+    source.save.mockRejectedValue(new Error("server offline"));
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("typed while the server was down"));
+    await wait(AUTOSAVE_MS);
+    expect(result.current.state).toBe("error");
+    expect(source.save).toHaveBeenCalledTimes(1);
+    unmount();
+    await settle();
+    expect(source.save).toHaveBeenCalledTimes(2);
+    expect(file.saves).toEqual([]);
+    expect(toast.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("server offline"));
+  });
+
+  it("saves a failed edit when the editor closes once the server answers again", async () => {
+    const { file, source } = fakeFile("start");
+    source.save.mockRejectedValueOnce(new Error("server offline"));
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("typed while the server was down"));
+    await wait(AUTOSAVE_MS);
+    expect(result.current.state).toBe("error");
+    unmount();
+    await settle();
+    expect(file.saves).toEqual(["typed while the server was down"]);
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
+  it("does not send a save twice when the editor closes while it is on its way", async () => {
+    const { source } = fakeFile("start");
+    let fail = (_reason: Error) => {};
+    source.save.mockImplementationOnce(
+      () =>
+        new Promise<SaveResult>((_resolve, reject) => {
+          fail = reject;
+        }),
+    );
+    const { result, unmount } = await mount(source);
+    act(() => result.current.edit("typed while the server was going down"));
+    await wait(AUTOSAVE_MS);
+    expect(result.current.state).toBe("saving");
+    unmount();
+    fail(new Error("server offline"));
+    await settle();
+    expect(source.save).toHaveBeenCalledTimes(1);
+    expect(toast.error).toHaveBeenCalledExactlyOnceWith(expect.stringContaining("server offline"));
+  });
+
   it("saves the last edit when the tab closes", async () => {
     const { file, source } = fakeFile("start");
     const { result } = await mount(source);
