@@ -100,10 +100,32 @@ ${EXPLANATION_NOTE}
 <!-- /auto -->
 `;
 
+const SECOND_README = `---
+id: lc-0020
+title: Valid Parentheses
+source: leetcode
+url: https://leetcode.com/problems/valid-parentheses/
+difficulty: easy
+patterns: [stack]
+concepts: [stack]
+status: solved
+hints: 0
+solution_revealed: false
+solved_in: [py]
+complexity: null
+---
+# 20. Valid Parentheses
+
+## Statement
+
+Say whether every bracket in \`s\` is closed in the right order.
+`;
+
 const FILES: Record<string, string> = {
   "problems/lc-0001-two-sum/README.md": PROBLEM_README,
   "problems/lc-0001-two-sum/cases.json": `${JSON.stringify(CASES, null, 2)}\n`,
   "concepts/hash-map/README.md": CONCEPT_README,
+  "problems/lc-0020-valid-parentheses/README.md": SECOND_README,
 };
 
 /** Puts the e2e repo back in its starting state without deleting folders the server is watching. */

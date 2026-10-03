@@ -105,6 +105,44 @@ describe("HomeView", () => {
     expect(screen.getByText(/No problems yet/)).toBeInTheDocument();
     expect(screen.getByText("No concepts yet.")).toBeInTheDocument();
   });
+
+  it("regroups the problems by status", async () => {
+    await renderWithRouter(<Harness />);
+    await userEvent.click(screen.getByRole("combobox", { name: "Group by" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Status" }));
+    expect(groupNames()).toEqual(["In progress1", "To do1", "Solved1"]);
+  });
+
+  it("shows only what is still pending", async () => {
+    await renderWithRouter(<Harness />);
+    await userEvent.click(screen.getByRole("radio", { name: "Pending" }));
+    expect(rowTitles()).toEqual(["Remove Duplicates", "lc-0030-broken"]);
+    expect(screen.getByRole("radio", { name: "Pending" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("filters by difficulty, counting what each choice would show", async () => {
+    await renderWithRouter(<Harness />);
+    await userEvent.click(screen.getByRole("button", { name: "Difficulty" }));
+    await userEvent.click(await screen.findByRole("option", { name: "Easy 2" }));
+    expect(rowTitles()).toEqual(["Two Sum", "Remove Duplicates"]);
+    expect(screen.getByRole("button", { name: /^Difficulty/ })).toHaveTextContent("Easy");
+  });
+
+  it("Reset clears the search and the filters but keeps the grouping", async () => {
+    await renderWithRouter(<Harness initial={{ ...DEFAULT_SEARCH, group: "status", q: "two", status: "solved" }} />);
+    expect(rowTitles()).toEqual(["Two Sum"]);
+    await userEvent.click(screen.getByRole("button", { name: "Reset" }));
+    expect(screen.getByRole("searchbox", { name: "Search" })).toHaveValue("");
+    expect(groupNames()).toEqual(["In progress1", "To do1", "Solved1"]);
+    expect(screen.queryByRole("button", { name: "Reset" })).not.toBeInTheDocument();
+  });
+
+  it("says when nothing matches and clears the filters on request", async () => {
+    await renderWithRouter(<Harness initial={{ ...DEFAULT_SEARCH, pattern: ["graphs"] }} />);
+    expect(screen.getByText("No problems match")).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    expect(rowTitles()).toEqual(["Two Sum", "Remove Duplicates", "lc-0030-broken"]);
+  });
 });
 
 describe("home page", () => {

@@ -1,16 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
-import { Inbox, TriangleAlert } from "lucide-react";
+import { Inbox, SearchX, TriangleAlert } from "lucide-react";
 import type { HomeData } from "../../server/types.ts";
 import { homeQuery } from "../api.ts";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
+import { Button } from "../components/ui/button.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { ConceptList } from "../home/ConceptList.tsx";
 import { ContinueCards } from "../home/ContinueCards.tsx";
 import { HomeHeader } from "../home/HomeHeader.tsx";
 import { conceptRows, continueItems, problemList } from "../home/model.ts";
 import { ProblemTable } from "../home/ProblemTable.tsx";
-import type { HomeSearch, SortKey } from "../home/search.ts";
+import { ProblemToolbar } from "../home/ProblemToolbar.tsx";
+import { clearFilters, type HomeSearch, type SortKey } from "../home/search.ts";
 import { SectionTitle } from "../home/SectionTitle.tsx";
 
 const route = getRouteApi("/");
@@ -39,7 +41,20 @@ export function HomeView({ data, search, onSearch }: HomeViewProps) {
             No problems yet. Paste one into Claude Code to start.
           </p>
         ) : (
-          <ProblemTable groups={list.groups} grouped={search.group !== "none"} concepts={data.concepts} sort={search.sort} dir={search.dir} onSort={sortBy} />
+          <>
+            <ProblemToolbar data={data} search={search} onSearch={onSearch} />
+            {list.matching === 0 ? (
+              <div className="flex flex-col items-center gap-2 rounded-lg border border-dashed py-10 text-center">
+                <SearchX aria-hidden className="size-5 text-muted-foreground" />
+                <p className="font-medium">No problems match</p>
+                <Button variant="outline" size="sm" onClick={() => onSearch(clearFilters(search))}>
+                  Clear filters
+                </Button>
+              </div>
+            ) : (
+              <ProblemTable groups={list.groups} grouped={search.group !== "none"} concepts={data.concepts} sort={search.sort} dir={search.dir} onSort={sortBy} />
+            )}
+          </>
         )}
       </section>
       <ConceptList rows={conceptRows(data, search.q)} hasConcepts={data.concepts.length > 0} />
