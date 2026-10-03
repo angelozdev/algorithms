@@ -95,13 +95,13 @@ test("after pnpm play restarts, the same tab reconnects, saves what was typed me
   await page.keyboard.press("ControlOrMeta+End");
   await page.keyboard.insertText("\n# typed while the server was down\n");
   // Text that cannot be saved locks the language switch at once, not only after the 500 ms autosave fails.
-  await expect(page.getByRole("tab", { name: "ts", exact: true })).toBeDisabled();
-  await expect(status).toHaveText("✕ not saved");
+  await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await expect(status).toHaveText("Not saved");
 
   server = await startServer();
   await expect(banner).toBeHidden({ timeout: 20_000 });
   await expect.poll(readSolution).toContain("# typed while the server was down");
-  await expect(status).toHaveText("✓ saved");
+  await expect(status).toHaveText("Saved");
 
   // Live events work again: a change made outside the browser reloads the editor.
   await expect(async () => {
@@ -123,7 +123,7 @@ test("a file changed while pnpm play was stopped shows up in a clean editor once
 
   server = await startServer();
   await expect(editor).toContainText("# written in VS Code while the server was down", { timeout: 20_000 });
-  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("✓ saved");
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Saved");
   expect(readSolution()).toBe("# written in VS Code while the server was down\n");
   expect(await isSameTab(page)).toBe(true);
 });

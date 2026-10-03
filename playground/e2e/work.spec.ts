@@ -19,7 +19,7 @@ test("goes from the home page to a green run with ⌘↵", async ({ page }) => {
 test("shows what a failing example expected and what the code returned", async ({ page }) => {
   await page.goto("/p/lc-0001");
   await replaceCode(page, "class Solution:\n    def twoSum(self, nums: list[int], target: int) -> list[int]:\n        return [0, 0]\n");
-  await page.getByRole("button", { name: /^▶ Run/ }).click();
+  await page.getByRole("button", { name: "Run", exact: true }).click();
   await expect(page.getByText("nums=[3,2,4], target=6")).toBeVisible({ timeout: 20_000 });
   await expect(page.getByText(/Hidden · skipped until the examples pass/)).toBeVisible();
 });
@@ -40,7 +40,7 @@ test("the editor never suggests anything", async ({ page }) => {
 
 test("switching to TypeScript opens solution.ts with its stub", async ({ page }) => {
   await page.goto("/p/lc-0001");
-  await page.getByRole("tab", { name: "ts", exact: true }).click();
+  await page.getByRole("radio", { name: "ts" }).click();
   await expect(page.getByRole("textbox", { name: "solution.ts" })).toContainText("export default function twoSum");
 });
 
@@ -72,9 +72,9 @@ test("disables the language switch while a conflict is open", async ({ page }) =
   // Someone else changes the file on disk before the 500 ms autosave can send this edit.
   writeFileSync(repoFile("problems/lc-0001-two-sum/solution.py"), "class Solution:\n    pass\n");
   await expect(page.getByText(/changed on disk/)).toBeVisible({ timeout: 5_000 });
-  const tsTab = page.getByRole("tab", { name: "ts", exact: true });
-  await expect(tsTab).toBeDisabled();
-  await expect(tsTab).toHaveAttribute("title", "Resolve the conflict first");
+  await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await page.getByRole("radiogroup", { name: "Language" }).hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Resolve the conflict first");
 });
 
 test("the editor shows code exactly as typed, in the app's mono font", async ({ page }) => {
@@ -90,4 +90,13 @@ test("the custom input fields stay hidden until their tab is open", async ({ pag
   await expect(page.getByRole("textbox", { name: "nums" })).toBeHidden();
   await page.getByRole("tab", { name: "Custom input" }).click();
   await expect(page.getByRole("textbox", { name: "nums" })).toBeVisible();
+});
+
+test("the status bar shows the connection, the file and the shortcuts", async ({ page }) => {
+  await page.goto("/p/lc-0001");
+  const bar = page.getByRole("contentinfo", { name: "Status bar" });
+  await expect(bar).toContainText("Connected");
+  await expect(bar).toContainText("Python · solution.py");
+  await expect(bar).toContainText(/(⌘↵|Ctrl\+Enter)\s*Run/);
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Saved");
 });

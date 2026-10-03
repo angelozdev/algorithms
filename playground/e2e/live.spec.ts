@@ -12,7 +12,7 @@ test("autosave writes the file on disk without pressing anything", async ({ page
   await page.goto("/p/lc-0001");
   await replaceCode(page, TWO_SUM_PY);
   await expect.poll(readSolution).toBe(TWO_SUM_PY);
-  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("✓ saved");
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Saved");
 });
 
 test("a change made outside the browser reloads the editor", async ({ page }) => {
@@ -54,7 +54,7 @@ test("Use disk version replaces the buffer and closes the conflict without touch
   await page.getByRole("button", { name: "Use disk version" }).click();
   await expect(editor).toContainText("# theirs");
   await expect(page.getByText("solution.py changed on disk.")).toHaveCount(0);
-  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("✓ saved");
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Saved");
   expect(readSolution()).toBe("# theirs\n");
 });
 
@@ -101,13 +101,13 @@ test("leaving with an edit the server could not save asks first, and the edit is
   await editor.click();
   await page.keyboard.press("ControlOrMeta+End");
   await page.keyboard.insertText("\n# typed while saves fail\n");
-  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("✕ not saved");
-  const tsTab = page.getByRole("tab", { name: "ts", exact: true });
-  await expect(tsTab).toBeDisabled();
-  await expect(tsTab).toHaveAttribute("title", "Not saved yet: press ⌘S to retry first");
+  await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Not saved");
+  await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await page.getByRole("radiogroup", { name: "Language" }).hover();
+  await expect(page.getByRole("tooltip")).toHaveText("Not saved yet: press ⌘S to retry first");
 
   // A link inside the app: the user chooses to stay.
-  await page.getByRole("link", { name: "← Home" }).click();
+  await page.getByRole("link", { name: "Algorithms" }).click();
   await expect.poll(() => dialogs).toEqual([{ type: "confirm", message: "You have unsaved changes in solution.py. Leave anyway?" }]);
   await expect(page).toHaveURL(/\/p\/lc-0001$/);
   await expect(editor).toContainText("# typed while saves fail");
@@ -121,7 +121,7 @@ test("leaving with an edit the server could not save asks first, and the edit is
   // The server answers again and the user leaves anyway: leaving sends the edit once more.
   await page.unroute(isSolution, saveFails);
   leave = true;
-  await page.getByRole("link", { name: "← Home" }).click();
+  await page.getByRole("link", { name: "Algorithms" }).click();
   await expect(page).toHaveURL((url) => url.pathname === "/");
   await expect.poll(readSolution).toContain("# typed while saves fail");
 });

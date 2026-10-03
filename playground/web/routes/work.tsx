@@ -1,6 +1,7 @@
 import type { KeyBinding } from "@codemirror/view";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
+import { CircleX, TriangleAlert } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
@@ -14,14 +15,17 @@ import { ConsolePanel } from "../components/ConsolePanel.tsx";
 import { type CustomInputHandle, CustomInputPanel } from "../components/CustomInputPanel.tsx";
 import { Markdown } from "../components/Markdown.tsx";
 import { NotFound } from "../components/NotFound.tsx";
+import { solutionSaveLabel, StatusBar } from "../components/StatusBar.tsx";
 import { TestsPanel } from "../components/TestsPanel.tsx";
-import { Badge } from "../components/ui/badge.tsx";
+import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs.tsx";
 import { useConnected, useRepoEvents } from "../events.tsx";
-import { type SaveState, useSolutionSync } from "../hooks/useSolutionSync.ts";
+import { useSolutionSync } from "../hooks/useSolutionSync.ts";
 import { useUnsavedGuard } from "../hooks/useUnsavedGuard.ts";
 import { pickLang, readRememberedLang, rememberLang } from "../lang.ts";
+import { shortcut } from "../lib/keys.ts";
+import { WorkHeader } from "../work/WorkHeader.tsx";
 import { cn } from "cn";
 
 type PanelTab = "tests" | "custom" | "console";
@@ -77,91 +81,23 @@ function useElapsed(active: boolean): number {
   return elapsed;
 }
 
-const SAVE_LABEL: Record<SaveState, string> = {
-  loading: "loading…",
-  saved: "✓ saved",
-  pending: "saving…",
-  saving: "saving…",
-  error: "✕ not saved",
-  conflict: "⚠ not saved",
-};
+const LANG_NAME: Record<Lang, string> = { py: "Python", ts: "TypeScript" };
 
-function SaveIndicator({ state, connected }: { state: SaveState; connected: boolean }) {
-  const label = !connected && (state === "pending" || state === "saving") ? "✕ not saved" : SAVE_LABEL[state];
-  const bad = label.startsWith("✕") || label.startsWith("⚠");
+function ConflictAlert({ file, onDisk, onMine }: { file: string; onDisk(): void; onMine(): void }) {
   return (
-    <span role="status" aria-label="Save status" className={cn("text-xs", bad ? "text-red-600" : "text-neutral-500")}>
-      {label}
-    </span>
-  );
-}
-
-function statusVariant(status: TargetData["status"]) {
-  if (status === "solved") return "success" as const;
-  if (status === "revealed") return "warning" as const;
-  return "outline" as const;
-}
-
-function WorkHeader(props: {
-  target: TargetData;
-  lang: Lang;
-  onLang(lang: Lang): void;
-  saveState: SaveState;
-  connected: boolean;
-  running: boolean;
-  canRun: boolean;
-  onRun(): void;
-  /** Why the language cannot change now (the editor has text that is not on disk and nothing will save it by itself), or null. */
-  langLock: string | null;
-}) {
-  const { target } = props;
-  return (
-    <header className="flex items-center gap-3 border-b border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
-      <Link to="/" className="text-neutral-500 hover:underline">
-        ← Home
-      </Link>
-      <h1 className="font-semibold">
-        {target.id} {target.title}
-      </h1>
-      {target.difficulty && <Badge variant="outline">{target.difficulty}</Badge>}
-      <Badge variant={statusVariant(target.status)}>{target.status}</Badge>
-      <span className="text-xs text-neutral-500">hints {target.hints}</span>
-      {target.url && (
-        <a href={target.url} target="_blank" rel="noreferrer" aria-label="Open the original problem" className="text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-100">
-          ↗
-        </a>
-      )}
-      <div className="ml-auto flex items-center gap-3">
-        <Tabs value={props.lang} onValueChange={(value) => props.onLang(value as Lang)}>
-          <TabsList aria-label="Language">
-            <TabsTrigger value="py" disabled={props.langLock !== null} title={props.langLock ?? undefined} className={cn(props.langLock && "cursor-not-allowed opacity-50")}>
-              py
-            </TabsTrigger>
-            <TabsTrigger value="ts" disabled={props.langLock !== null} title={props.langLock ?? undefined} className={cn(props.langLock && "cursor-not-allowed opacity-50")}>
-              ts
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-        <SaveIndicator state={props.saveState} connected={props.connected} />
-        <Button onClick={props.onRun} disabled={!props.canRun} title="Run the tests (⌘↵)">
-          {props.running ? "Running…" : "▶ Run"} <kbd className="text-xs opacity-70">⌘↵</kbd>
+    <Alert variant="warning" className="rounded-none border-x-0 border-t-0">
+      <TriangleAlert aria-hidden />
+      <AlertTitle>{file} changed on disk.</AlertTitle>
+      <AlertDescription className="flex items-center gap-2">
+        Keep one version:
+        <Button size="sm" variant="outline" onClick={onDisk}>
+          Use disk version
         </Button>
-      </div>
-    </header>
-  );
-}
-
-function ConflictBanner({ file, onDisk, onMine }: { file: string; onDisk(): void; onMine(): void }) {
-  return (
-    <div role="alert" className="flex items-center gap-3 bg-amber-100 px-3 py-2 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-      <span>{file} changed on disk.</span>
-      <Button size="sm" variant="outline" onClick={onDisk}>
-        Use disk version
-      </Button>
-      <Button size="sm" variant="outline" onClick={onMine}>
-        Keep mine
-      </Button>
-    </div>
+        <Button size="sm" variant="outline" onClick={onMine}>
+          Keep mine
+        </Button>
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -302,18 +238,18 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         target={target}
         lang={lang}
         onLang={onLang}
-        saveState={sync.state}
-        connected={connected}
         running={run.isPending}
+        elapsedMs={elapsed}
         canRun={canRun}
         onRun={actions.run}
         langLock={langLock}
       />
-      {sync.conflict && <ConflictBanner file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={() => void sync.keepMine()} />}
+      {sync.conflict && <ConflictAlert file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={() => void sync.keepMine()} />}
       {sync.state === "error" && sync.error && (
-        <p role="alert" className="bg-red-50 px-3 py-1.5 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
-          Not saved: {sync.error}
-        </p>
+        <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
+          <CircleX aria-hidden />
+          <AlertDescription>Not saved: {sync.error}</AlertDescription>
+        </Alert>
       )}
       <Group orientation="horizontal" className="min-h-0 flex-1" defaultLayout={columns.defaultLayout} onLayoutChanged={columns.onLayoutChanged}>
         <Panel id="statement" defaultSize="40%" minSize="20%" className="overflow-y-auto p-4">
@@ -364,6 +300,15 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
           </Group>
         </Panel>
       </Group>
+      <StatusBar
+        subject={`${LANG_NAME[lang]} · solution.${lang}`}
+        save={solutionSaveLabel(sync.state, connected)}
+        shortcuts={[
+          { keys: shortcut("run"), label: "Run" },
+          { keys: shortcut("custom"), label: "Custom" },
+          { keys: shortcut("save"), label: "Save" },
+        ]}
+      />
     </div>
   );
 }
