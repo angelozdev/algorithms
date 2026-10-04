@@ -6,6 +6,7 @@ url: https://leetcode.com/problems/merge-two-sorted-lists/
 difficulty: easy
 patterns: [linked-list, two-pointers]
 concepts: [linked-list, two-pointers, dummy-node]
+lists: [grind-75]
 status: solved
 hints: 0
 solution_revealed: false

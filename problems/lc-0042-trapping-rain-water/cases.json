@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "trap",
+  "params": [
+    {"name":"height","type":"int[]"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[[0,1,0,2,1,0,1,3,2,1,2,1]],"expected":6},
+    {"input":[[4,2,0,3,2,5]],"expected":9}
+  ],
+  "hidden": [
+    {"input":[[5]],"expected":0},
+    {"input":[[5,5]],"expected":0},
+    {"input":[[1,2,3,4,5]],"expected":0},
+    {"input":[[5,4,3,2,1]],"expected":0},
+    {"input":[[3,3,3,3]],"expected":0},
+    {"input":[[0,0,0,0]],"expected":0},
+    {"input":[[5,0,5]],"expected":5},
+    {"input":[[3,0,2,0,4]],"expected":7},
+    {"input":[[100000,0,100000]],"expected":100000},
+    {"input":[[0,0,5,0,0]],"expected":0}
+  ]
+}

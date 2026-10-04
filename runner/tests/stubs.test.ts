@@ -1,9 +1,10 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+import { runHarness } from "../src/executor.ts";
 import { ensureSolution, pyType, renderStub, tsType } from "../src/stubs.ts";
 import type { CaseFile } from "../src/types.ts";
-import { removeTemp, tempDir } from "./helpers.ts";
+import { removeTemp, tempDir, write } from "./helpers.ts";
 
 const dir = tempDir();
 afterAll(() => removeTemp(dir));
@@ -78,5 +79,129 @@ describe("ensureSolution", () => {
     const second = ensureSolution(dir, { ...base, entry: "other" }, "py");
     expect(second.created).toBe(false);
     expect(readFileSync(first.path, "utf8")).toBe("# my work\n");
+  });
+});
+
+describe("stubs for the Grind 75 runner features", () => {
+  const cf = (overrides: Partial<CaseFile>): CaseFile => ({ ...base, ...overrides });
+  const cycle = cf({
+    entry: "hasCycle",
+    params: [
+      { name: "head", type: "ListNode" },
+      { name: "pos", type: "int", cycle: "head" },
+    ],
+    returns: "bool",
+  });
+  const refs = cf({
+    entry: "lowestCommonAncestor",
+    params: [
+      { name: "root", type: "TreeNode" },
+      { name: "p", type: "TreeNode", ref: "root" },
+    ],
+    returns: "TreeNode.val",
+  });
+  const graph = cf({ entry: "cloneGraph", params: [{ name: "node", type: "GraphNode" }], returns: "GraphNode" });
+  const api = cf({
+    entry: "firstBadVersion",
+    params: [
+      { name: "n", type: "int" },
+      { name: "bad", type: "int", api: "isBadVersion" },
+    ],
+    returns: "int",
+  });
+  const codec = cf({ mode: "codec", entry: "Codec", params: [{ name: "root", type: "TreeNode" }], returns: null });
+
+  it("leaves cycle params out of the signature", () => {
+    expect(renderStub(cycle, "py")).toBe(
+      "from lc import ListNode  # delete this line when pasting into LeetCode\n\n\nclass Solution:\n    def hasCycle(self, head: ListNode | None) -> bool:\n        raise NotImplementedError\n",
+    );
+    expect(renderStub(cycle, "ts")).toBe(
+      'import { ListNode } from "lc"; // delete this line when pasting into LeetCode\n\nexport default function hasCycle(head: ListNode | null): boolean {\n  throw new Error("Not implemented");\n}\n',
+    );
+  });
+
+  it("types ref params and TreeNode.val returns as tree nodes", () => {
+    expect(renderStub(refs, "ts")).toContain(
+      "export default function lowestCommonAncestor(root: TreeNode | null, p: TreeNode | null): TreeNode | null {",
+    );
+    expect(renderStub(refs, "py")).toContain(
+      "    def lowestCommonAncestor(self, root: TreeNode | None, p: TreeNode | None) -> TreeNode | None:",
+    );
+  });
+
+  it("names graph nodes as LeetCode does: _Node in TypeScript, Node in Python", () => {
+    expect(renderStub(graph, "ts")).toBe(
+      'import { _Node } from "lc"; // delete this line when pasting into LeetCode\n\nexport default function cloneGraph(node: _Node | null): _Node | null {\n  throw new Error("Not implemented");\n}\n',
+    );
+    expect(renderStub(graph, "py")).toBe(
+      "from lc import Node  # delete this line when pasting into LeetCode\n\n\nclass Solution:\n    def cloneGraph(self, node: Node | None) -> Node | None:\n        raise NotImplementedError\n",
+    );
+  });
+
+  it("writes an api problem as LeetCode's factory in TypeScript and a global in Python", () => {
+    expect(renderStub(api, "ts")).toBe(
+      'export default function solution(isBadVersion: (version: number) => boolean) {\n  return function firstBadVersion(n: number): number {\n    throw new Error("Not implemented");\n  };\n}\n',
+    );
+    expect(renderStub(api, "py")).toBe(
+      "from lc import isBadVersion  # delete this line when pasting into LeetCode\n\n\nclass Solution:\n    def firstBadVersion(self, n: int) -> int:\n        raise NotImplementedError\n",
+    );
+  });
+
+  it("writes codec mode as two functions in TypeScript and a class in Python", () => {
+    expect(renderStub(codec, "ts")).toBe(
+      [
+        'import { TreeNode } from "lc"; // delete this line when pasting into LeetCode',
+        "",
+        "/** Encodes a value to a single string. */",
+        "export function serialize(root: TreeNode | null): string {",
+        '  throw new Error("Not implemented");',
+        "}",
+        "",
+        "/** Decodes your encoded data back to the value. */",
+        "export function deserialize(data: string): TreeNode | null {",
+        '  throw new Error("Not implemented");',
+        "}",
+        "",
+      ].join("\n"),
+    );
+    expect(renderStub(codec, "py")).toBe(
+      [
+        "from lc import TreeNode  # delete this line when pasting into LeetCode",
+        "",
+        "",
+        "class Codec:",
+        "    def serialize(self, root: TreeNode | None) -> str:",
+        "        raise NotImplementedError",
+        "",
+        "    def deserialize(self, data: str) -> TreeNode | None:",
+        "        raise NotImplementedError",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  it("produces stubs the harnesses load: they reach the solution and raise Not implemented", async () => {
+    const stubs = tempDir();
+    try {
+      const cases = (input: unknown) => [{ id: "e1", input }];
+      const request = (file: string, c: CaseFile, input: unknown) => ({
+        solutionPath: file,
+        mode: c.mode,
+        entry: c.entry,
+        params: c.params,
+        returns: c.returns,
+        inPlace: null,
+        discardOutput: false,
+        cases: cases(input),
+      });
+      const tsApi = await runHarness("ts", request(write(stubs, "api/solution.ts", renderStub(api, "ts")), api, [5, 4]), { wallLimitMs: 10_000 });
+      expect(tsApi.runs.get("e1")).toMatchObject({ ok: false, error: { kind: "exception", message: "Error: Not implemented" } });
+      const pyCodec = await runHarness("py", request(write(stubs, "codec/solution.py", renderStub(codec, "py")), codec, [[1]]), { wallLimitMs: 5000 });
+      expect(pyCodec.runs.get("e1")).toMatchObject({ ok: false, error: { kind: "exception", message: "NotImplementedError: " } });
+      const pyGraph = await runHarness("py", request(write(stubs, "graph/solution.py", renderStub(graph, "py")), graph, [[[2], [1]]]), { wallLimitMs: 5000 });
+      expect(pyGraph.runs.get("e1")).toMatchObject({ ok: false, error: { kind: "exception", message: "NotImplementedError: " } });
+    } finally {
+      removeTemp(stubs);
+    }
   });
 });

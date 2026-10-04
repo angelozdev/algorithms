@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "minWindow",
+  "params": [
+    {"name":"s","type":"string"},
+    {"name":"t","type":"string"}
+  ],
+  "returns": "string",
+  "compare": "exact",
+  "examples": [
+    {"input":["ADOBECODEBANC","ABC"],"expected":"BANC"},
+    {"input":["a","a"],"expected":"a"},
+    {"input":["a","aa"],"expected":""}
+  ],
+  "hidden": [
+    {"input":["z","z"],"expected":"z"},
+    {"input":["b","bb"],"expected":""},
+    {"input":["aa","a"],"expected":"a"},
+    {"input":["abc","d"],"expected":""},
+    {"input":["aaaaaaaaaa","aaa"],"expected":"aaa"},
+    {"input":["ab","b"],"expected":"b"},
+    {"input":["bba","ab"],"expected":"ba"},
+    {"input":["xaybzc","abc"],"expected":"aybzc"}
+  ]
+}

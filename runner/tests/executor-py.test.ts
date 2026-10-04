@@ -317,3 +317,311 @@ describe("python harness", () => {
     expect(outcome.runs.get("a")).toMatchObject({ ok: true, output: null });
   });
 });
+
+describe("python harness: graphs and node values (Grind 75 spec §3.2, §3.3)", () => {
+  const graph = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { params: [{ name: "node", type: "GraphNode" }], returns: "GraphNode", cases });
+
+  it("builds a graph from its adjacency list and reads a returned graph back", async () => {
+    const file = solution(
+      "graph-fixed",
+      [
+        "from lc import Node",
+        "",
+        "",
+        "class Solution:",
+        "    def solve(self, node):",
+        "        if node is None:",
+        "            return None",
+        "        if not node.neighbors:",
+        "            return Node(1)",
+        "        one, two = Node(1), Node(2)",
+        "        one.neighbors, two.neighbors = [two], [one]",
+        "        return one if node.neighbors[0].neighbors[0] is node else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      graph(file, [
+        { id: "pair", input: [[[2], [1]]] },
+        { id: "single", input: [[[]]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("pair")?.output).toEqual([[2], [1]]);
+    expect(outcome.runs.get("single")?.output).toEqual([[]]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a returned input node, unnumbered nodes and a bad neighbor with readable messages", async () => {
+    const same = solution("graph-same", ["class Solution:", "    def solve(self, node):", "        return node", ""].join("\n"));
+    const fresh = solution(
+      "graph-default",
+      ["from lc import Node", "", "", "class Solution:", "    def solve(self, node):", "        return Node()", ""].join("\n"),
+    );
+    const sameOutcome = await runHarness(
+      "py",
+      graph(same, [
+        { id: "copy", input: [[[2], [1]]] },
+        { id: "neighbor", input: [[[3], [1]]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(sameOutcome.runs.get("copy")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "returned a node of the input graph: return a copy" },
+    });
+    expect(sameOutcome.runs.get("neighbor")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "node 1 lists neighbor 3, but the graph has nodes 1..2" },
+    });
+    const freshOutcome = await runHarness("py", graph(fresh, [{ id: "zero", input: [[[2], [1]]] }]), { wallLimitMs: 5000 });
+    expect(freshOutcome.runs.get("zero")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "graph node values must be 1..1, each used once" },
+    });
+  });
+
+  it("judges a returned tree node by its value", async () => {
+    const file = solution(
+      "node-value",
+      [
+        "class Solution:",
+        "    def solve(self, root):",
+        "        if root is not None and root.val == 7:",
+        "            return 7",
+        "        return root.left if root else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      harnessRequest(file, {
+        params: [{ name: "root", type: "TreeNode" }],
+        returns: "TreeNode.val",
+        cases: [
+          { id: "left", input: [[2, 1, 3]] },
+          { id: "none", input: [[2]] },
+          { id: "number", input: [[7]] },
+        ],
+      }),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("left")?.output).toBe(1);
+    expect(outcome.runs.get("none")?.output).toBeNull();
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "expected a TreeNode, got int" },
+    });
+  });
+});
+
+describe("python harness: cycle and ref params (Grind 75 spec §3.1, §3.2)", () => {
+  it("links the tail back to node pos, passes only the list, and keeps pos = -1 a plain list", async () => {
+    const file = solution(
+      "cycle",
+      [
+        "class Solution:",
+        "    def solve(self, *args):",
+        "        node = args[0]",
+        "        for _ in range(4):",
+        "            if node is None:",
+        "                break",
+        "            node = node.next",
+        "        if len(args) != 1:",
+        "            return -99",
+        "        return node.val if node is not None else -1",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      harnessRequest(file, {
+        params: [
+          { name: "head", type: "ListNode" },
+          { name: "pos", type: "int", cycle: "head" },
+        ],
+        returns: "int",
+        cases: [
+          { id: "loop", input: [[3, 2, 0, -4], 1] },
+          { id: "plain", input: [[3, 2, 0, -4], -1] },
+          { id: "far", input: [[3, 2], 5] },
+        ],
+      }),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("loop")?.output).toBe(2);
+    expect(outcome.runs.get("plain")?.output).toBe(-1);
+    expect(outcome.runs.get("far")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "pos = 5 is out of range for head (2 nodes)" },
+    });
+  });
+
+  it("hands ref params over as the nodes inside the tree", async () => {
+    const file = solution(
+      "refs",
+      [
+        "class Solution:",
+        "    def solve(self, root, p, q):",
+        "        if root is not None and root.left is p and root.right is q:",
+        "            return root",
+        "        return q",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      harnessRequest(file, {
+        params: [
+          { name: "root", type: "TreeNode" },
+          { name: "p", type: "TreeNode", ref: "root" },
+          { name: "q", type: "TreeNode", ref: "root" },
+        ],
+        returns: "TreeNode.val",
+        cases: [
+          { id: "children", input: [[2, 1, 3], 1, 3] },
+          { id: "swapped", input: [[2, 1, 3], 3, 1] },
+          { id: "null", input: [[2, 1, 3], 1, null] },
+          { id: "missing", input: [[2, 1, 3], 9, 1] },
+        ],
+      }),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("children")?.output).toBe(2);
+    expect(outcome.runs.get("swapped")?.output).toBe(1);
+    expect(outcome.runs.get("null")?.output).toBeNull();
+    expect(outcome.runs.get("missing")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "p = 9 is not a value in root" },
+    });
+  });
+});
+
+describe("python harness: api params (Grind 75 spec §3.4)", () => {
+  const api = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, {
+      params: [
+        { name: "n", type: "int" },
+        { name: "bad", type: "int", api: "isBadVersion" },
+      ],
+      returns: "int",
+      cases,
+    });
+  const body = [
+    "class Solution:",
+    "    def solve(self, *args):",
+    "        if len(args) != 1:",
+    "            return -99",
+    "        n = args[0]",
+    "        if not isBadVersion(n):",
+    "            return 0",
+    "        return -1 if isBadVersion(n - 1) else n",
+    "",
+  ];
+
+  it("defines the judge's function as a module global, with or without the stub's lc import", async () => {
+    const bare = solution("api-bare", body.join("\n"));
+    const withImport = solution("api-with-import", ["from lc import isBadVersion", "", "", ...body].join("\n"));
+    for (const file of [bare, withImport]) {
+      const outcome = await runHarness(
+        "py",
+        api(file, [
+          { id: "first", input: [5, 5] },
+          { id: "earlier", input: [5, 3] },
+          { id: "none", input: [5, 6] },
+        ]),
+        { wallLimitMs: 5000 },
+      );
+      expect(outcome.fatal).toBeNull();
+      expect(outcome.runs.get("first")?.output).toBe(5);
+      expect(outcome.runs.get("earlier")?.output).toBe(-1);
+      expect(outcome.runs.get("none")?.output).toBe(0);
+    }
+  });
+});
+
+describe("python harness: codec mode (Grind 75 spec §3.5)", () => {
+  const codec = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { mode: "codec", entry: "Codec", params: [{ name: "root", type: "TreeNode" }], returns: null, cases });
+
+  it("runs deserialize(serialize(value)) on two instances and judges the rebuilt value", async () => {
+    const file = solution(
+      "codec-fixed",
+      [
+        "from lc import TreeNode",
+        "",
+        "INSTANCES = []",
+        "",
+        "",
+        "class Codec:",
+        "    def __init__(self):",
+        "        INSTANCES.append(self)",
+        "",
+        "    def serialize(self, root):",
+        '        return "tree" if root else ""',
+        "",
+        "    def deserialize(self, data):",
+        "        if len(INSTANCES) % 2 != 0:",
+        '            return TreeNode(9)',
+        "        return TreeNode(1, TreeNode(2)) if data else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      codec(file, [
+        { id: "tree", input: [[1, 2]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("tree")?.output).toEqual([1, 2]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a serialize that returns no string and a deserialize that hands back the input nodes", async () => {
+    const file = solution(
+      "codec-kept",
+      [
+        "KEPT = []",
+        "",
+        "",
+        "class Codec:",
+        "    def serialize(self, root):",
+        "        KEPT.append(root)",
+        '        return 42 if root is not None and root.val == 0 else "kept"',
+        "",
+        "    def deserialize(self, data):",
+        "        return KEPT[-1]",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      codec(file, [
+        { id: "number", input: [[0]] },
+        { id: "kept", input: [[1, 2]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "serialize must return a string, got int" },
+    });
+    expect(outcome.runs.get("kept")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "deserialize returned nodes of the input: build new ones from the string" },
+    });
+  });
+
+  it("needs the codec class", async () => {
+    const file = solution("codec-missing", ["class Other:", "    pass", ""].join("\n"));
+    const outcome = await runHarness("py", codec(file, [{ id: "e1", input: [[1]] }]), { wallLimitMs: 5000 });
+    expect(outcome.fatal).toMatchObject({ kind: "missing-entry", message: 'expected class "Codec"' });
+  });
+});

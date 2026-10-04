@@ -1,0 +1,24 @@
+{
+  "entry": "rightSideView",
+  "params": [
+    {"name":"root","type":"TreeNode"}
+  ],
+  "returns": "int[]",
+  "compare": "exact",
+  "examples": [
+    {"input":[[1,2,3,null,5,null,4]],"expected":[1,3,4]},
+    {"input":[[1,2,3,4,null,null,null,5]],"expected":[1,3,4,5]},
+    {"input":[[1,null,3]],"expected":[1,3]},
+    {"input":[[]],"expected":[]}
+  ],
+  "hidden": [
+    {"input":[[1]],"expected":[1]},
+    {"input":[[1,2]],"expected":[1,2]},
+    {"input":[[1,null,2]],"expected":[1,2]},
+    {"input":[[1,2,null,3,null,4,null]],"expected":[1,2,3,4]},
+    {"input":[[1,2,3,4,5,6,7]],"expected":[1,3,7]},
+    {"input":[[-1,-2,-3]],"expected":[-1,-3]},
+    {"input":[[1,2,3,null,4,5,null]],"expected":[1,3,5]},
+    {"input":[[100,-100,100,-100,100,-100,100]],"expected":[100,100,100]}
+  ]
+}

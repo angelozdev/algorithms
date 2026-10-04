@@ -19,7 +19,7 @@ import traceback
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lc import ListNode, TreeNode  # noqa: E402
+from lc import ListNode, Node, TreeNode  # noqa: E402
 
 sys.setrecursionlimit(10_000)
 
@@ -34,6 +34,12 @@ class MissingEntryError(Exception):
 
 class SerializationError(Exception):
     pass
+
+
+# Judge-provided functions, built from an `api` param's value (Grind 75 spec §3.4).
+API_FACTORIES = {
+    "isBadVersion": lambda bad: (lambda version: version >= bad),
+}
 
 
 class CappedBuffer(io.TextIOBase):
@@ -111,6 +117,54 @@ def to_tree_node(values):
     return root
 
 
+def to_graph_node(lists):
+    """LeetCode's adjacency list: entry i holds the neighbors of the node whose val is i + 1. [] is no graph."""
+    if not lists:
+        return None
+    nodes = [Node(i + 1) for i in range(len(lists))]
+    for i, neighbors in enumerate(lists):
+        for neighbor in neighbors:
+            if isinstance(neighbor, bool) or not isinstance(neighbor, int) or not 1 <= neighbor <= len(lists):
+                raise SerializationError(
+                    f"node {i + 1} lists neighbor {json.dumps(neighbor)}, but the graph has nodes 1..{len(lists)}"
+                )
+            nodes[i].neighbors.append(nodes[neighbor - 1])
+    return nodes[0]
+
+
+def reachable(start) -> list:
+    """Every node reachable from `start`, in breadth-first order."""
+    if start is None:
+        return []
+    seen = {id(start)}
+    order = [start]
+    head = 0
+    while head < len(order):
+        for neighbor in getattr(order[head], "neighbors", None) or []:
+            if neighbor is not None and id(neighbor) not in seen:
+                seen.add(id(neighbor))
+                order.append(neighbor)
+                if len(order) > MAX_NODES:
+                    raise SerializationError("graph has more than 10^6 nodes")
+        head += 1
+    return order
+
+
+def from_graph_node(start, input_graph) -> list:
+    """Reads a returned graph back as an adjacency list; input_graph holds the ids of the input's nodes."""
+    nodes = reachable(start)
+    if any(id(node) in input_graph for node in nodes):
+        raise SerializationError("returned a node of the input graph: return a copy")
+    by_val = {node.val: node for node in nodes}
+    n = len(nodes)
+    numbered = len(by_val) == n and all(
+        isinstance(val, int) and not isinstance(val, bool) and 1 <= val <= n for val in by_val
+    )
+    if not numbered:
+        raise SerializationError(f"graph node values must be 1..{n}, each used once")
+    return [[getattr(neighbor, "val", None) for neighbor in by_val[i + 1].neighbors] for i in range(n)]
+
+
 def deserialize(value, type_name: str):
     if type_name.endswith("[]"):
         return [deserialize(item, type_name[:-2]) for item in value]
@@ -118,6 +172,8 @@ def deserialize(value, type_name: str):
         return to_list_node(value)
     if type_name == "TreeNode":
         return to_tree_node(value)
+    if type_name == "GraphNode":
+        return to_graph_node(value)
     if type_name == "float":
         return float(value)
     return value
@@ -166,13 +222,21 @@ def plain(value):
     return value
 
 
-def serialize(value, type_name):
+def serialize(value, type_name, input_graph=frozenset()):
     if type_name == "ListNode":
         return from_list_node(value)
     if type_name == "TreeNode":
         return from_tree_node(value)
+    if type_name == "TreeNode.val":
+        if value is None:
+            return None
+        if not hasattr(value, "val"):
+            raise SerializationError(f"expected a TreeNode, got {type(value).__name__}")
+        return plain(value.val)
+    if type_name == "GraphNode":
+        return from_graph_node(value, input_graph)
     if type_name and type_name.endswith("[]") and isinstance(value, (list, tuple)):
-        return [serialize(item, type_name[:-2]) for item in value]
+        return [serialize(item, type_name[:-2], input_graph) for item in value]
     return plain(value)
 
 
@@ -197,13 +261,77 @@ def resolve_entry(module, request: dict):
     return cls
 
 
-def run_function(solution_cls, request: dict, raw_input):
-    params = request["params"]
-    args = [
-        deserialize(value, param["type"])
+def link_cycle(head, pos, param) -> None:
+    """Links the tail of head back to node pos (Grind 75 spec §3.1); -1 leaves the list as it is."""
+    nodes = []
+    node = head
+    while node is not None and len(nodes) <= MAX_NODES:
+        nodes.append(node)
+        node = node.next
+    if isinstance(pos, bool) or not isinstance(pos, int) or not -1 <= pos < len(nodes):
+        raise SerializationError(
+            f"{param['name']} = {json.dumps(pos)} is out of range for {param['cycle']} ({len(nodes)} nodes)"
+        )
+    if pos >= 0:
+        nodes[-1].next = nodes[pos]
+
+
+def find_node(root, value):
+    """The first node holding value, in level order (Grind 75 spec §3.2)."""
+    queue = [root]
+    head = 0
+    while head < len(queue):
+        node = queue[head]
+        head += 1
+        if node is None:
+            continue
+        if node.val == value:
+            return node
+        queue.append(node.left)
+        queue.append(node.right)
+    return None
+
+
+def build_input(params, raw_input):
+    """One built value per param, the arguments the solution receives, and the ids of the input graphs' nodes."""
+    def marked(param) -> bool:
+        return "cycle" in param or "ref" in param or "api" in param
+
+    values = [
+        value if marked(param) else deserialize(value, param["type"])
         for value, param in zip(raw_input, params, strict=True)
     ]
-    method = getattr(solution_cls(), request["entry"])
+    names = [param["name"] for param in params]
+    apis = {}
+    for i, param in enumerate(params):
+        if "cycle" in param:
+            link_cycle(values[names.index(param["cycle"])], raw_input[i], param)
+        elif "ref" in param and raw_input[i] is not None:
+            node = find_node(values[names.index(param["ref"])], raw_input[i])
+            if node is None:
+                raise SerializationError(
+                    f"{param['name']} = {json.dumps(raw_input[i])} is not a value in {param['ref']}"
+                )
+            values[i] = node
+        elif "api" in param:
+            apis[param["api"]] = API_FACTORIES[param["api"]](raw_input[i])
+    input_graph = {
+        id(node)
+        for value, param in zip(values, params)
+        if param["type"] == "GraphNode"
+        for node in reachable(value)
+    }
+    args = [value for value, param in zip(values, params) if "cycle" not in param and "api" not in param]
+    return values, args, apis, input_graph
+
+
+def run_function(target, module, request: dict, raw_input):
+    params = request["params"]
+    values, args, apis, input_graph = build_input(params, raw_input)
+    for name, function in apis.items():
+        # Rebinds the module global, which also replaces the stub's `from lc import isBadVersion` placeholder.
+        setattr(module, name, function)
+    method = getattr(target(), request["entry"])
     started = time.perf_counter()
     returned = method(*args)
     ms = (time.perf_counter() - started) * 1000
@@ -214,16 +342,16 @@ def run_function(solution_cls, request: dict, raw_input):
         index = next(i for i, p in enumerate(params) if p["name"] == in_place["param"])
         output = {
             "ret": plain(returned),
-            "param": serialize(args[index], params[index]["type"]),
+            "param": serialize(values[index], params[index]["type"], input_graph),
         }
         return output, ms
-    return serialize(returned, request["returns"]), ms
+    return serialize(returned, request["returns"], input_graph), ms
 
 
-def run_class(cls, request: dict, raw_input):
+def run_class(target, module, request: dict, raw_input):
     ops, args = raw_input["ops"], raw_input["args"]
     started = time.perf_counter()
-    instance = cls(*args[0])
+    instance = target(*args[0])
     results = [None]
     for op, op_args in zip(ops[1:], args[1:], strict=True):
         results.append(getattr(instance, op)(*op_args))
@@ -233,8 +361,47 @@ def run_class(cls, request: dict, raw_input):
     return [plain(result) for result in results], ms
 
 
-def run_case(target, request: dict, case: dict, solution_path: str) -> None:
-    runner = run_function if request["mode"] == "function" else run_class
+def nodes_of(value) -> list:
+    """The node objects of a built tree or list, for telling a rebuilt value from the input one."""
+    nodes, queue, head = [], [value], 0
+    while head < len(queue) and len(nodes) <= MAX_NODES:
+        node = queue[head]
+        head += 1
+        if node is None or not hasattr(node, "val"):
+            continue
+        nodes.append(node)
+        if hasattr(node, "left") or hasattr(node, "right"):
+            queue.append(getattr(node, "left", None))
+            queue.append(getattr(node, "right", None))
+        elif hasattr(node, "next"):
+            queue.append(node.next)
+    return nodes
+
+
+def run_codec(cls, module, request: dict, raw_input):
+    """deser.deserialize(ser.serialize(value)) on two instances, as LeetCode does (Grind 75 spec §3.5)."""
+    param = request["params"][0]
+    value = deserialize(raw_input[0], param["type"])
+    input_nodes = {id(node) for node in nodes_of(value)}
+    ser, deser = cls(), cls()
+    started = time.perf_counter()
+    data = ser.serialize(value)
+    if not isinstance(data, str):
+        raise SerializationError(f"serialize must return a string, got {type(data).__name__}")
+    rebuilt = deser.deserialize(data)
+    ms = (time.perf_counter() - started) * 1000
+    if request["discardOutput"]:
+        return None, ms
+    if any(id(node) in input_nodes for node in nodes_of(rebuilt)):
+        raise SerializationError("deserialize returned nodes of the input: build new ones from the string")
+    return serialize(rebuilt, param["type"]), ms
+
+
+RUNNERS = {"function": run_function, "class": run_class, "codec": run_codec}
+
+
+def run_case(target, module, request: dict, case: dict, solution_path: str) -> None:
+    runner = RUNNERS[request["mode"]]
     buffer = CappedBuffer()
     started = time.perf_counter()
 
@@ -253,7 +420,7 @@ def run_case(target, request: dict, case: dict, solution_path: str) -> None:
 
     try:
         with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
-            output, ms = runner(target, request, case["input"])
+            output, ms = runner(target, module, request, case["input"])
     except SerializationError as exc:
         fail(error("serialization", str(exc)))
         return
@@ -300,7 +467,7 @@ def main() -> None:
     emit({"type": "ready"})
     for case in request["cases"]:
         emit({"type": "start", "id": case["id"]})
-        run_case(target, request, case, solution_path)
+        run_case(target, module, request, case, solution_path)
 
 
 if __name__ == "__main__":

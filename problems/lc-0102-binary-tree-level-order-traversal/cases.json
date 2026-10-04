@@ -1,0 +1,21 @@
+{
+  "entry": "levelOrder",
+  "params": [
+    {"name":"root","type":"TreeNode"}
+  ],
+  "returns": "int[][]",
+  "compare": "exact",
+  "examples": [
+    {"input":[[3,9,20,null,null,15,7]],"expected":[[3],[9,20],[15,7]]},
+    {"input":[[1]],"expected":[[1]]},
+    {"input":[[]],"expected":[]}
+  ],
+  "hidden": [
+    {"input":[[1,2]],"expected":[[1],[2]]},
+    {"input":[[1,null,2]],"expected":[[1],[2]]},
+    {"input":[[1,2,null,3,null,4,null]],"expected":[[1],[2],[3],[4]]},
+    {"input":[[-5,-3,-7]],"expected":[[-5],[-3,-7]]},
+    {"input":[[1,1,1,1,1,1,1]],"expected":[[1],[1,1],[1,1,1,1]]},
+    {"input":[[1000,-1000,1000,-1000,1000,-1000,1000]],"expected":[[1000],[-1000,1000],[-1000,1000,-1000,1000]]}
+  ]
+}

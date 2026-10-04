@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "canConstruct",
+  "params": [
+    {"name":"ransomNote","type":"string"},
+    {"name":"magazine","type":"string"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":["a","b"],"expected":false},
+    {"input":["aa","ab"],"expected":false},
+    {"input":["aa","aab"],"expected":true}
+  ],
+  "hidden": [
+    {"input":["a","a"],"expected":true},
+    {"input":["z","y"],"expected":false},
+    {"input":["aa","a"],"expected":false},
+    {"input":["aab","aaab"],"expected":true},
+    {"input":["abc","cab"],"expected":true},
+    {"input":["ab","baa"],"expected":true},
+    {"input":["aaa","aab"],"expected":false},
+    {"input":["zzzzz","zzzzzzzzzz"],"expected":true}
+  ]
+}

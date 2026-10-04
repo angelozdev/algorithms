@@ -6,6 +6,7 @@ url: https://leetcode.com/problems/two-sum/
 difficulty: easy
 patterns: [arrays-hashing]
 concepts: [hash-map]
+lists: [grind-75]
 status: solved
 hints: 0
 solution_revealed: false

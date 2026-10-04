@@ -1,0 +1,18 @@
+{
+  "mode": "class",
+  "entry": "TimeMap",
+  "compare": "exact",
+  "examples": [
+    {"input":{"ops":["TimeMap","set","get","get","set","get","get"],"args":[[],["foo","bar",1],["foo",1],["foo",3],["foo","bar2",4],["foo",4],["foo",5]]},"expected":[null,null,"bar","bar",null,"bar2","bar2"]}
+  ],
+  "hidden": [
+    {"input":{"ops":["TimeMap","get"],"args":[[],["missing",5]]},"expected":[null,""]},
+    {"input":{"ops":["TimeMap","set","get"],"args":[[],["a","v1",10],["a",5]]},"expected":[null,null,""]},
+    {"input":{"ops":["TimeMap","set","set","set","get","get","get","get"],"args":[[],["k","v1",1],["k","v2",5],["k","v3",9],["k",1],["k",4],["k",9],["k",100]]},"expected":[null,null,null,null,"v1","v1","v3","v3"]},
+    {"input":{"ops":["TimeMap","set","set","get","get"],"args":[[],["x","valx",2],["y","valy",3],["x",10],["y",10]]},"expected":[null,null,null,"valx","valy"]},
+    {"input":{"ops":["TimeMap","set","get"],"args":[[],["k","exact",7],["k",7]]},"expected":[null,null,"exact"]},
+    {"input":{"ops":["TimeMap","set","get","get"],"args":[[],["k","v",1],["k",1],["k",10000000]]},"expected":[null,null,"v","v"]},
+    {"input":{"ops":["TimeMap","set","get"],"args":[[],["k1","v123",50],["k1",50]]},"expected":[null,null,"v123"]},
+    {"input":{"ops":["TimeMap","set","get","set","get","set","get"],"args":[[],["z","a",10],["z",15],["z","b",20],["z",15],["z","c",30],["z",25]]},"expected":[null,null,"a",null,"a",null,"b"]}
+  ]
+}

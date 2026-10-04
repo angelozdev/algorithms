@@ -55,18 +55,30 @@ export function missingConcepts(repo: RepoModel): Map<string, string[]> {
   return missing;
 }
 
-export function renderProblemIndex(repo: RepoModel): string {
+export const NO_PATTERN = "(no pattern yet)";
+
+export interface ProblemGroup {
+  pattern: string;
+  problems: ProblemEntry[];
+}
+
+/** Problems by pattern, patterns sorted. A problem with several patterns appears in each group. Shared with the playground. */
+export function problemGroups(repo: RepoModel): ProblemGroup[] {
   const groups = new Map<string, ProblemEntry[]>();
   for (const problem of repo.problems) {
     const patterns = strList(problem.data.patterns);
-    for (const pattern of patterns.length > 0 ? patterns : ["(no pattern yet)"]) {
+    for (const pattern of patterns.length > 0 ? patterns : [NO_PATTERN]) {
       groups.set(pattern, [...(groups.get(pattern) ?? []), problem]);
     }
   }
+  return [...groups.keys()].sort().map((pattern) => ({ pattern, problems: groups.get(pattern)! }));
+}
+
+export function renderProblemIndex(repo: RepoModel): string {
+  const groups = problemGroups(repo);
   const lines = ["# Problems", "", GENERATED_NOTE, "", "Status: ✓ solved · … solving · ↺ revealed · ○ todo", ""];
-  if (groups.size === 0) lines.push("_No problems yet. Paste one into Claude Code to start._", "");
-  for (const pattern of [...groups.keys()].sort()) {
-    const items = groups.get(pattern)!;
+  if (groups.length === 0) lines.push("_No problems yet. Paste one into Claude Code to start._", "");
+  for (const { pattern, problems: items } of groups) {
     const solved = items.filter((p) => p.data.status === "solved").length;
     lines.push(`## ${pattern} (${solved}/${items.length})`, "");
     for (const p of items) {

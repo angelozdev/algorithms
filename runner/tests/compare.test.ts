@@ -28,6 +28,15 @@ describe("compareValue", () => {
     expect(compareValue("any-of", [[0, 1], [1, 0]], [1, 0])).toBe(true);
     expect(compareValue("any-of", [[0, 1]], [1, 0])).toBe(false);
   });
+
+  it("unordered-nested: the same groups in any order, each group in any order", () => {
+    expect(compareValue("unordered-nested", [[-1, 0, 1], [-1, -1, 2]], [[2, -1, -1], [0, 1, -1]])).toBe(true);
+    expect(compareValue("unordered-nested", [[], [1]], [[1], []])).toBe(true);
+    expect(compareValue("unordered-nested", [["a", "b"]], [["b", "a"]])).toBe(true);
+    expect(compareValue("unordered-nested", [[1, 2]], [[1, 2], [1, 2]])).toBe(false);
+    expect(compareValue("unordered-nested", [[1, 1, 2]], [[1, 2, 2]])).toBe(false);
+    expect(compareValue("unordered-nested", [1], 1)).toBe(false);
+  });
 });
 
 describe("in-place judging", () => {

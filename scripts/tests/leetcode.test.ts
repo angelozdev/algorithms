@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { buildDraft, htmlToText, type LeetCodeQuestion, mapLeetCodeType, parseOutputs, slugFrom } from "../lib/leetcode.ts";
+import {
+  buildDraft,
+  buildList,
+  copiedRuns,
+  htmlToText,
+  type LeetCodeQuestion,
+  listSlugFrom,
+  mapLeetCodeType,
+  parseOutputs,
+  slugFrom,
+  statementSection,
+} from "../lib/leetcode.ts";
 
 const twoSum: LeetCodeQuestion = {
   questionFrontendId: "1",
@@ -167,4 +178,60 @@ describe("buildDraft", () => {
       hidden: [],
     });
   });
+});
+
+describe("problem lists", () => {
+  it("reads a list slug from a URL or as it is", () => {
+    expect(listSlugFrom("https://leetcode.com/problem-list/rab78cw1/")).toBe("rab78cw1");
+    expect(listSlugFrom("https://leetcode.com/problem-list/rab78cw1/?page=2")).toBe("rab78cw1");
+    expect(listSlugFrom(" rab78cw1 ")).toBe("rab78cw1");
+  });
+
+  it("turns list questions into ids, folders and URLs", () => {
+    expect(
+      buildList("Grind 75", [
+        { questionFrontendId: "3", title: "Some Title", titleSlug: "some-title", difficulty: "MEDIUM", paidOnly: false },
+      ]),
+    ).toEqual({
+      name: "Grind 75",
+      questions: [
+        {
+          id: "lc-0003",
+          folder: "lc-0003-some-title",
+          title: "Some Title",
+          slug: "some-title",
+          difficulty: "medium",
+          url: "https://leetcode.com/problems/some-title/",
+          paidOnly: false,
+        },
+      ],
+    });
+  });
+});
+
+describe("paraphrase check", () => {
+  const original = "The quick brown fox jumps over the lazy dog while the cat sleeps on the warm mat.";
+
+  it("finds runs of ten or more words copied from the original", () => {
+    expect(copiedRuns(original, "Look: the quick brown fox jumps over the lazy dog while the cat sleeps, really.")).toEqual([
+      "the quick brown fox jumps over the lazy dog while the cat sleeps",
+    ]);
+  });
+
+  it("ignores shorter overlaps, and compares without case or punctuation", () => {
+    expect(copiedRuns(original, "A fox jumps over the lazy dog, then the cat naps.")).toEqual([]);
+    expect(copiedRuns("A b c d e f g h i j", "a, B; c d E f g h i J!")).toEqual(["a b c d e f g h i j"]);
+  });
+
+  it("reads only the paraphrase of a problem README", () => {
+    const readme = "---\nid: lc-0001\n---\n# 1. Title\n\n## Statement\n\nOwn words here.\n\n**Examples**\n\n- `copied` → `1`\n\n## Concepts\n";
+    expect(statementSection(readme)).toBe("Own words here.");
+    expect(statementSection("# No statement\n")).toBe("");
+  });
+});
+
+it("warns when LeetCode builds the input or judges the answer by hand", () => {
+  const manual = { ...twoSum, metaData: JSON.stringify({ ...JSON.parse(twoSum.metaData), manual: true }) };
+  expect(buildDraft(manual).warnings.some((warning) => warning.includes('"manual"'))).toBe(true);
+  expect(buildDraft(twoSum).warnings.some((warning) => warning.includes('"manual"'))).toBe(false);
 });

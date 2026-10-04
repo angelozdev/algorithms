@@ -1,6 +1,9 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parseMarkdown } from "./frontmatter.ts";
+import { exerciseIdFromFolder, problemIdFromFolder } from "./ids.ts";
+
+export { exerciseIdFromFolder, problemIdFromFolder };
 
 export interface DocEntry {
   /** Absolute folder path. */
@@ -38,16 +41,6 @@ export interface RepoModel {
   problems: ProblemEntry[];
   exercises: ExerciseEntry[];
   concepts: ConceptEntry[];
-}
-
-/** "lc-0001-two-sum" → "lc-0001"; folders without a number keep their full name. */
-export function problemIdFromFolder(folder: string): string {
-  return /^([a-z]+-\d{4})-/.exec(folder)?.[1] ?? folder;
-}
-
-/** ("greedy", "01-coins") → "greedy/01" */
-export function exerciseIdFromFolder(concept: string, folder: string): string {
-  return `${concept}/${/^(\d{2})-/.exec(folder)?.[1] ?? folder}`;
 }
 
 export function str(value: unknown, fallback = ""): string {
@@ -104,4 +97,16 @@ export function scanRepo(root: string): RepoModel {
     }
   }
   return { root, problems, exercises, concepts };
+}
+
+/**
+ * In progress: status solving, or todo with a solution file (created by pnpm watch or the playground).
+ * The reminder hook (.claude/hooks/reminder.mjs) applies the same rule in plain JavaScript.
+ */
+export function isInProgress(entry: Pick<DocEntry, "dir" | "data">): boolean {
+  if (entry.data.status === "solving") return true;
+  return (
+    entry.data.status === "todo" &&
+    ["solution.py", "solution.ts"].some((name) => existsSync(path.join(entry.dir, name)))
+  );
 }

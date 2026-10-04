@@ -4,51 +4,150 @@
 
 Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
-## arrays-hashing (3/3)
+## arrays-hashing (3/9)
 
 - ✓ [lc-0001 · Two Sum](problems/lc-0001-two-sum/README.md) · easy
+- ○ [lc-0054 · Spiral Matrix](problems/lc-0054-spiral-matrix/README.md) · medium
+- ○ [lc-0169 · Majority Element](problems/lc-0169-majority-element/README.md) · easy
+- ○ [lc-0217 · Contains Duplicate](problems/lc-0217-contains-duplicate/README.md) · easy
+- ○ [lc-0238 · Product of Array Except Self](problems/lc-0238-product-of-array-except-self/README.md) · medium
+- ○ [lc-0242 · Valid Anagram](problems/lc-0242-valid-anagram/README.md) · easy
+- ○ [lc-0383 · Ransom Note](problems/lc-0383-ransom-note/README.md) · easy
 - ✓ [lc-1672 · Richest Customer Wealth](problems/lc-1672-richest-customer-wealth/README.md) · easy
 - ✓ [lc-1920 · Build Array from Permutation](problems/lc-1920-build-array-from-permutation/README.md) · easy
 
-## binary-search (0/1)
+## backtracking (0/5)
 
+- ○ [lc-0017 · Letter Combinations of a Phone Number](problems/lc-0017-letter-combinations-of-a-phone-number/README.md) · medium
+- ○ [lc-0039 · Combination Sum](problems/lc-0039-combination-sum/README.md) · medium
+- ○ [lc-0046 · Permutations](problems/lc-0046-permutations/README.md) · medium
+- ○ [lc-0078 · Subsets](problems/lc-0078-subsets/README.md) · medium
+- ○ [lc-0079 · Word Search](problems/lc-0079-word-search/README.md) · medium
+
+## binary-search (0/5)
+
+- ○ [lc-0033 · Search in Rotated Sorted Array](problems/lc-0033-search-in-rotated-sorted-array/README.md) · medium
 - … [lc-0035 · Search Insert Position](problems/lc-0035-search-insert-position/README.md) · easy
+- ○ [lc-0278 · First Bad Version](problems/lc-0278-first-bad-version/README.md) · easy
+- ○ [lc-0704 · Binary Search](problems/lc-0704-binary-search/README.md) · easy
+- ○ [lc-0981 · Time Based Key-Value Store](problems/lc-0981-time-based-key-value-store/README.md) · medium
 
 ## bit-manipulation (1/1)
 
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## dp-1d (1/1)
+## dp-1d (1/6)
 
+- ○ [lc-0053 · Maximum Subarray](problems/lc-0053-maximum-subarray/README.md) · medium
 - ✓ [lc-0070 · Climbing Stairs](problems/lc-0070-climbing-stairs/README.md) · easy
+- ○ [lc-0139 · Word Break](problems/lc-0139-word-break/README.md) · medium
+- ○ [lc-0322 · Coin Change](problems/lc-0322-coin-change/README.md) · medium
+- ○ [lc-0416 · Partition Equal Subset Sum](problems/lc-0416-partition-equal-subset-sum/README.md) · medium
+- ○ [lc-1235 · Maximum Profit in Job Scheduling](problems/lc-1235-maximum-profit-in-job-scheduling/README.md) · hard
 
-## linked-list (2/3)
+## dp-2d (0/2)
+
+- ○ [lc-0005 · Longest Palindromic Substring](problems/lc-0005-longest-palindromic-substring/README.md) · medium
+- ○ [lc-0062 · Unique Paths](problems/lc-0062-unique-paths/README.md) · medium
+
+## graphs (0/9)
+
+- ○ [lc-0127 · Word Ladder](problems/lc-0127-word-ladder/README.md) · hard
+- ○ [lc-0133 · Clone Graph](problems/lc-0133-clone-graph/README.md) · medium
+- ○ [lc-0200 · Number of Islands](problems/lc-0200-number-of-islands/README.md) · medium
+- ○ [lc-0207 · Course Schedule](problems/lc-0207-course-schedule/README.md) · medium
+- ○ [lc-0310 · Minimum Height Trees](problems/lc-0310-minimum-height-trees/README.md) · medium
+- ○ [lc-0542 · 01 Matrix](problems/lc-0542-01-matrix/README.md) · medium
+- ○ [lc-0721 · Accounts Merge](problems/lc-0721-accounts-merge/README.md) · medium
+- ○ [lc-0733 · Flood Fill](problems/lc-0733-flood-fill/README.md) · easy
+- ○ [lc-0994 · Rotting Oranges](problems/lc-0994-rotting-oranges/README.md) · medium
+
+## greedy (0/1)
+
+- ○ [lc-0621 · Task Scheduler](problems/lc-0621-task-scheduler/README.md) · medium
+
+## heap (0/3)
+
+- ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+- ○ [lc-0295 · Find Median from Data Stream](problems/lc-0295-find-median-from-data-stream/README.md) · hard
+- ○ [lc-0973 · K Closest Points to Origin](problems/lc-0973-k-closest-points-to-origin/README.md) · medium
+
+## intervals (0/2)
+
+- ○ [lc-0056 · Merge Intervals](problems/lc-0056-merge-intervals/README.md) · medium
+- ○ [lc-0057 · Insert Interval](problems/lc-0057-insert-interval/README.md) · medium
+
+## linked-list (2/8)
 
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
+- ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+- ○ [lc-0141 · Linked List Cycle](problems/lc-0141-linked-list-cycle/README.md) · easy
+- ○ [lc-0146 · LRU Cache](problems/lc-0146-lru-cache/README.md) · medium
+- ○ [lc-0206 · Reverse Linked List](problems/lc-0206-reverse-linked-list/README.md) · easy
+- ○ [lc-0876 · Middle of the Linked List](problems/lc-0876-middle-of-the-linked-list/README.md) · easy
 - … [lc-2181 · Merge Nodes in Between Zeros](problems/lc-2181-merge-nodes-in-between-zeros/README.md) · medium
 - ✓ [lc-2807 · Insert Greatest Common Divisors in Linked List](problems/lc-2807-insert-greatest-common-divisors-in-linked-list/README.md) · medium
 
-## math (4/4)
+## math (4/5)
 
 - ✓ [lc-0009 · Palindrome Number](problems/lc-0009-palindrome-number/README.md) · easy
 - ✓ [lc-0066 · Plus One](problems/lc-0066-plus-one/README.md) · easy
+- ○ [lc-0067 · Add Binary](problems/lc-0067-add-binary/README.md) · easy
 - ✓ [lc-2807 · Insert Greatest Common Divisors in Linked List](problems/lc-2807-insert-greatest-common-divisors-in-linked-list/README.md) · medium
 - ✓ [lc-2894 · Divisible and Non-divisible Sums Difference](problems/lc-2894-divisible-and-non-divisible-sums-difference/README.md) · easy
 
-## stack (1/1)
+## sliding-window (0/4)
+
+- ○ [lc-0003 · Longest Substring Without Repeating Characters](problems/lc-0003-longest-substring-without-repeating-characters/README.md) · medium
+- ○ [lc-0076 · Minimum Window Substring](problems/lc-0076-minimum-window-substring/README.md) · hard
+- ○ [lc-0121 · Best Time to Buy and Sell Stock](problems/lc-0121-best-time-to-buy-and-sell-stock/README.md) · easy
+- ○ [lc-0438 · Find All Anagrams in a String](problems/lc-0438-find-all-anagrams-in-a-string/README.md) · medium
+
+## stack (1/6)
 
 - ✓ [lc-0020 · Valid Parentheses](problems/lc-0020-valid-parentheses/README.md) · easy
+- ○ [lc-0084 · Largest Rectangle in Histogram](problems/lc-0084-largest-rectangle-in-histogram/README.md) · hard
+- ○ [lc-0150 · Evaluate Reverse Polish Notation](problems/lc-0150-evaluate-reverse-polish-notation/README.md) · medium
+- ○ [lc-0155 · Min Stack](problems/lc-0155-min-stack/README.md) · medium
+- ○ [lc-0224 · Basic Calculator](problems/lc-0224-basic-calculator/README.md) · hard
+- ○ [lc-0232 · Implement Queue using Stacks](problems/lc-0232-implement-queue-using-stacks/README.md) · easy
 
-## strings (5/5)
+## strings (5/7)
 
+- ○ [lc-0008 · String to Integer (atoi)](problems/lc-0008-string-to-integer-atoi/README.md) · medium
 - ✓ [lc-0028 · Find the Index of the First Occurrence in a String](problems/lc-0028-find-the-index-of-the-first-occurrence-in-a-string/README.md) · easy
 - ✓ [lc-0058 · Length of Last Word](problems/lc-0058-length-of-last-word/README.md) · easy
+- ○ [lc-0409 · Longest Palindrome](problems/lc-0409-longest-palindrome/README.md) · easy
 - ✓ [lc-2942 · Find Words Containing Character](problems/lc-2942-find-words-containing-character/README.md) · easy
 - ✓ [lc-3110 · Score of a String](problems/lc-3110-score-of-a-string/README.md) · easy
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## two-pointers (2/3)
+## trees (0/12)
 
+- ○ [lc-0098 · Validate Binary Search Tree](problems/lc-0098-validate-binary-search-tree/README.md) · medium
+- ○ [lc-0102 · Binary Tree Level Order Traversal](problems/lc-0102-binary-tree-level-order-traversal/README.md) · medium
+- ○ [lc-0104 · Maximum Depth of Binary Tree](problems/lc-0104-maximum-depth-of-binary-tree/README.md) · easy
+- ○ [lc-0105 · Construct Binary Tree from Preorder and Inorder Traversal](problems/lc-0105-construct-binary-tree-from-preorder-and-inorder-traversal/README.md) · medium
+- ○ [lc-0110 · Balanced Binary Tree](problems/lc-0110-balanced-binary-tree/README.md) · easy
+- ○ [lc-0199 · Binary Tree Right Side View](problems/lc-0199-binary-tree-right-side-view/README.md) · medium
+- ○ [lc-0226 · Invert Binary Tree](problems/lc-0226-invert-binary-tree/README.md) · easy
+- ○ [lc-0230 · Kth Smallest Element in a BST](problems/lc-0230-kth-smallest-element-in-a-bst/README.md) · medium
+- ○ [lc-0235 · Lowest Common Ancestor of a Binary Search Tree](problems/lc-0235-lowest-common-ancestor-of-a-binary-search-tree/README.md) · medium
+- ○ [lc-0236 · Lowest Common Ancestor of a Binary Tree](problems/lc-0236-lowest-common-ancestor-of-a-binary-tree/README.md) · medium
+- ○ [lc-0297 · Serialize and Deserialize Binary Tree](problems/lc-0297-serialize-and-deserialize-binary-tree/README.md) · hard
+- ○ [lc-0543 · Diameter of Binary Tree](problems/lc-0543-diameter-of-binary-tree/README.md) · easy
+
+## tries (0/1)
+
+- ○ [lc-0208 · Implement Trie (Prefix Tree)](problems/lc-0208-implement-trie-prefix-tree/README.md) · medium
+
+## two-pointers (2/8)
+
+- ○ [lc-0011 · Container With Most Water](problems/lc-0011-container-with-most-water/README.md) · medium
+- ○ [lc-0015 · 3Sum](problems/lc-0015-3sum/README.md) · medium
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
 - … [lc-0026 · Remove Duplicates from Sorted Array](problems/lc-0026-remove-duplicates-from-sorted-array/README.md) · easy
 - ✓ [lc-0027 · Remove Element](problems/lc-0027-remove-element/README.md) · easy
+- ○ [lc-0042 · Trapping Rain Water](problems/lc-0042-trapping-rain-water/README.md) · hard
+- ○ [lc-0075 · Sort Colors](problems/lc-0075-sort-colors/README.md) · medium
+- ○ [lc-0125 · Valid Palindrome](problems/lc-0125-valid-palindrome/README.md) · easy

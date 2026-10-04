@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "findAnagrams",
+  "params": [
+    {"name":"s","type":"string"},
+    {"name":"p","type":"string"}
+  ],
+  "returns": "int[]",
+  "compare": "unordered",
+  "examples": [
+    {"input":["cbaebabacd","abc"],"expected":[0,6]},
+    {"input":["abab","ab"],"expected":[0,1,2]}
+  ],
+  "hidden": [
+    {"input":["a","a"],"expected":[0]},
+    {"input":["a","b"],"expected":[]},
+    {"input":["aa","a"],"expected":[0,1]},
+    {"input":["ab","ab"],"expected":[0]},
+    {"input":["baba","ab"],"expected":[0,1,2]},
+    {"input":["aaaaaa","aa"],"expected":[0,1,2,3,4]},
+    {"input":["ab","abc"],"expected":[]},
+    {"input":["aabbcc","abc"],"expected":[]}
+  ]
+}

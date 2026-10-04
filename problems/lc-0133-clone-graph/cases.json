@@ -1,0 +1,22 @@
+{
+  "entry": "cloneGraph",
+  "params": [
+    {"name":"node","type":"GraphNode"}
+  ],
+  "returns": "GraphNode",
+  "compare": "exact",
+  "examples": [
+    {"input":[[[2,4],[1,3],[2,4],[1,3]]],"expected":[[2,4],[1,3],[2,4],[1,3]]},
+    {"input":[[[]]],"expected":[[]]},
+    {"input":[[]],"expected":[]}
+  ],
+  "hidden": [
+    {"input":[[]],"expected":[]},
+    {"input":[[[]]],"expected":[[]]},
+    {"input":[[[2],[1]]],"expected":[[2],[1]]},
+    {"input":[[[2,3],[1,3],[1,2]]],"expected":[[2,3],[1,3],[1,2]]},
+    {"input":[[[2],[1,3],[2]]],"expected":[[2],[1,3],[2]]},
+    {"input":[[[2,3,4],[1],[1],[1]]],"expected":[[2,3,4],[1],[1],[1]]},
+    {"input":[[[2,5],[1,3],[2,4],[3,5],[4,1]]],"expected":[[2,5],[1,3],[2,4],[3,5],[4,1]]}
+  ]
+}

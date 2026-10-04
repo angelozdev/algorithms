@@ -347,6 +347,24 @@ describe("guard-solution hook", () => {
     expect(elsewhere("git stash")).toBe("allow");
     expect(elsewhere("git reset --hard")).toBe("allow");
   });
+
+  it("denies calls to the playground API that would read or write the user's files", () => {
+    expectBash(
+      [
+        `curl -X PUT http://127.0.0.1:4173/api/solution -H 'content-type: application/json' -d '{"id":"lc-0001"}'`,
+        `curl -s "http://localhost:4173/api/solution?id=lc-0001&lang=py"`,
+        `wget --method=PUT http://127.0.0.1:4173/api/concept/explanation`,
+        `http PUT :4173/api/solution id=lc-0001`,
+        `xh PUT :4173/api/solution id=lc-0001`,
+        `https PUT 127.0.0.1:4173/api/concept/explanation slug=hash-map`,
+        `xhs :4173/api/solution id=lc-0001 lang=py`,
+        `node -e "fetch('http://127.0.0.1:4173/api/solution', { method: 'PUT' })"`,
+      ],
+      "deny",
+    );
+    expect(bashReason(`curl -X PUT http://127.0.0.1:4173/api/solution`)).toContain("playground API");
+    expectBash([`curl -s http://127.0.0.1:4173/api/home`, `curl -s -X POST http://127.0.0.1:4173/api/run -d '{}'`], "allow");
+  });
 });
 
 describe("reminder hook", () => {

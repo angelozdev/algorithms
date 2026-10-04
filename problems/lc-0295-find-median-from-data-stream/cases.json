@@ -1,0 +1,18 @@
+{
+  "mode": "class",
+  "entry": "MedianFinder",
+  "compare": "float",
+  "examples": [
+    {"input":{"ops":["MedianFinder","addNum","addNum","findMedian","addNum","findMedian"],"args":[[],[1],[2],[],[3],[]]},"expected":[null,null,null,1.5,null,2]}
+  ],
+  "hidden": [
+    {"input":{"ops":["MedianFinder","addNum","findMedian"],"args":[[],[5],[]]},"expected":[null,null,5]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","findMedian"],"args":[[],[4],[8],[]]},"expected":[null,null,null,6]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","addNum","findMedian"],"args":[[],[-5],[0],[5],[]]},"expected":[null,null,null,null,0]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","addNum","addNum","findMedian"],"args":[[],[3],[3],[3],[3],[]]},"expected":[null,null,null,null,null,3]},
+    {"input":{"ops":["MedianFinder","addNum","findMedian","addNum","findMedian","addNum","findMedian","addNum","findMedian","addNum","findMedian"],"args":[[],[2],[],[1],[],[5],[],[3],[],[4],[]]},"expected":[null,null,2,null,1.5,null,2,null,2.5,null,3]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","findMedian"],"args":[[],[-100000],[100000],[]]},"expected":[null,null,null,0]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","addNum","addNum","findMedian"],"args":[[],[9],[7],[5],[3],[]]},"expected":[null,null,null,null,null,6]},
+    {"input":{"ops":["MedianFinder","addNum","addNum","addNum","addNum","addNum","findMedian"],"args":[[],[1],[2],[3],[4],[5],[]]},"expected":[null,null,null,null,null,null,3]}
+  ]
+}

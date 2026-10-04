@@ -356,3 +356,8 @@ runner/tests/.tmp/
 # Python bytecode caches
 __pycache__/
 *.py[cod]
+
+# Playwright
+test-results/
+playwright-report/
+playground/e2e/.tmp/

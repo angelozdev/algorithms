@@ -1,0 +1,23 @@
+{
+  "mode": "function",
+  "entry": "longestPalindrome",
+  "params": [
+    {"name":"s","type":"string"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":["abccccdd"],"expected":7},
+    {"input":["a"],"expected":1}
+  ],
+  "hidden": [
+    {"input":["Z"],"expected":1},
+    {"input":["Aa"],"expected":1},
+    {"input":["aaaa"],"expected":4},
+    {"input":["abcde"],"expected":1},
+    {"input":["aabbAABB"],"expected":8},
+    {"input":["aabbc"],"expected":5},
+    {"input":["AAAA"],"expected":4},
+    {"input":["aAbBcCdD"],"expected":1}
+  ]
+}

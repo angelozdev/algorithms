@@ -118,6 +118,15 @@ describe("checkRepo", () => {
     expect(broken.status).toBe(1);
     expect(broken.stdout).toContain('✗ problems/lc-0001-two-sum/README.md: id "nope" does not match');
   });
+
+  it("accepts a kebab-case lists field on problems and rejects anything else", async () => {
+    const root = makeStudyRepo();
+    sync(root);
+    edit(root, "problems/lc-0001-two-sum/README.md", "solution_revealed: false", "solution_revealed: false\nlists: [grind-75]");
+    expect(await messages(root)).toEqual([]);
+    edit(root, "problems/lc-0001-two-sum/README.md", "lists: [grind-75]", "lists: [Grind 75]");
+    expect((await messages(root)).some((e) => e.startsWith("problems/lc-0001-two-sum/README.md: frontmatter lists[0]:"))).toBe(true);
+  });
 });
 
 describe("sectionText", () => {
