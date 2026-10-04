@@ -295,7 +295,7 @@ Run **by the user** (it moves solution files; Claude is denied it), once, from t
 | `playground/server/events.ts` | Also watch `.study/solutions/**` and `.study/state.json` (excluding `study.db*`, `history/`, `exports/`); emit a `progress` event when `state.json`'s version changes. |
 | `playground/server/app.ts` | Routes `GET /api/study/today`, `POST /api/study/start/:id`, `POST /api/study/ack/:announcement`, `POST /api/study/pause`. The DB handle is cached on `globalThis` (the Vite dev server re-evaluates `app.ts`). |
 | `playground/web` | Today section (replaces Continue), announcement banner, "Start review" gate in the work view, editor reset for review and exam attempts. |
-| `.claude/hooks/guard-solution.mjs` | Protect `.study/**` (solutions, history, `study.db*`). Deny Claude `study migrate\|start\|pause\|resume\|phase\|curriculum set`, `sqlite3 … study.db`, and the start/pause endpoints in `PLAYGROUND_FILES`. |
+| `.claude/hooks/guard-solution.mjs` | Protect `.study/**` (solutions, history, `study.db*`). Deny Claude `study migrate\|start\|pause\|resume\|phase set` (`curriculum set` stays allowed: the coach runs it only on the user's explicit request, §6.5), `sqlite3 … study.db`, and the start/pause endpoints in `PLAYGROUND_FILES`. |
 | `.claude/hooks/reminder.mjs` | Read `.study/state.json`. |
 | `.claude/settings.json` | Allow `pnpm -s study:*`, `pnpm -s today:*`. |
 | Skills `problem`, `concept`, `hint`, `review`, `give-up` | Templates without personal fields; record through the CLI; read `study status`. New skill: `coach`. |
