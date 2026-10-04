@@ -28,25 +28,37 @@ function subdirs(dir) {
     .sort();
 }
 
-/** Problem and exercise folders that have a README.md. */
-function itemDirs(root) {
-  const dirs = [...subdirs(path.join(root, "problems"))];
-  for (const concept of subdirs(path.join(root, "concepts"))) dirs.push(...subdirs(path.join(concept, "exercises")));
-  return dirs.filter((dir) => existsSync(path.join(dir, "README.md")));
+/** Where the user's progress lives: $ALGO_STUDY, or <project>/.study (study coach spec §3). */
+function studyDir(root) {
+  return process.env.ALGO_STUDY ? path.resolve(process.env.ALGO_STUDY) : path.join(root, ".study");
 }
 
-/** In progress: status solving, or todo with a solution file (e.g. created by pnpm watch). See CLAUDE.md. */
-function inProgress(dir, text) {
+/** Problem and exercise folders that have a README.md, with the .study/solutions folder kind they map to. */
+function items(root) {
+  const list = subdirs(path.join(root, "problems")).map((dir) => ({ dir, kind: "problems" }));
+  for (const concept of subdirs(path.join(root, "concepts"))) {
+    list.push(...subdirs(path.join(concept, "exercises")).map((dir) => ({ dir, kind: "exercises" })));
+  }
+  return list.filter(({ dir }) => existsSync(path.join(dir, "README.md")));
+}
+
+/**
+ * In progress by READMEs that predate the study coach: status solving, or todo with a solution file in its
+ * folder or under .study/solutions. Mirrors lib/repo.ts's isInProgress.
+ */
+function inProgress(root, item, text) {
   const status = field(text, "status");
   if (status === "solving") return true;
-  return status === "todo" && ["solution.py", "solution.ts"].some((name) => existsSync(path.join(dir, name)));
+  const id = field(text, "id");
+  const dirs = [item.dir, ...(id ? [path.join(studyDir(root), "solutions", item.kind, ...id.split("/"))] : [])];
+  return status === "todo" && dirs.some((dir) => ["solution.py", "solution.ts"].some((name) => existsSync(path.join(dir, name))));
 }
 
 try {
   const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const inProgressItems = itemDirs(root)
-    .map((dir) => ({ dir, text: readFileSync(path.join(dir, "README.md"), "utf8") }))
-    .filter(({ dir, text }) => inProgress(dir, text))
+  const inProgressItems = items(root)
+    .map((item) => ({ item, text: readFileSync(path.join(item.dir, "README.md"), "utf8") }))
+    .filter(({ item, text }) => inProgress(root, item, text))
     .map(({ text }) => `${field(text, "id")} (hints ${field(text, "hints") ?? "0"})`);
   const context = [
     ...RULES,
