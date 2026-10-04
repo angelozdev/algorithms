@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "isAnagram",
+  "params": [
+    {"name":"s","type":"string"},
+    {"name":"t","type":"string"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":["anagram","nagaram"],"expected":true},
+    {"input":["rat","car"],"expected":false}
+  ],
+  "hidden": [
+    {"input":["a","a"],"expected":true},
+    {"input":["a","b"],"expected":false},
+    {"input":["aa","aa"],"expected":true},
+    {"input":["ab","ba"],"expected":true},
+    {"input":["ab","abc"],"expected":false},
+    {"input":["aaaaaaaaaa","aaaaaaaaab"],"expected":false},
+    {"input":["zzzzz","zzzzz"],"expected":true},
+    {"input":["abcdefghijklmnopqrstuvwxyz","zyxwvutsrqponmlkjihgfedcba"],"expected":true}
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "addBinary",
+  "params": [
+    {"name":"a","type":"string"},
+    {"name":"b","type":"string"}
+  ],
+  "returns": "string",
+  "compare": "exact",
+  "examples": [
+    {"input":["11","1"],"expected":"100"},
+    {"input":["1010","1011"],"expected":"10101"}
+  ],
+  "hidden": [
+    {"input":["0","0"],"expected":"0"},
+    {"input":["0","1"],"expected":"1"},
+    {"input":["1","1"],"expected":"10"},
+    {"input":["1111","1111"],"expected":"11110"},
+    {"input":["1","111"],"expected":"1000"},
+    {"input":["1010101010","101010101"],"expected":"1111111111"},
+    {"input":["100000000000000000000","1"],"expected":"100000000000000000001"},
+    {"input":["11","1010"],"expected":"1101"}
+  ]
+}

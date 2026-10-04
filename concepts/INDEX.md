@@ -19,19 +19,23 @@
 ## Missing
 
 - arithmetic-series — referenced by lc-2894
-- binary-representation — referenced by lc-3280
+- binary-representation — referenced by lc-0067, lc-3280
 - binary-search — referenced by lc-0035
-- carry-propagation — referenced by lc-0066
+- boyer-moore-voting — referenced by lc-0169
+- carry-propagation — referenced by lc-0066, lc-0067
 - digit-manipulation — referenced by lc-0009
 - dummy-node — referenced by lc-0021
 - dynamic-programming — referenced by lc-0070
+- frequency-counting — referenced by lc-0242, lc-0383, lc-0409
 - gcd — referenced by lc-2807
+- hash-set — referenced by lc-0217
 - in-place-array-modification — referenced by lc-0026, lc-0027, lc-1920
 - linked-list — referenced by lc-0021, lc-2181, lc-2807
 - matrix-traversal — referenced by lc-1672
 - modular-arithmetic — referenced by lc-1920
 - recursion — referenced by lc-0070
+- sliding-window — referenced by lc-0121
 - stack — referenced by lc-0020
 - string-matching — referenced by lc-0028
-- string-traversal — referenced by lc-0058, lc-2942, lc-3110
-- two-pointers — referenced by lc-0021, lc-0026, lc-0027, lc-2181
+- string-traversal — referenced by lc-0058, lc-0125, lc-2942, lc-3110
+- two-pointers — referenced by lc-0021, lc-0026, lc-0027, lc-0125, lc-2181
