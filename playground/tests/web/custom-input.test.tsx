@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CustomResult } from "../../../runner/src/types.ts";
 import type { Signature } from "../../server/types.ts";
 import { ApiError } from "../../web/api.ts";
-import { CustomInputPanel } from "../../web/components/CustomInputPanel.tsx";
+import { CustomInputPanel, fieldNames } from "../../web/components/CustomInputPanel.tsx";
 
 const SIG: Signature = {
   mode: "function",
@@ -96,5 +96,9 @@ describe("CustomInputPanel", () => {
   it("explains that it needs a valid cases.json", () => {
     render(<CustomInputPanel targetId="lc-0001" signature={null} exampleInput={null} run={vi.fn()} />);
     expect(screen.getByText(/needs a valid cases\.json/)).toBeInTheDocument();
+  });
+
+  it("asks for the single param of a codec problem", () => {
+    expect(fieldNames({ mode: "codec", entry: "Codec", params: [{ name: "root", type: "TreeNode" }], returns: null })).toEqual(["root"]);
   });
 });

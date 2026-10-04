@@ -543,3 +543,85 @@ describe("python harness: api params (Grind 75 spec §3.4)", () => {
     }
   });
 });
+
+describe("python harness: codec mode (Grind 75 spec §3.5)", () => {
+  const codec = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { mode: "codec", entry: "Codec", params: [{ name: "root", type: "TreeNode" }], returns: null, cases });
+
+  it("runs deserialize(serialize(value)) on two instances and judges the rebuilt value", async () => {
+    const file = solution(
+      "codec-fixed",
+      [
+        "from lc import TreeNode",
+        "",
+        "INSTANCES = []",
+        "",
+        "",
+        "class Codec:",
+        "    def __init__(self):",
+        "        INSTANCES.append(self)",
+        "",
+        "    def serialize(self, root):",
+        '        return "tree" if root else ""',
+        "",
+        "    def deserialize(self, data):",
+        "        if len(INSTANCES) % 2 != 0:",
+        '            return TreeNode(9)',
+        "        return TreeNode(1, TreeNode(2)) if data else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      codec(file, [
+        { id: "tree", input: [[1, 2]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("tree")?.output).toEqual([1, 2]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a serialize that returns no string and a deserialize that hands back the input nodes", async () => {
+    const file = solution(
+      "codec-kept",
+      [
+        "KEPT = []",
+        "",
+        "",
+        "class Codec:",
+        "    def serialize(self, root):",
+        "        KEPT.append(root)",
+        '        return 42 if root is not None and root.val == 0 else "kept"',
+        "",
+        "    def deserialize(self, data):",
+        "        return KEPT[-1]",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      codec(file, [
+        { id: "number", input: [[0]] },
+        { id: "kept", input: [[1, 2]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "serialize must return a string, got int" },
+    });
+    expect(outcome.runs.get("kept")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "deserialize returned nodes of the input: build new ones from the string" },
+    });
+  });
+
+  it("needs the codec class", async () => {
+    const file = solution("codec-missing", ["class Other:", "    pass", ""].join("\n"));
+    const outcome = await runHarness("py", codec(file, [{ id: "e1", input: [[1]] }]), { wallLimitMs: 5000 });
+    expect(outcome.fatal).toMatchObject({ kind: "missing-entry", message: 'expected class "Codec"' });
+  });
+});

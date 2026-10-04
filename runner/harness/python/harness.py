@@ -361,8 +361,47 @@ def run_class(target, module, request: dict, raw_input):
     return [plain(result) for result in results], ms
 
 
+def nodes_of(value) -> list:
+    """The node objects of a built tree or list, for telling a rebuilt value from the input one."""
+    nodes, queue, head = [], [value], 0
+    while head < len(queue) and len(nodes) <= MAX_NODES:
+        node = queue[head]
+        head += 1
+        if node is None or not hasattr(node, "val"):
+            continue
+        nodes.append(node)
+        if hasattr(node, "left") or hasattr(node, "right"):
+            queue.append(getattr(node, "left", None))
+            queue.append(getattr(node, "right", None))
+        elif hasattr(node, "next"):
+            queue.append(node.next)
+    return nodes
+
+
+def run_codec(cls, module, request: dict, raw_input):
+    """deser.deserialize(ser.serialize(value)) on two instances, as LeetCode does (Grind 75 spec §3.5)."""
+    param = request["params"][0]
+    value = deserialize(raw_input[0], param["type"])
+    input_nodes = {id(node) for node in nodes_of(value)}
+    ser, deser = cls(), cls()
+    started = time.perf_counter()
+    data = ser.serialize(value)
+    if not isinstance(data, str):
+        raise SerializationError(f"serialize must return a string, got {type(data).__name__}")
+    rebuilt = deser.deserialize(data)
+    ms = (time.perf_counter() - started) * 1000
+    if request["discardOutput"]:
+        return None, ms
+    if any(id(node) in input_nodes for node in nodes_of(rebuilt)):
+        raise SerializationError("deserialize returned nodes of the input: build new ones from the string")
+    return serialize(rebuilt, param["type"]), ms
+
+
+RUNNERS = {"function": run_function, "class": run_class, "codec": run_codec}
+
+
 def run_case(target, module, request: dict, case: dict, solution_path: str) -> None:
-    runner = run_function if request["mode"] == "function" else run_class
+    runner = RUNNERS[request["mode"]]
     buffer = CappedBuffer()
     started = time.perf_counter()
 

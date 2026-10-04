@@ -467,3 +467,75 @@ describe("typescript harness: api params (Grind 75 spec §3.4)", () => {
     });
   });
 });
+
+describe("typescript harness: codec mode (Grind 75 spec §3.5)", () => {
+  const codec = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { mode: "codec", entry: "Codec", params: [{ name: "root", type: "TreeNode" }], returns: null, cases });
+
+  it("runs deserialize(serialize(value)) and judges the rebuilt value", async () => {
+    const file = solution(
+      "codec-fixed",
+      [
+        'import { TreeNode } from "lc";',
+        "export function serialize(root: TreeNode | null): string {",
+        '  return root ? "tree" : "";',
+        "}",
+        "export function deserialize(data: string): TreeNode | null {",
+        '  return data === "" ? null : new TreeNode(1, new TreeNode(2));',
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      codec(file, [
+        { id: "tree", input: [[1, 2]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("tree")?.output).toEqual([1, 2]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a serialize that returns no string and a deserialize that hands back the input nodes", async () => {
+    const file = solution(
+      "codec-kept",
+      [
+        'import { TreeNode } from "lc";',
+        "let kept: TreeNode | null = null;",
+        "export function serialize(root: TreeNode | null): string {",
+        "  kept = root;",
+        '  return root && root.val === 0 ? (42 as unknown as string) : "kept";',
+        "}",
+        "export function deserialize(_data: string): TreeNode | null {",
+        "  return kept;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      codec(file, [
+        { id: "number", input: [[0]] },
+        { id: "kept", input: [[1, 2]] },
+      ]),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "serialize must return a string, got number" },
+    });
+    expect(outcome.runs.get("kept")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "deserialize returned nodes of the input: build new ones from the string" },
+    });
+  });
+
+  it("needs both named exports", async () => {
+    const file = solution("codec-half", ["export function serialize(root: unknown): string {", '  return "";', "}", ""].join("\n"));
+    const outcome = await runHarness("ts", codec(file, [{ id: "e1", input: [[1]] }]), { wallLimitMs: 10_000 });
+    expect(outcome.fatal).toMatchObject({ kind: "missing-entry", message: 'expected exported functions "serialize" and "deserialize"' });
+  });
+});

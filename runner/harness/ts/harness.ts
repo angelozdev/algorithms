@@ -20,7 +20,7 @@ interface Param {
 
 interface Request {
   solutionPath: string;
-  mode: "function" | "class";
+  mode: "function" | "class" | "codec";
   entry: string;
   params: Param[];
   returns: string | null;
@@ -316,6 +316,52 @@ function buildInput(request: Request, input: unknown): Built {
   return { values, args, apis, inputGraph };
 }
 
+/** The node objects of a built tree or list, for telling a rebuilt value from the input one. */
+function nodesOf(value: unknown): unknown[] {
+  const nodes: unknown[] = [];
+  const queue: unknown[] = [value];
+  for (let head = 0; head < queue.length && nodes.length <= MAX_NODES; head++) {
+    const node = queue[head] as Partial<Tree & Linked> | null;
+    if (!node || typeof node !== "object") continue;
+    nodes.push(node);
+    if ("left" in node || "right" in node) queue.push(node.left, node.right);
+    else if ("next" in node) queue.push(node.next);
+  }
+  return nodes;
+}
+
+type Codec = { serialize: Callable; deserialize: Callable };
+
+/** deserialize(serialize(value)), judged by the param's type (Grind 75 spec §3.5). */
+function runCodec(codec: Codec, request: Request, input: unknown): { output: unknown; ms: number } {
+  const param = request.params[0];
+  const value = deserialize((input as unknown[])[0], param.type);
+  const inputNodes = new Set(nodesOf(value));
+  const started = performance.now();
+  const data = codec.serialize(value);
+  if (typeof data !== "string") {
+    throw new SerializationError(`serialize must return a string, got ${data === null ? "null" : typeof data}`);
+  }
+  const rebuilt = codec.deserialize(data);
+  const ms = performance.now() - started;
+  if (request.discardOutput) return { output: null, ms };
+  if (nodesOf(rebuilt).some((node) => inputNodes.has(node))) {
+    throw new SerializationError("deserialize returned nodes of the input: build new ones from the string");
+  }
+  return { output: serialize(rebuilt, param.type), ms };
+}
+
+/** Why the module lacks what the mode needs, or null. */
+function missingEntry(request: Request, loaded: Record<string, unknown>): string | null {
+  if (request.mode === "codec") {
+    return typeof loaded.serialize === "function" && typeof loaded.deserialize === "function"
+      ? null
+      : 'expected exported functions "serialize" and "deserialize"';
+  }
+  if (typeof loaded.default === "function") return null;
+  return `expected default export ${request.mode === "function" ? "function" : "class"} "${request.entry}"`;
+}
+
 function runFunction(fn: Callable, request: Request, input: unknown): { output: unknown; ms: number } {
   const { values, args, apis, inputGraph } = buildInput(request, input);
   let solve = fn;
@@ -360,10 +406,10 @@ async function main(): Promise<void> {
   const request = JSON.parse(readFileSync(0, "utf8")) as Request;
   const solutionPath = path.resolve(request.solutionPath);
 
-  let exported: unknown;
+  let loaded: Record<string, unknown>;
   const stopLoadCapture = capture();
   try {
-    exported = ((await import(pathToFileURL(solutionPath).href)) as { default?: unknown }).default;
+    loaded = (await import(pathToFileURL(solutionPath).href)) as Record<string, unknown>;
   } catch (error) {
     stopLoadCapture();
     emit({ type: "fatal", error: { kind: "load", message: describe(error), trace: userTrace(error, solutionPath) } });
@@ -371,12 +417,9 @@ async function main(): Promise<void> {
   }
   stopLoadCapture();
 
-  if (typeof exported !== "function") {
-    const what = request.mode === "function" ? "function" : "class";
-    emit({
-      type: "fatal",
-      error: { kind: "missing-entry", message: `expected default export ${what} "${request.entry}"`, trace: "" },
-    });
+  const missing = missingEntry(request, loaded);
+  if (missing) {
+    emit({ type: "fatal", error: { kind: "missing-entry", message: missing, trace: "" } });
     return;
   }
 
@@ -388,8 +431,10 @@ async function main(): Promise<void> {
     try {
       const { output, ms } =
         request.mode === "function"
-          ? runFunction(exported as Callable, request, testCase.input)
-          : runClass(exported as Constructor, request, testCase.input);
+          ? runFunction(loaded.default as Callable, request, testCase.input)
+          : request.mode === "class"
+            ? runClass(loaded.default as Constructor, request, testCase.input)
+            : runCodec(loaded as unknown as Codec, request, testCase.input);
       const stdout = stop();
       emit({ type: "case", id: testCase.id, ok: true, output, ms: Number(ms.toFixed(3)), stdout });
     } catch (error) {
