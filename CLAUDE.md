@@ -55,6 +55,8 @@ Use `pnpm -s` whenever you parse output, so pnpm's banner does not corrupt the J
 - `pnpm play [query]`: the web playground, for the user. Do not start it. It writes the same `solution.*` files the user would (autosave) and the "My explanation" section, and never frontmatter: treat what it writes as the user's own edits.
 - `pnpm -s fill-expected <query> --ref <file outside the repo>`: fills hidden expected values.
 - `pnpm -s leetcode <slug|url>`: JSON draft of a LeetCode problem: `id`, `folder`, `title`, `slug`, `difficulty`, `url`, `statement` (verbatim Markdown: paraphrase it before writing the README), `cases` (a draft `cases.json`) and `warnings`.
+- `pnpm -s leetcode --list <slug|url>`: JSON of a LeetCode problem list: `name` and `questions` (`id`, `folder`, `title`, `slug`, `difficulty`, `url`, `paidOnly`).
+- `pnpm -s leetcode --check-paraphrase <README>`: lists runs of 10+ words the README's statement copies from LeetCode (exit code 1 when there are any). Run it after writing every problem README.
 - `pnpm -s sync`, then `pnpm -s check`: after any change to problems or concepts.
 - `pnpm verify`: tool tests + check.
 

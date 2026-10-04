@@ -16,6 +16,7 @@ interface LeetCodeMeta {
   return?: { type: string };
   output?: { paramindex: number; size?: string };
   classname?: string;
+  manual?: boolean;
 }
 
 type Example = { input: unknown; expected?: unknown };
@@ -101,6 +102,85 @@ export function slugFrom(arg: string): string {
   return (match ? match[1] : arg).trim().toLowerCase();
 }
 
+/** "1", "two-sum" → { id: "lc-0001", folder: "lc-0001-two-sum" }. */
+export function folderOf(frontendId: string, slug: string): { id: string; folder: string } {
+  const number = frontendId.padStart(4, "0");
+  return { id: `lc-${number}`, folder: `lc-${number}-${slug}` };
+}
+
+export interface ListQuestion {
+  questionFrontendId: string;
+  title: string;
+  titleSlug: string;
+  difficulty: string;
+  paidOnly: boolean;
+}
+
+export interface ProblemList {
+  name: string;
+  questions: { id: string; folder: string; title: string; slug: string; difficulty: string; url: string; paidOnly: boolean }[];
+}
+
+/** The slug of a LeetCode problem list, from its URL (…/problem-list/<slug>/) or as it is. */
+export function listSlugFrom(arg: string): string {
+  const match = /leetcode\.com\/problem-list\/([^/?#]+)/.exec(arg);
+  return (match ? match[1] : arg).trim();
+}
+
+export function buildList(name: string, questions: readonly ListQuestion[]): ProblemList {
+  return {
+    name,
+    questions: questions.map((question) => ({
+      ...folderOf(question.questionFrontendId, question.titleSlug),
+      title: question.title,
+      slug: question.titleSlug,
+      difficulty: question.difficulty.toLowerCase(),
+      url: `https://leetcode.com/problems/${question.titleSlug}/`,
+      paidOnly: question.paidOnly,
+    })),
+  };
+}
+
+function words(text: string): string[] {
+  return text.toLowerCase().match(/[a-z0-9]+/g) ?? [];
+}
+
+/**
+ * Runs of at least `minWords` consecutive words that `text` shares with `original`, in text order. The repo is
+ * public, so a problem's statement must be paraphrased (Grind 75 spec §6); an empty result passes.
+ */
+export function copiedRuns(original: string, text: string, minWords = 10): string[] {
+  const source = words(original);
+  const target = words(text);
+  const grams = new Set<string>();
+  for (let i = 0; i + minWords <= source.length; i++) grams.add(source.slice(i, i + minWords).join(" "));
+  const covered = new Array<boolean>(target.length).fill(false);
+  for (let i = 0; i + minWords <= target.length; i++) {
+    if (grams.has(target.slice(i, i + minWords).join(" "))) covered.fill(true, i, i + minWords);
+  }
+  const runs: string[] = [];
+  for (let i = 0; i < target.length; ) {
+    if (!covered[i]) {
+      i++;
+      continue;
+    }
+    let end = i;
+    while (end < target.length && covered[end]) end++;
+    runs.push(target.slice(i, end).join(" "));
+    i = end;
+  }
+  return runs;
+}
+
+/** The paraphrase in a problem README: the text after "## Statement", up to the examples or the next section. */
+export function statementSection(readme: string): string {
+  const start = readme.indexOf("## Statement");
+  if (start === -1) return "";
+  const body = readme.slice(start + "## Statement".length);
+  const stop = body.search(/\*\*Examples\*\*|\n## /);
+  return (stop === -1 ? body : body.slice(0, stop)).trim();
+}
+
 function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);
@@ -176,14 +256,17 @@ export function buildDraft(question: LeetCodeQuestion): Draft {
     .filter(Boolean)
     .map(parseJson);
   const warnings: string[] = [];
+  if (meta.manual) {
+    warnings.push(
+      'LeetCode builds this problem\'s input or judges its answer by hand ("manual"): check the params against the runner\'s cycle, ref and api marks and its codec mode',
+    );
+  }
   const cases = meta.classname ? classDraft(meta, lines, outputs) : functionDraft(meta, lines, outputs, statement, warnings);
   cases.examples.forEach((example, i) => {
     if (!("expected" in example)) warnings.push(`could not parse the expected output of example ${i + 1} — fill it from the statement`);
   });
-  const number = question.questionFrontendId.padStart(4, "0");
   return {
-    id: `lc-${number}`,
-    folder: `lc-${number}-${question.titleSlug}`,
+    ...folderOf(question.questionFrontendId, question.titleSlug),
     title: question.title,
     slug: question.titleSlug,
     difficulty: question.difficulty.toLowerCase(),

@@ -36,6 +36,8 @@ uv python install 3.13   # only if `uv python find` finds nothing
 | `pnpm test <query> [--lang py\|ts\|all] [--json]` | Runs once |
 | `pnpm fill-expected <query> --ref <file>` | Fills hidden expected values from a reference solution outside the repo |
 | `pnpm leetcode <slug\|url>` | Prints a LeetCode problem as a JSON draft |
+| `pnpm leetcode --list <slug\|url>` | Prints a LeetCode problem list (for example Grind 75) as JSON |
+| `pnpm leetcode --check-paraphrase <README>` | Flags runs of 10+ words a problem README copies from LeetCode's statement |
 | `pnpm sync` | Regenerates the indexes and backlinks |
 | `pnpm check` | Validates files and links |
 | `pnpm verify` | Runs the tool tests, the type checks and `check` |

@@ -56,6 +56,7 @@ complexity: null
 
 - Quote a `title` that contains a colon (`title: "Foo: Bar"`).
 - Use `status: todo` instead of `solving` if the user says the problem is for later.
+- Run `pnpm -s leetcode --check-paraphrase problems/<folder>/README.md` and rewrite every sentence it flags until `copied` is empty.
 
 ## 3. Write `cases.json`
 
