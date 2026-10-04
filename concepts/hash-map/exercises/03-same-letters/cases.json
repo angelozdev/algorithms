@@ -1,24 +1,23 @@
 {
   "mode": "function",
-  "entry": "sameLetters",
+  "entry": "groupSameLetters",
   "params": [
-    {"name":"a","type":"string"},
-    {"name":"b","type":"string"}
+    {"name":"words","type":"string[]"}
   ],
-  "returns": "bool",
-  "compare": "exact",
+  "returns": "string[][]",
+  "compare": "unordered-nested",
   "examples": [
-    {"input":["listen","silent"],"expected":true},
-    {"input":["rat","car"],"expected":false},
-    {"input":["aab","abb"],"expected":false}
+    {"input":[["eat","tea","tan","ate","nat","bat"]],"expected":[["eat","tea","ate"],["tan","nat"],["bat"]]},
+    {"input":[["a"]],"expected":[["a"]]},
+    {"input":[[""]],"expected":[[""]]}
   ],
   "hidden": [
-    {"input":["",""],"expected":true},
-    {"input":["a","a"],"expected":true},
-    {"input":["a","b"],"expected":false},
-    {"input":["ab","a"],"expected":false},
-    {"input":["aabbcc","cbacba"],"expected":true},
-    {"input":["abc","abcc"],"expected":false},
-    {"input":["zzzz","zzzz"],"expected":true}
+    {"input":[["abc","bca","cab"]],"expected":[["abc","bca","cab"]]},
+    {"input":[["abc","def","ghi"]],"expected":[["abc"],["def"],["ghi"]]},
+    {"input":[["","",""]],"expected":[["","",""]]},
+    {"input":[["ab","ba","a","b"]],"expected":[["ab","ba"],["a"],["b"]]},
+    {"input":[["aab","aba","baa","ab"]],"expected":[["aab","aba","baa"],["ab"]]},
+    {"input":[["listen","silent","enlist","google"]],"expected":[["listen","silent","enlist"],["google"]]},
+    {"input":[["a","a","a"]],"expected":[["a","a","a"]]}
   ]
 }

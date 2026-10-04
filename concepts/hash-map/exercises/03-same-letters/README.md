@@ -11,16 +11,17 @@ solved_in: []
 
 ## Statement
 
-Return `true` if `b` uses exactly the same letters as `a`, each one the same number of times (in other words, `b` is a rearrangement of `a`), and `false` otherwise.
+Given a list of `words`, group together every word that uses exactly the same letters as another, each letter the same number of times (so the words in a group are rearrangements of each other). Return the groups: both the order of the groups and the order of the words inside each group can be anything.
 
 **Examples**
 
-- `a = "listen", b = "silent"` → `true`
-- `a = "rat", b = "car"` → `false`
-- `a = "aab", b = "abb"` → `false`
+- `words = ["eat","tea","tan","ate","nat","bat"]` → `[["eat","tea","ate"],["tan","nat"],["bat"]]`
+- `words = ["a"]` → `[["a"]]`
+- `words = [""]` → `[[""]]`
 
-**Constraints:** `0 <= a.length, b.length <= 5 * 10^4` · lowercase English letters
+**Constraints:** `1 <= words.length <= 10^5` · `0 <= words[i].length <= 100` · lowercase English letters
 
 ## Log
 
 - 2026-09-27 · created
+- 2026-10-04 · statement reworded: the previous version (a two-string anagram check) was isomorphic to problems/lc-0242-valid-anagram
