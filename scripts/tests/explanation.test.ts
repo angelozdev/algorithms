@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explanationIssues, joinExplanation, splitExplanation } from "../../server/explanation.ts";
+import { explanationIssues, joinExplanation, splitExplanation } from "../../lib/explanation.ts";
 
 const BODY =
   "# Hash map\n\n## Intuition\n\nAn analogy.\n\n## My explanation\n\n<!-- USER: in your own words -->\n\n## Problems\n\n- one\n";

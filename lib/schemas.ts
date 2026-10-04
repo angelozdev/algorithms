@@ -58,3 +58,13 @@ export const conceptFrontmatter = z
     related: z.array(z.string().min(1)),
   })
   .strict();
+
+/**
+ * Personal progress READMEs held before the study coach (spec §9.4, §10). `pnpm study migrate` removes these
+ * fields (with the README's `## Log` and its "My explanation" text); `pnpm check` reports any left behind.
+ */
+export const LEGACY_PERSONAL_FIELDS = {
+  problem: ["status", "hints", "solution_revealed", "solved_in", "complexity"],
+  exercise: ["status", "hints", "solution_revealed", "solved_in"],
+  concept: ["status"],
+} as const satisfies Record<"problem" | "exercise" | "concept", readonly string[]>;

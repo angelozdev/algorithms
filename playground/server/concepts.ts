@@ -1,9 +1,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { Hono } from "hono";
 import { z } from "zod";
+import { explanationIssues, joinExplanation, splitExplanation } from "../../lib/explanation.ts";
 import { parseMarkdown } from "../../lib/frontmatter.ts";
 import { type ConceptEntry, scanRepo, str } from "../../lib/repo.ts";
-import { explanationIssues, joinExplanation, splitExplanation } from "./explanation.ts";
 import { contentVersion } from "./solutions.ts";
 import { conceptStatus } from "./targets.ts";
 import type { ConceptData } from "./types.ts";
