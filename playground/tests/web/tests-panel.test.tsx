@@ -45,6 +45,9 @@ describe("TestsPanel", () => {
     panel({ result: result() });
     expect(screen.getByText(/Green in py/)).toBeInTheDocument();
     expect(screen.getByText("/review")).toBeInTheDocument();
+    // A polite status, not an assertive alert: three green runs in a row should not interrupt three times.
+    expect(screen.getByRole("status")).toHaveTextContent("Green in py.");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Example 1: passed, 0.20 ms" })).toBeInTheDocument();
     expect(screen.getByRole("img", { name: "Example 2: passed, 83 ms" })).toBeInTheDocument();
     expect(screen.queryByRole("table", { name: "Failures" })).not.toBeInTheDocument();
@@ -102,6 +105,8 @@ describe("TestsPanel", () => {
     expect(cells(tableRows("Failures")[0]!)).toEqual(["1", "nums=[1], target=1", "[0,0]", "error"]);
     expect(screen.getByText("exception: IndexError: list index out of range")).toBeInTheDocument();
     expect(screen.getByText("line 3, in twoSum")).toBeInTheDocument();
+    // Already read as part of the row below the failure; not a second, separately-announced alert.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("shows a load error with its trace instead of the results", () => {

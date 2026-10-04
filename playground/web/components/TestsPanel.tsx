@@ -144,7 +144,8 @@ function FailuresTable({ rows }: { rows: FailureRow[] }) {
             {row.error && (
               <TableRow>
                 <TableCell colSpan={4} className="whitespace-normal">
-                  <ErrorBox error={row.error} />
+                  {/* Already read as part of this row; not announced again as a separate alert. */}
+                  <ErrorBox error={row.error} role={undefined} />
                 </TableCell>
               </TableRow>
             )}
@@ -241,7 +242,7 @@ export function TestsPanel({ result, running, elapsedMs, stale, caseError, param
         <div className={cn("space-y-3", running && "opacity-50")}>
           {stale && <Badge variant="warning">Cases changed — run again</Badge>}
           {result.green && (
-            <Alert variant="success">
+            <Alert variant="success" role="status">
               <CircleCheck aria-hidden />
               <AlertTitle>Green in {result.lang}.</AlertTitle>
               <AlertDescription>

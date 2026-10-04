@@ -163,7 +163,9 @@ function StatementPane({ target, trail, onConcept, onBack }: { target: TargetDat
   }
   if (target.readmeError) {
     return (
-      <Alert variant="destructive">
+      // No live role: the statement pane already renders in the normal reading order, so this is not an
+      // interrupt like the disconnection banner or a save conflict.
+      <Alert variant="destructive" role={undefined}>
         <TriangleAlert aria-hidden />
         <AlertDescription>
           {target.readme || "README.md"}: {target.readmeError}
