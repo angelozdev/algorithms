@@ -27,8 +27,6 @@ Given an integer array `nums` and an integer `target`, return the indices of the
 
 **Constraints:** `2 <= nums.length <= 10^4` · `-10^9 <= nums[i], target <= 10^9` · exactly one answer exists
 
-**Follow-up:** Can you do better than O(n²) time?
-
 ## Concepts
 
 <!-- auto:concepts -->

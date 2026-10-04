@@ -25,8 +25,6 @@ complexity: null
 
 **Constraints:** `1 <= nums.length <= 1000` · `0 <= nums[i] < nums.length` · all values are distinct
 
-**Follow-up:** Can you solve it with O(1) extra memory?
-
 ## Concepts
 
 <!-- auto:concepts -->

@@ -16,7 +16,7 @@ complexity: null
 
 ## Statement
 
-`nums` is sorted in ascending order and has distinct values. Return the index of `target` if it is in `nums`; otherwise return the index where it would be inserted to keep the order. The algorithm must run in O(log n) time.
+`nums` is sorted in ascending order and has distinct values. Return the index of `target` if it is in `nums`; otherwise return the index where it would be inserted to keep the order.
 
 **Examples**
 
