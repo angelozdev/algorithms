@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
-import type { CaseEntry, CaseFile } from "./types.ts";
+import { API_NAMES, type CaseEntry, type CaseFile, type Param } from "./types.ts";
 
 export class CaseFileError extends Error {
   constructor(
@@ -13,8 +13,11 @@ export class CaseFileError extends Error {
   }
 }
 
-const BASE_TYPES = new Set(["int", "float", "bool", "string", "ListNode", "TreeNode"]);
-const TYPE_HINT = "int | float | bool | string | ListNode | TreeNode, with optional [] suffixes";
+const BASE_TYPES = new Set(["int", "float", "bool", "string", "ListNode", "TreeNode", "GraphNode"]);
+const TYPE_HINT = "int | float | bool | string | ListNode | TreeNode | GraphNode, with optional [] suffixes";
+
+/** A return type only: a node inside an input tree, judged by its value (Grind 75 spec §3.2). */
+export const NODE_VALUE_RETURN = "TreeNode.val";
 
 export function isValueType(type: string): boolean {
   let base = type;
@@ -27,20 +30,30 @@ const valueType = z
   .refine(isValueType, { message: `unknown type (expected ${TYPE_HINT})` });
 const returnType = z
   .string()
-  .refine((type) => type === "void" || isValueType(type), {
-    message: `unknown type (expected void or ${TYPE_HINT})`,
+  .refine((type) => type === "void" || type === NODE_VALUE_RETURN || isValueType(type), {
+    message: `unknown type (expected void, ${NODE_VALUE_RETURN} or ${TYPE_HINT})`,
   });
 const required = z.custom<unknown>((value) => value !== undefined, { message: "required" });
 
 const caseEntrySchema = z.object({ input: required, expected: z.unknown().optional() }).strict();
 
+const paramSchema = z
+  .object({
+    name: z.string().min(1),
+    type: valueType,
+    cycle: z.string().min(1).optional(),
+    ref: z.string().min(1).optional(),
+    api: z.enum(API_NAMES).optional(),
+  })
+  .strict();
+
 const caseFileSchema = z
   .object({
-    mode: z.enum(["function", "class"]).optional(),
+    mode: z.enum(["function", "class", "codec"]).optional(),
     entry: z.string().min(1),
-    params: z.array(z.object({ name: z.string().min(1), type: valueType }).strict()).optional(),
+    params: z.array(paramSchema).optional(),
     returns: returnType.optional(),
-    compare: z.enum(["exact", "unordered", "float", "any-of"]).optional(),
+    compare: z.enum(["exact", "unordered", "unordered-nested", "float", "any-of"]).optional(),
     inPlace: z
       .object({ param: z.string().min(1), prefix: z.literal("return").optional() })
       .strict()
@@ -75,7 +88,7 @@ function classInput(input: unknown): { ops: unknown[]; args: unknown[] } | null 
  * class mode takes { ops, args }. `where` prefixes each issue (e.g. "hidden[3]").
  */
 export function inputIssues(signature: Signature, input: unknown, where: string): string[] {
-  if (signature.mode === "function") {
+  if (signature.mode !== "class") {
     const count = signature.params.length;
     if (!Array.isArray(input)) return [`${where}.input: expected an array of ${count} params`];
     return input.length === count ? [] : [`${where}.input: expected ${count} params, got ${input.length}`];
@@ -90,6 +103,44 @@ export function inputIssues(signature: Signature, input: unknown, where: string)
   }
   if (!call.args.every(Array.isArray)) issues.push(`${where}.input.args: every entry must be an array`);
   return issues;
+}
+
+/** The rules for `cycle`, `ref` and `api` params (Grind 75 spec §3.1, §3.2, §3.4). */
+export function paramIssues(params: readonly Param[]): string[] {
+  const issues: string[] = [];
+  const apis = new Set<string>();
+  params.forEach((param, i) => {
+    const where = `params[${i}]`;
+    const earlier = params.slice(0, i);
+    const marks = [param.cycle, param.ref, param.api].filter((mark) => mark !== undefined);
+    if (marks.length > 1) {
+      issues.push(`${where}: use only one of cycle, ref and api`);
+      return;
+    }
+    if (param.cycle !== undefined) {
+      if (param.type !== "int") issues.push(`${where}.cycle: the param's type must be int`);
+      if (!earlier.some((other) => other.name === param.cycle && other.type === "ListNode")) {
+        issues.push(`${where}.cycle: "${param.cycle}" must name an earlier ListNode param`);
+      }
+    }
+    if (param.ref !== undefined) {
+      if (param.type !== "TreeNode") issues.push(`${where}.ref: the param's type must be TreeNode`);
+      if (!earlier.some((other) => other.name === param.ref && other.type === "TreeNode" && other.ref === undefined)) {
+        issues.push(`${where}.ref: "${param.ref}" must name an earlier TreeNode param that is not a ref`);
+      }
+    }
+    if (param.api !== undefined) {
+      if (param.type !== "int") issues.push(`${where}.api: the param's type must be int`);
+      if (apis.has(param.api)) issues.push(`${where}.api: "${param.api}" is used twice`);
+      apis.add(param.api);
+    }
+  });
+  return issues;
+}
+
+/** The params a solution receives as arguments: `cycle` and `api` params only shape the input. */
+export function passedParams<T extends Param>(params: readonly T[]): T[] {
+  return params.filter((param) => param.cycle === undefined && param.api === undefined);
 }
 
 export function parseCaseFile(raw: unknown): CaseFile {
@@ -114,17 +165,7 @@ export function parseCaseFile(raw: unknown): CaseFile {
     if (entry.expected === undefined) issues.push(`examples[${i}].expected: required`);
   });
 
-  if (mode === "function") {
-    if (!data.params) issues.push("params: required in function mode");
-    if (!data.returns) issues.push("returns: required in function mode");
-    for (const [key, list] of lists) {
-      list.forEach((entry, i) => issues.push(...inputIssues(signature, entry.input, `${key}[${i}]`)));
-    }
-    const inPlace = data.inPlace;
-    if (inPlace && !data.params?.some((param) => param.name === inPlace.param)) {
-      issues.push(`inPlace.param: "${inPlace.param}" is not a param name`);
-    }
-  } else {
+  if (mode === "class") {
     if (data.params) issues.push("params: not allowed in class mode");
     if (data.returns) issues.push("returns: not allowed in class mode");
     if (data.inPlace) issues.push("inPlace: not allowed in class mode");
@@ -141,6 +182,28 @@ export function parseCaseFile(raw: unknown): CaseFile {
           issues.push(`${where}.expected: expected one value per op (${call.ops.length})`);
         }
       });
+    }
+  } else {
+    if (!data.params) issues.push(`params: required in ${mode} mode`);
+    issues.push(...paramIssues(data.params ?? []));
+    for (const [key, list] of lists) {
+      list.forEach((entry, i) => issues.push(...inputIssues(signature, entry.input, `${key}[${i}]`)));
+    }
+    if (mode === "function") {
+      if (!data.returns) issues.push("returns: required in function mode");
+      const inPlace = data.inPlace;
+      const target = inPlace ? data.params?.find((param) => param.name === inPlace.param) : undefined;
+      if (inPlace && !target) issues.push(`inPlace.param: "${inPlace.param}" is not a param name`);
+      if (inPlace && target && (target.cycle !== undefined || target.api !== undefined)) {
+        issues.push(`inPlace.param: "${inPlace.param}" is not passed to the solution`);
+      }
+    } else {
+      if (data.params && data.params.length !== 1) issues.push("params: codec mode takes exactly one param");
+      if (data.params?.some((param) => param.cycle !== undefined || param.ref !== undefined || param.api !== undefined)) {
+        issues.push("params: codec mode takes a plain param (no cycle, ref or api)");
+      }
+      if (data.returns) issues.push("returns: not allowed in codec mode");
+      if (data.inPlace) issues.push("inPlace: not allowed in codec mode");
     }
   }
 

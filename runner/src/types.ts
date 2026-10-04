@@ -1,11 +1,24 @@
 export type Lang = "py" | "ts";
 export const LANGS: readonly Lang[] = ["py", "ts"];
 
-export type CompareMode = "exact" | "unordered" | "float" | "any-of";
+export type CompareMode = "exact" | "unordered" | "unordered-nested" | "float" | "any-of";
+
+/** Functions the judge provides to a solution, configured by an `api` param (Grind 75 spec §3.4). */
+export const API_NAMES = ["isBadVersion"] as const;
+export type ApiName = (typeof API_NAMES)[number];
+
+/** How the solution is called: one function, a class driven by ops, or a serialize/deserialize round trip. */
+export type CaseMode = "function" | "class" | "codec";
 
 export interface Param {
   name: string;
   type: string;
+  /** Links the tail of the named earlier ListNode param back to node `value`; not passed to the solution. */
+  cycle?: string;
+  /** The value names a node inside the named earlier TreeNode param; the solution receives that node. */
+  ref?: string;
+  /** Configures a judge-provided function with this value; not passed as an argument. */
+  api?: ApiName;
 }
 
 export interface InPlace {
@@ -21,7 +34,7 @@ export interface CaseEntry {
 
 /** Normalized cases.json (defaults applied). */
 export interface CaseFile {
-  mode: "function" | "class";
+  mode: CaseMode;
   entry: string;
   params: Param[];
   returns: string | null;
@@ -58,7 +71,7 @@ export interface HarnessError {
 /** Sent to a harness on stdin. Never contains expected values. */
 export interface HarnessRequest {
   solutionPath: string;
-  mode: "function" | "class";
+  mode: CaseMode;
   entry: string;
   params: Param[];
   returns: string | null;

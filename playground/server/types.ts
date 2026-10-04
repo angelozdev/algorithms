@@ -1,4 +1,4 @@
-import type { Lang, Param } from "../../runner/src/types.ts";
+import type { CaseMode, Lang, Param } from "../../runner/src/types.ts";
 
 export type ItemStatus = "todo" | "solving" | "solved" | "revealed";
 export type ConceptStatus = "new" | "learning" | "mastered";
@@ -40,7 +40,7 @@ export interface HomeData {
 }
 
 export interface Signature {
-  mode: "function" | "class";
+  mode: CaseMode;
   entry: string;
   params: Param[];
   returns: string | null;

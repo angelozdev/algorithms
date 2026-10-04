@@ -4,6 +4,7 @@ import {
   CaseFileError,
   formatCasesJson,
   parseCaseFile,
+  passedParams,
 } from "../src/schema.ts";
 
 const valid = {
@@ -121,5 +122,128 @@ describe("formatCasesJson", () => {
       ].join("\n"),
     );
     expect(JSON.parse(text)).toEqual(raw);
+  });
+});
+
+describe("Grind 75 grammar: param marks, GraphNode, TreeNode.val, codec, unordered-nested", () => {
+  const cycle = {
+    entry: "hasCycle",
+    params: [
+      { name: "head", type: "ListNode" },
+      { name: "pos", type: "int", cycle: "head" },
+    ],
+    returns: "bool",
+    examples: [{ input: [[3, 2, 0, -4], 1], expected: true }],
+    hidden: [],
+  };
+  const refs = {
+    entry: "lowestCommonAncestor",
+    params: [
+      { name: "root", type: "TreeNode" },
+      { name: "p", type: "TreeNode", ref: "root" },
+      { name: "q", type: "TreeNode", ref: "root" },
+    ],
+    returns: "TreeNode.val",
+    examples: [{ input: [[2, 1], 2, 1], expected: 2 }],
+    hidden: [],
+  };
+  const api = {
+    entry: "firstBadVersion",
+    params: [
+      { name: "n", type: "int" },
+      { name: "bad", type: "int", api: "isBadVersion" },
+    ],
+    returns: "int",
+    examples: [{ input: [5, 4], expected: 4 }],
+    hidden: [],
+  };
+  const codec = {
+    mode: "codec",
+    entry: "Codec",
+    params: [{ name: "root", type: "TreeNode" }],
+    examples: [{ input: [[1, 2]], expected: [1, 2] }],
+    hidden: [],
+  };
+
+  it("accepts cycle, ref and api params, GraphNode, TreeNode.val, codec mode and unordered-nested", () => {
+    expect(issuesOf(cycle)).toEqual([]);
+    expect(issuesOf(refs)).toEqual([]);
+    expect(issuesOf(api)).toEqual([]);
+    expect(issuesOf(codec)).toEqual([]);
+    expect(
+      issuesOf({
+        entry: "cloneGraph",
+        params: [{ name: "node", type: "GraphNode" }],
+        returns: "GraphNode",
+        examples: [{ input: [[[2], [1]]], expected: [[2], [1]] }],
+        hidden: [],
+      }),
+    ).toEqual([]);
+    expect(issuesOf({ ...valid, compare: "unordered-nested" })).toEqual([]);
+    expect(parseCaseFile(codec)).toMatchObject({ mode: "codec", returns: null, inPlace: null });
+  });
+
+  it("checks what a cycle param points at", () => {
+    expect(
+      issuesOf({ ...cycle, params: [cycle.params[0], { name: "pos", type: "string", cycle: "head" }] }),
+    ).toContain("params[1].cycle: the param's type must be int");
+    expect(
+      issuesOf({
+        ...cycle,
+        params: [{ name: "pos", type: "int", cycle: "head" }, { name: "head", type: "ListNode" }],
+        examples: [{ input: [1, [1, 2]], expected: true }],
+      }),
+    ).toContain('params[0].cycle: "head" must name an earlier ListNode param');
+    expect(
+      issuesOf({ ...cycle, params: [{ name: "head", type: "int[]" }, cycle.params[1]] }),
+    ).toContain('params[1].cycle: "head" must name an earlier ListNode param');
+  });
+
+  it("checks what a ref param points at", () => {
+    expect(
+      issuesOf({ ...refs, params: [refs.params[0], refs.params[1], { name: "q", type: "TreeNode", ref: "p" }] }),
+    ).toContain('params[2].ref: "p" must name an earlier TreeNode param that is not a ref');
+    expect(
+      issuesOf({ ...refs, params: [refs.params[0], { name: "p", type: "int", ref: "root" }, refs.params[2]] }),
+    ).toContain("params[1].ref: the param's type must be TreeNode");
+  });
+
+  it("checks api params", () => {
+    expect(issuesOf({ ...api, params: [api.params[0], { name: "bad", type: "int", api: "guess" }] })[0]).toMatch(
+      /^params\[1\]\.api:/,
+    );
+    expect(
+      issuesOf({
+        ...api,
+        params: [...api.params, { name: "other", type: "int", api: "isBadVersion" }],
+        examples: [{ input: [5, 4, 3], expected: 4 }],
+      }),
+    ).toContain('params[2].api: "isBadVersion" is used twice');
+    expect(
+      issuesOf({ ...api, params: [api.params[0], { name: "bad", type: "int", api: "isBadVersion", cycle: "n" }] }),
+    ).toContain("params[1]: use only one of cycle, ref and api");
+    expect(issuesOf({ ...api, inPlace: { param: "bad" } })).toContain('inPlace.param: "bad" is not passed to the solution');
+  });
+
+  it("checks codec mode", () => {
+    expect(
+      issuesOf({
+        ...codec,
+        params: [...codec.params, { name: "k", type: "int" }],
+        examples: [{ input: [[1], 1], expected: [1] }],
+      }),
+    ).toContain("params: codec mode takes exactly one param");
+    expect(issuesOf({ ...codec, returns: "TreeNode" })).toContain("returns: not allowed in codec mode");
+    expect(issuesOf({ ...codec, inPlace: { param: "root" } })).toContain("inPlace: not allowed in codec mode");
+    expect(issuesOf({ ...codec, params: undefined })).toContain("params: required in codec mode");
+    expect(
+      issuesOf({ ...codec, params: [{ name: "root", type: "TreeNode", ref: "root" }] }),
+    ).toContain("params: codec mode takes a plain param (no cycle, ref or api)");
+  });
+
+  it("lists the params a solution receives as arguments", () => {
+    expect(passedParams(parseCaseFile(cycle).params).map((p) => p.name)).toEqual(["head"]);
+    expect(passedParams(parseCaseFile(api).params).map((p) => p.name)).toEqual(["n"]);
+    expect(passedParams(parseCaseFile(refs).params).map((p) => p.name)).toEqual(["root", "p", "q"]);
   });
 });
