@@ -60,13 +60,15 @@ const STUDY_REASON =
   "Blocked by the study rules (CLAUDE.md rule 2): .study/ holds the user's solutions, their history and the progress database. " +
   "Do not write, move or delete anything there. Record progress only with pnpm -s study record ….";
 const STUDY_COMMAND_REASON =
-  "Blocked by the study rules: this study command is for the user only (migrate, start, pause, resume, phase set). " +
-  "Ask the user to run it.";
+  "Blocked by the study rules: this study command is for the user only (migrate, start, pause, resume, phase set), " +
+  "whether run through the CLI or the playground's /api/study/start|pause|resume routes. Ask the user to run it.";
 const SQLITE_REASON =
   "Blocked by the study rules: never open the progress database directly. Read it with pnpm -s study status … --json " +
   "and write it with pnpm -s study record ….";
 /** Playground routes that touch the user's files or study time (reading a solution creates its stub). */
 const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation|study\/(?:start|pause|resume))\b/;
+/** The playground routes that start, pause or resume study time: same user-only rule as the CLI verbs. */
+const PLAYGROUND_STUDY = /\/api\/study\/(?:start|pause|resume)\b/;
 /** Study subcommands only the user runs; phase only with `set`. `curriculum set` stays allowed (spec §6.5). */
 const USER_ONLY_STUDY = new Set(["migrate", "start", "pause", "resume"]);
 const HTTP_CLIENTS = new Set(["curl", "wget", "http", "https", "xh", "xhs"]);
@@ -402,7 +404,11 @@ const operands = (args) => {
 const hasFlag = (args, long, letters) =>
   args.some((arg) => arg === long || new RegExp(`^-[a-zA-Z]*[${letters}]`).test(arg));
 
-/** True when `git <args>` can discard or remove solution work in this project's working tree. */
+/**
+ * Whether `git <args>` can discard or remove solution work or the study folder in this project's working
+ * tree: "study", "solution", or null when it does neither. Kept apart so the caller can pick the reason
+ * that actually matches what was reached, instead of always blaming the solution files.
+ */
 function gitDiscards(args, where) {
   let cwd = where.cwd;
   let i = 0;
@@ -414,36 +420,38 @@ function gitDiscards(args, where) {
     } else i += ["-c", "--git-dir", "--work-tree", "--namespace"].includes(args[i]) ? 2 : 1;
   }
   const here = { ...where, cwd };
-  if (!inProject(cwd, where)) return false; // another repository
+  if (!inProject(cwd, where)) return null; // another repository
   const [sub, ...rest] = args.slice(i);
-  const covers = (spec) =>
-    reachesStudy(spec, here) ||
+  const coversSolution = (spec) =>
     spec.startsWith(":/") ||
     reachesSolutions(spec, here, true) ||
     (/[*?[{]/.test(spec) && !spec.includes("/") && couldBeSolution(spec)); // a pathspec glob matches at any depth
+  /** "study" when any spec reaches .study, else "solution" when any spec covers a solution file, else null. */
+  const reasonFor = (specs) =>
+    specs.some((spec) => reachesStudy(spec, here)) ? "study" : specs.some(coversSolution) ? "solution" : null;
   switch (sub) {
     case "checkout":
-      return hasFlag(rest, "--force", "f") || operands(rest).some(covers);
+      return hasFlag(rest, "--force", "f") ? "solution" : reasonFor(operands(rest));
     case "switch":
-      return rest.includes("--discard-changes") || hasFlag(rest, "--force", "f");
+      return rest.includes("--discard-changes") || hasFlag(rest, "--force", "f") ? "solution" : null;
     case "restore": {
       const staged = hasFlag(rest, "--staged", "S");
-      if (staged && !hasFlag(rest, "--worktree", "W")) return false; // only unstages
-      return operands(rest).some(covers);
+      if (staged && !hasFlag(rest, "--worktree", "W")) return null; // only unstages
+      return reasonFor(operands(rest));
     }
     case "rm":
-      return !rest.includes("--cached") && operands(rest).some(covers);
+      return rest.includes("--cached") ? null : reasonFor(operands(rest));
     case "reset":
-      return rest.includes("--hard");
+      return rest.includes("--hard") ? "solution" : null;
     case "clean": {
-      if (!hasFlag(rest, "--force", "f")) return false;
+      if (!hasFlag(rest, "--force", "f")) return null;
       const specs = operands(rest);
-      return specs.length === 0 ? reachesSolutions(".", here, true) : specs.some(covers);
+      return specs.length === 0 ? (reachesSolutions(".", here, true) ? "solution" : null) : reasonFor(specs);
     }
     case "stash":
-      return rest[0] !== "list" && rest[0] !== "show";
+      return rest[0] !== "list" && rest[0] !== "show" ? "solution" : null;
     default:
-      return false;
+      return null;
   }
 }
 
@@ -531,6 +539,7 @@ function inlineCodeReason(segment, index, command, stage) {
   const readsStdin = args.includes("-") || (index > 0 && code.length === 0 && script.length === 0);
   if (readsStdin) code.push(...segment.stages.slice(0, index).flatMap((previous) => previous.words));
   if (code.some((text) => MENTIONS_STUDY.test(text))) return STUDY_REASON;
+  if (code.some((text) => PLAYGROUND_STUDY.test(text))) return STUDY_COMMAND_REASON;
   return code.some((text) => MENTIONS_SOLUTION.test(text) || PLAYGROUND_FILES.test(text)) ? WRITE_REASON : null;
 }
 
@@ -573,10 +582,14 @@ function segmentReason(segment, where) {
       const reason = bashReason(command.args.join(" "), where);
       if (reason) return reason;
     }
-    if ((command.name === "git" && gitDiscards(command.args, where)) || deletesSolutions(command, segmentWords, where)) {
-      return DISCARD_REASON;
+    if (command.name === "git") {
+      const discards = gitDiscards(command.args, where);
+      if (discards) return discards === "study" ? STUDY_REASON : DISCARD_REASON;
     }
-    if (HTTP_CLIENTS.has(command.name) && command.args.some((arg) => PLAYGROUND_FILES.test(arg))) return PLAYGROUND_REASON;
+    if (deletesSolutions(command, segmentWords, where)) return DISCARD_REASON;
+    if (HTTP_CLIENTS.has(command.name) && command.args.some((arg) => PLAYGROUND_FILES.test(arg))) {
+      return command.args.some((arg) => PLAYGROUND_STUDY.test(arg)) ? STUDY_COMMAND_REASON : PLAYGROUND_REASON;
+    }
     if (userOnlyStudy(command)) return STUDY_COMMAND_REASON;
     if (command.name === "sqlite3" && command.args.some((arg) => /study\.db/.test(arg))) return SQLITE_REASON;
     if (deletesStudy(command, segmentWords, where)) return STUDY_REASON;

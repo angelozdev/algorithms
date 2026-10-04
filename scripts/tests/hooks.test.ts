@@ -411,6 +411,13 @@ describe("guard-solution hook: the study folder", () => {
     expect(bashReason(`sqlite3 .study/study.db "select 1"`)).toContain("never open the progress database");
   });
 
+  it("gives the .study reason, not the generic solution-discard reason, for a git command that discards .study", () => {
+    expect(bashReason("git clean -fdX .study")).toContain(".study/ holds the user's solutions");
+    expect(bashReason("git clean -fdX .study")).not.toContain("uncommitted solution work");
+    expect(bashReason("git checkout -- .study/state.json")).toContain(".study/ holds the user's solutions");
+    expect(bashReason("git checkout -- .study/state.json")).not.toContain("uncommitted solution work");
+  });
+
   it("denies the study commands that belong to the user, in every launcher form", () => {
     expectBash(
       [
@@ -439,6 +446,12 @@ describe("guard-solution hook: the study folder", () => {
       ],
       "deny",
     );
+  });
+
+  it("gives the study-command reason, not the generic playground reason, for the /api/study routes", () => {
+    expect(bashReason("curl -X POST http://127.0.0.1:4173/api/study/pause")).toContain("for the user only");
+    expect(bashReason("curl -X POST http://127.0.0.1:4173/api/study/pause")).toContain("/api/study/start|pause|resume");
+    expect(bashReason(`node -e "fetch('http://127.0.0.1:4173/api/study/resume', { method: 'POST' })"`)).toContain("for the user only");
   });
 
   it("still lets Claude read progress and use the study CLI's other commands", () => {
