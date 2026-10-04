@@ -15,13 +15,13 @@ function randomJobs(rng: Rng, n: number): [number[], number[], number[]] {
 }
 
 export default function stress(rng: Rng): StressCase[] {
-  const n = 50_000;
+  const n = 4_000;
   const random = randomJobs(rng, n);
   const startTime = Array.from({ length: n }, (_, i) => i + 1);
   const endTime = Array.from({ length: n }, (_, i) => i + 2);
   const profit = Array.from({ length: n }, () => rng.int(1, 10_000));
   return [
-    { name: "n=5e4 random", input: random },
-    { name: "n=5e4 all non-overlapping", input: [startTime, endTime, profit] },
+    { name: "n=4e3 random", input: random },
+    { name: "n=4e3 all non-overlapping", input: [startTime, endTime, profit] },
   ];
 }

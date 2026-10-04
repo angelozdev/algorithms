@@ -68,6 +68,7 @@ Start from the draft (`cases` from step 1), or write it from the statement:
 - `hidden`: 6–10 inputs **without** `expected`. Cover the edges allowed by the constraints: smallest input, empty (if allowed), duplicates, negatives and zeros, all-equal, sorted and reverse-sorted, maximum values, and any tricky case the statement warns about.
 - `compare`:
   - `unordered` if the statement says "any order".
+  - `unordered-nested` for a set of groups whose members are also unordered (e.g. triplets, combinations, subsets).
   - `any-of` if several different answers are valid.
   - `float` for real-number answers.
   - `exact` otherwise.
@@ -75,6 +76,13 @@ Start from the draft (`cases` from step 1), or write it from the statement:
   - `"inPlace": { "param": "<name>", "prefix": "return" }` when the function returns `k` and only the first `k` elements are judged.
   - Omit `prefix` when the whole array is judged (void functions).
 - Class-design problems: `"mode": "class"`, `"entry": "<ClassName>"`, and every input as `{ "ops": [...], "args": [...] }`.
+- Extended param/type grammar — one line each; full shape and rules in the design spec §3 (`docs/superpowers/specs/2026-10-03-grind-75-design.md`):
+  - `"cycle": "<list param>"` on an `int` param: links a linked list's tail back to an earlier node (`-1` = no cycle); part of the input, never passed to the solution.
+  - `"ref": "<tree param>"` on a `TreeNode` param: given as a node **value** in the JSON, reaches the solution as that node inside the built tree.
+  - `"returns": "TreeNode.val"`: the return is a tree node, judged by its `val` (`null` stays `null`).
+  - `"api": "<name>"` on a param: not passed as an argument; configures a judge-provided function instead (see the spec's registry).
+  - `"type": "GraphNode"`: a node in LeetCode's adjacency-list graph shape, for problems about graph node references.
+  - `"mode": "codec"`: a serialize/deserialize round trip judged against `expected`, instead of a single return value; exactly one param, no `returns`/`inPlace`.
 
 ## 4. Stress cases (only when input size matters)
 
@@ -90,6 +98,7 @@ export default function stress(rng: Rng): StressCase[] {
 
 - Generate inputs only, make them satisfy the problem's guarantees (for example "exactly one answer exists"), and never exceed the problem's own constraints: use the largest n they allow, not always 1e5.
 - `Rng` offers `int(min, max)`, `intArray(n, min, max)`, `pick(items)`, `shuffle(items)` and `next()`.
+- When a natural solution might be recursive, also keep the size safely under typical recursion-depth limits, not just under the time/complexity budget.
 
 ## 5. Fill the hidden expected values
 
