@@ -416,3 +416,54 @@ describe("typescript harness: cycle and ref params (Grind 75 spec §3.1, §3.2)"
     });
   });
 });
+
+describe("typescript harness: api params (Grind 75 spec §3.4)", () => {
+  const api = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, {
+      params: [
+        { name: "n", type: "int" },
+        { name: "bad", type: "int", api: "isBadVersion" },
+      ],
+      returns: "int",
+      cases,
+    });
+
+  it("calls the default export with the judge's functions, then runs the function it returns", async () => {
+    const file = solution(
+      "api",
+      [
+        "export default function solution(isBadVersion: (version: number) => boolean) {",
+        "  return function solve(...args: number[]): number {",
+        "    if (args.length !== 1) return -99;",
+        "    const n = args[0];",
+        "    if (!isBadVersion(n)) return 0;",
+        "    return isBadVersion(n - 1) ? -1 : n;",
+        "  };",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      api(file, [
+        { id: "first", input: [5, 5] },
+        { id: "earlier", input: [5, 3] },
+        { id: "none", input: [5, 6] },
+      ]),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("first")?.output).toBe(5);
+    expect(outcome.runs.get("earlier")?.output).toBe(-1);
+    expect(outcome.runs.get("none")?.output).toBe(0);
+  });
+
+  it("fails the case when the default export does not return a function", async () => {
+    const file = solution("api-value", ["export default function solution(isBadVersion: unknown) {", "  return 42;", "}", ""].join("\n"));
+    const outcome = await runHarness("ts", api(file, [{ id: "e1", input: [5, 4] }]), { wallLimitMs: 10_000 });
+    expect(outcome.runs.get("e1")).toMatchObject({
+      ok: false,
+      error: { kind: "missing-entry", message: "the default export must return the solution function when called with isBadVersion" },
+    });
+  });
+});

@@ -15,6 +15,7 @@ interface Param {
   type: string;
   cycle?: string;
   ref?: string;
+  api?: string;
 }
 
 interface Request {
@@ -38,6 +39,14 @@ const MAX_NODES = 1_000_000;
 const CAPTURE_LIMIT = 64 * 1024;
 
 class SerializationError extends Error {}
+
+/** The module does not provide what the mode needs (reported as a missing-entry error). */
+class EntryError extends Error {}
+
+/** Judge-provided functions, built from an `api` param's value (Grind 75 spec §3.4). */
+const APIS: Record<string, (value: unknown) => Callable> = {
+  isBadVersion: (bad) => (version) => (version as number) >= (bad as number),
+};
 
 function emit(message: unknown): void {
   const buffer = Buffer.from(`${JSON.stringify(message)}\n`);
@@ -256,6 +265,8 @@ interface Built {
   values: unknown[];
   /** The values the solution receives as arguments. */
   args: unknown[];
+  /** Judge-provided functions, in param order. */
+  apis: Callable[];
   /** Nodes of the input graphs, which a returned graph must not reuse (Grind 75 spec §3.3). */
   inputGraph: Set<unknown>;
 }
@@ -284,9 +295,10 @@ function findNode(root: Tree | null, value: unknown): Tree | null {
 
 function buildInput(request: Request, input: unknown): Built {
   const raw = input as unknown[];
-  const marked = (param: Param) => param.cycle !== undefined || param.ref !== undefined;
+  const marked = (param: Param) => param.cycle !== undefined || param.ref !== undefined || param.api !== undefined;
   const values = request.params.map((param, i) => (marked(param) ? raw[i] : deserialize(raw[i], param.type)));
   const valueOf = (name: string | undefined) => values[request.params.findIndex((param) => param.name === name)];
+  const apis: Callable[] = [];
   request.params.forEach((param, i) => {
     if (param.cycle !== undefined) linkCycle(valueOf(param.cycle) as Linked | null, raw[i], param);
     if (param.ref !== undefined && raw[i] !== null) {
@@ -294,19 +306,29 @@ function buildInput(request: Request, input: unknown): Built {
       if (!node) throw new SerializationError(`${param.name} = ${JSON.stringify(raw[i])} is not a value in ${param.ref}`);
       values[i] = node;
     }
+    if (param.api !== undefined) apis.push(APIS[param.api](raw[i]));
   });
   const inputGraph = new Set<unknown>();
   request.params.forEach((param, i) => {
     if (param.type === "GraphNode") for (const node of reachable(values[i] as GraphLike | null)) inputGraph.add(node);
   });
-  const args = request.params.flatMap((param, i) => (param.cycle === undefined ? [values[i]] : []));
-  return { values, args, inputGraph };
+  const args = request.params.flatMap((param, i) => (param.cycle === undefined && param.api === undefined ? [values[i]] : []));
+  return { values, args, apis, inputGraph };
 }
 
 function runFunction(fn: Callable, request: Request, input: unknown): { output: unknown; ms: number } {
-  const { values, args, inputGraph } = buildInput(request, input);
+  const { values, args, apis, inputGraph } = buildInput(request, input);
+  let solve = fn;
+  if (apis.length > 0) {
+    const made = fn(...apis);
+    if (typeof made !== "function") {
+      const names = request.params.flatMap((param) => (param.api ? [param.api] : [])).join(", ");
+      throw new EntryError(`the default export must return the solution function when called with ${names}`);
+    }
+    solve = made as Callable;
+  }
   const started = performance.now();
-  const returned = fn(...args);
+  const returned = solve(...args);
   const ms = performance.now() - started;
   if (request.discardOutput) return { output: null, ms };
   const inPlace = request.inPlace;
@@ -372,15 +394,15 @@ async function main(): Promise<void> {
       emit({ type: "case", id: testCase.id, ok: true, output, ms: Number(ms.toFixed(3)), stdout });
     } catch (error) {
       const stdout = stop();
-      const serialization = error instanceof SerializationError;
+      const kind = error instanceof SerializationError ? "serialization" : error instanceof EntryError ? "missing-entry" : "exception";
       emit({
         type: "case",
         id: testCase.id,
         ok: false,
         error: {
-          kind: serialization ? "serialization" : "exception",
-          message: serialization ? (error as Error).message : describe(error),
-          trace: serialization ? "" : userTrace(error, solutionPath),
+          kind,
+          message: kind === "exception" ? describe(error) : (error as Error).message,
+          trace: kind === "exception" ? userTrace(error, solutionPath) : "",
         },
         ms: Number((performance.now() - started).toFixed(3)),
         stdout,

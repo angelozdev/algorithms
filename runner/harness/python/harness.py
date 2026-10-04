@@ -36,6 +36,12 @@ class SerializationError(Exception):
     pass
 
 
+# Judge-provided functions, built from an `api` param's value (Grind 75 spec §3.4).
+API_FACTORIES = {
+    "isBadVersion": lambda bad: (lambda version: version >= bad),
+}
+
+
 class CappedBuffer(io.TextIOBase):
     """Collects printed text, keeping at most CAPTURE_LIMIT characters."""
 
@@ -289,13 +295,14 @@ def find_node(root, value):
 def build_input(params, raw_input):
     """One built value per param, the arguments the solution receives, and the ids of the input graphs' nodes."""
     def marked(param) -> bool:
-        return "cycle" in param or "ref" in param
+        return "cycle" in param or "ref" in param or "api" in param
 
     values = [
         value if marked(param) else deserialize(value, param["type"])
         for value, param in zip(raw_input, params, strict=True)
     ]
     names = [param["name"] for param in params]
+    apis = {}
     for i, param in enumerate(params):
         if "cycle" in param:
             link_cycle(values[names.index(param["cycle"])], raw_input[i], param)
@@ -306,20 +313,25 @@ def build_input(params, raw_input):
                     f"{param['name']} = {json.dumps(raw_input[i])} is not a value in {param['ref']}"
                 )
             values[i] = node
+        elif "api" in param:
+            apis[param["api"]] = API_FACTORIES[param["api"]](raw_input[i])
     input_graph = {
         id(node)
         for value, param in zip(values, params)
         if param["type"] == "GraphNode"
         for node in reachable(value)
     }
-    args = [value for value, param in zip(values, params) if "cycle" not in param]
-    return values, args, input_graph
+    args = [value for value, param in zip(values, params) if "cycle" not in param and "api" not in param]
+    return values, args, apis, input_graph
 
 
-def run_function(solution_cls, request: dict, raw_input):
+def run_function(target, module, request: dict, raw_input):
     params = request["params"]
-    values, args, input_graph = build_input(params, raw_input)
-    method = getattr(solution_cls(), request["entry"])
+    values, args, apis, input_graph = build_input(params, raw_input)
+    for name, function in apis.items():
+        # Rebinds the module global, which also replaces the stub's `from lc import isBadVersion` placeholder.
+        setattr(module, name, function)
+    method = getattr(target(), request["entry"])
     started = time.perf_counter()
     returned = method(*args)
     ms = (time.perf_counter() - started) * 1000
@@ -336,10 +348,10 @@ def run_function(solution_cls, request: dict, raw_input):
     return serialize(returned, request["returns"], input_graph), ms
 
 
-def run_class(cls, request: dict, raw_input):
+def run_class(target, module, request: dict, raw_input):
     ops, args = raw_input["ops"], raw_input["args"]
     started = time.perf_counter()
-    instance = cls(*args[0])
+    instance = target(*args[0])
     results = [None]
     for op, op_args in zip(ops[1:], args[1:], strict=True):
         results.append(getattr(instance, op)(*op_args))
@@ -349,7 +361,7 @@ def run_class(cls, request: dict, raw_input):
     return [plain(result) for result in results], ms
 
 
-def run_case(target, request: dict, case: dict, solution_path: str) -> None:
+def run_case(target, module, request: dict, case: dict, solution_path: str) -> None:
     runner = run_function if request["mode"] == "function" else run_class
     buffer = CappedBuffer()
     started = time.perf_counter()
@@ -369,7 +381,7 @@ def run_case(target, request: dict, case: dict, solution_path: str) -> None:
 
     try:
         with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(buffer):
-            output, ms = runner(target, request, case["input"])
+            output, ms = runner(target, module, request, case["input"])
     except SerializationError as exc:
         fail(error("serialization", str(exc)))
         return
@@ -416,7 +428,7 @@ def main() -> None:
     emit({"type": "ready"})
     for case in request["cases"]:
         emit({"type": "start", "id": case["id"]})
-        run_case(target, request, case, solution_path)
+        run_case(target, module, request, case, solution_path)
 
 
 if __name__ == "__main__":

@@ -42,3 +42,8 @@ class Node:
 
     def __repr__(self) -> str:
         return f"Node({self.val!r})"
+
+
+def isBadVersion(version: int) -> bool:  # noqa: N802 (LeetCode's name)
+    """LeetCode's First Bad Version API. The runner replaces this placeholder before every case."""
+    raise RuntimeError("isBadVersion is provided by the runner; run the tests to call it")
