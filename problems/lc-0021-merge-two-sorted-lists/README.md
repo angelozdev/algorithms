@@ -30,7 +30,7 @@ You get the heads of two linked lists, each sorted in non-decreasing order. Merg
 
 <!-- auto:concepts -->
 - linked-list (missing)
-- two-pointers (missing)
+- [Two pointers](../../concepts/two-pointers/README.md) · learning
 - dummy-node (missing)
 <!-- /auto -->
 

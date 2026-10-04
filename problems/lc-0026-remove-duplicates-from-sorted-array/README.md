@@ -28,7 +28,7 @@ complexity: null
 ## Concepts
 
 <!-- auto:concepts -->
-- two-pointers (missing)
+- [Two pointers](../../concepts/two-pointers/README.md) · learning
 - in-place-array-modification (missing)
 <!-- /auto -->
 

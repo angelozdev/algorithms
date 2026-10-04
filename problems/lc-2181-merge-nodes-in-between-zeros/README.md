@@ -29,7 +29,7 @@ A linked list starts and ends with a node of value `0`, and no two zeros are adj
 
 <!-- auto:concepts -->
 - linked-list (missing)
-- two-pointers (missing)
+- [Two pointers](../../concepts/two-pointers/README.md) · learning
 <!-- /auto -->
 
 ## Log

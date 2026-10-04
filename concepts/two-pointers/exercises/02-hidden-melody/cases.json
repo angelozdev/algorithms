@@ -1,0 +1,27 @@
+{
+  "mode": "function",
+  "entry": "isHidden",
+  "params": [
+    {"name":"melody","type":"string"},
+    {"name":"jam","type":"string"}
+  ],
+  "returns": "bool",
+  "compare": "exact",
+  "examples": [
+    {"input":["ace","abcde"],"expected":true},
+    {"input":["aec","abcde"],"expected":false},
+    {"input":["","abc"],"expected":true}
+  ],
+  "hidden": [
+    {"input":["",""],"expected":true},
+    {"input":["a",""],"expected":false},
+    {"input":["abc","abc"],"expected":true},
+    {"input":["abcd","abc"],"expected":false},
+    {"input":["aaa","aa"],"expected":false},
+    {"input":["aa","baba"],"expected":true},
+    {"input":["z","abcdefghijklmnopqrstuvwxyz"],"expected":true},
+    {"input":["ba","ab"],"expected":false},
+    {"input":["abc","aabbcc"],"expected":true},
+    {"input":["bb","abcab"],"expected":true}
+  ]
+}

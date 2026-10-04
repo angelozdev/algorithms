@@ -28,7 +28,7 @@ Remove every occurrence of `val` from `nums` **in place** and return `k`, the nu
 ## Concepts
 
 <!-- auto:concepts -->
-- two-pointers (missing)
+- [Two pointers](../../concepts/two-pointers/README.md) · learning
 - in-place-array-modification (missing)
 <!-- /auto -->
 

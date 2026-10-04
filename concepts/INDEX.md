@@ -5,14 +5,16 @@
 ## Learning path
 
 1. [Hash map](hash-map/README.md) · learning
+2. [Two pointers](two-pointers/README.md) · learning
 
 ## By status
 
 ### mastered (0)
 
-### learning (1)
+### learning (2)
 
 - [Hash map](hash-map/README.md)
+- [Two pointers](two-pointers/README.md)
 
 ### new (0)
 
@@ -31,7 +33,7 @@
 - matrix-traversal — referenced by lc-1672
 - modular-arithmetic — referenced by lc-1920
 - recursion — referenced by lc-0070
+- sliding-window — referenced by two-pointers
 - stack — referenced by lc-0020
 - string-matching — referenced by lc-0028
 - string-traversal — referenced by lc-0058, lc-2942, lc-3110
-- two-pointers — referenced by lc-0021, lc-0026, lc-0027, lc-2181
