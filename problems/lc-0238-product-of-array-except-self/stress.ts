@@ -1,7 +1,5 @@
 import type { Rng, StressCase } from "../../runner/src/stress.ts";
 
-// Keeps every partial product within the 32-bit guarantee: almost all entries
-// are ±1, with only a handful of larger (but still small) factors mixed in.
 function buildBase(rng: Rng, n: number): number[] {
   const nums = Array.from({ length: n }, () => rng.pick([-1, 1]));
   const largeValues = [-4, -3, -2, 2, 3, 4];
