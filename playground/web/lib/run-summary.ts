@@ -19,8 +19,9 @@ export const HIDDEN_ROW_ID = "case-hidden";
 export const stressRowId = (index: number): string => `stress-${index}`;
 
 const EXAMPLE_STATE: Record<CaseStatus, ChipState> = { pass: "passed", fail: "failed", error: "error", timeout: "timeout", skipped: "skipped" };
-const STRESS_STATE: Record<StressStatus, ChipState> = { pass: "passed", slow: "slow", timeout: "timeout", error: "error", skipped: "skipped" };
-const WORDS: Record<ChipState, string> = { passed: "passed", failed: "failed", error: "error", timeout: "timeout", skipped: "skipped", slow: "too slow" };
+/** The one place a stress case's status maps to a chip state and a word, so the table and the chips always agree. */
+export const STRESS_STATE: Record<StressStatus, ChipState> = { pass: "passed", slow: "slow", timeout: "timeout", error: "error", skipped: "skipped" };
+export const WORDS: Record<ChipState, string> = { passed: "passed", failed: "failed", error: "error", timeout: "timeout", skipped: "skipped", slow: "too slow" };
 
 const explains = (state: ChipState) => state !== "passed" && state !== "skipped";
 

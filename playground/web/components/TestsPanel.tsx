@@ -2,10 +2,10 @@ import { cn } from "cn";
 import { CircleCheck, CirclePause, CircleX, FlaskConical, LoaderCircle, Lock, type LucideIcon, Snail, Timer, TriangleAlert } from "lucide-react";
 import { Fragment } from "react";
 import { formatNamedInput, formatOutput } from "../../../runner/src/format.ts";
-import type { HarnessError, RunResult, StressStatus } from "../../../runner/src/types.ts";
+import type { HarnessError, RunResult } from "../../../runner/src/types.ts";
 import { DISPLAY_MAX, formatMs } from "../lib/format.ts";
 import { shortcut } from "../lib/keys.ts";
-import { type Chip, type ChipState, exampleRowId, HIDDEN_ROW_ID, runChips, stressRowId } from "../lib/run-summary.ts";
+import { type Chip, type ChipState, exampleRowId, HIDDEN_ROW_ID, runChips, STRESS_STATE, stressRowId, WORDS } from "../lib/run-summary.ts";
 import { Hint } from "./Hint.tsx";
 import { ErrorBox } from "./RunDetails.tsx";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.tsx";
@@ -155,14 +155,6 @@ function FailuresTable({ rows }: { rows: FailureRow[] }) {
   );
 }
 
-const STRESS_RESULT: Record<StressStatus, { text: string; state: ChipState }> = {
-  pass: { text: "passed", state: "passed" },
-  slow: { text: "too slow", state: "slow" },
-  timeout: { text: "timeout", state: "timeout" },
-  error: { text: "error", state: "error" },
-  skipped: { text: "skipped", state: "skipped" },
-};
-
 function StressTable({ result }: { result: RunResult }) {
   const { stress } = result;
   if (stress.status === "none") return <p className="text-muted-foreground">No stress cases</p>;
@@ -180,8 +172,8 @@ function StressTable({ result }: { result: RunResult }) {
       </TableHeader>
       <TableBody>
         {stress.cases.map((c, index) => {
-          const outcome = STRESS_RESULT[c.status];
-          const { Icon, text } = LOOK[outcome.state];
+          const state = STRESS_STATE[c.status];
+          const { Icon, text } = LOOK[state];
           return (
             <Fragment key={c.name}>
               <TableRow id={stressRowId(index)} tabIndex={-1} className="outline-none focus:bg-destructive/10">
@@ -191,7 +183,7 @@ function StressTable({ result }: { result: RunResult }) {
                 <TableCell>
                   <span className={cn("inline-flex items-center gap-1", text)}>
                     <Icon aria-hidden className="size-3" />
-                    {outcome.text}
+                    {WORDS[state]}
                   </span>
                 </TableCell>
               </TableRow>

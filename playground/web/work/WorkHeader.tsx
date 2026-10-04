@@ -15,6 +15,7 @@ import { Kbd } from "../components/ui/kbd.tsx";
 import { ToggleGroup, ToggleGroupItem } from "../components/ui/toggle-group.tsx";
 import { shortcut } from "../lib/keys.ts";
 import { conceptLabel, patternLabel, STATUS_LABEL, type StatusKind, statusKind } from "../lib/labels.ts";
+import { splitExerciseId } from "../links.ts";
 
 export interface WorkHeaderProps {
   target: TargetData;
@@ -35,7 +36,7 @@ type Crumb = { label: string; pattern: string } | { label: string; concept: stri
 export function middleCrumbs(target: TargetData, home: HomeData | undefined): Crumb[] {
   if (!home) return [];
   if (target.kind === "exercise") {
-    const slug = target.id.slice(0, target.id.indexOf("/"));
+    const slug = splitExerciseId(target.id)!.concept;
     return [{ label: "Concepts" }, { label: conceptLabel(slug, home.concepts), concept: slug }];
   }
   const pattern = home.problems.find((problem) => problem.id === target.id)?.patterns[0];
@@ -88,7 +89,7 @@ export function WorkHeader({ target, lang, onLang, running, elapsedMs, canRun, o
   // on the home page, and the header must agree with it.
   const inProgress = target.status === "todo" && (target.solutions.py || target.solutions.ts);
   const kind = statusKind(target.status, inProgress);
-  const short = target.kind === "exercise" ? target.id.slice(target.id.indexOf("/") + 1) : target.id;
+  const short = target.kind === "exercise" ? splitExerciseId(target.id)!.nn : target.id;
   return (
     <header className="flex h-10 shrink-0 items-center gap-3 border-b bg-card px-3 text-[13px]">
       <Breadcrumb>

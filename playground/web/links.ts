@@ -7,11 +7,18 @@ export type AppLink =
   | { to: "/e/$concept/$nn"; params: { concept: string; nn: string } }
   | { to: "/c/$slug"; params: { slug: string } };
 
+/** Splits an exercise id ("hash-map/01") into its concept slug and number, or null for a problem id (no "/"). */
+export function splitExerciseId(id: string): { concept: string; nn: string } | null {
+  const slash = id.indexOf("/");
+  if (slash < 0) return null;
+  return { concept: id.slice(0, slash), nn: id.slice(slash + 1) };
+}
+
 /** Link to a problem (lc-0001) or an exercise (hash-map/01). */
 export function targetLink(id: string): AppLink {
-  const slash = id.indexOf("/");
-  if (slash < 0) return { to: "/p/$id", params: { id } };
-  return { to: "/e/$concept/$nn", params: { concept: id.slice(0, slash), nn: id.slice(slash + 1) } };
+  const parts = splitExerciseId(id);
+  if (!parts) return { to: "/p/$id", params: { id } };
+  return { to: "/e/$concept/$nn", params: parts };
 }
 
 export type LinkTarget = { kind: "app"; link: AppLink } | { kind: "external"; href: string } | { kind: "none" };

@@ -9,7 +9,7 @@ import { facetOptions } from "./model.ts";
 import { clearFilters, GROUP_BY, type GroupBy, type HomeSearch, isFiltered, STATUS_FILTERS, type StatusFilter } from "./search.ts";
 
 const GROUP_LABEL: Record<GroupBy, string> = { none: "None", pattern: "Pattern", concept: "Concept", difficulty: "Difficulty", status: "Status" };
-const STATUS_LABEL: Record<StatusFilter, string> = { all: "All", pending: "Pending", solved: "Solved" };
+const STATUS_FILTER_LABEL: Record<StatusFilter, string> = { all: "All", pending: "Pending", solved: "Solved" };
 
 interface ProblemToolbarProps {
   data: HomeData;
@@ -49,7 +49,7 @@ export function ProblemToolbar({ data, search, onSearch }: ProblemToolbarProps) 
       >
         {STATUS_FILTERS.map((status) => (
           <ToggleGroupItem key={status} value={status}>
-            {STATUS_LABEL[status]}
+            {STATUS_FILTER_LABEL[status]}
           </ToggleGroupItem>
         ))}
       </ToggleGroup>
