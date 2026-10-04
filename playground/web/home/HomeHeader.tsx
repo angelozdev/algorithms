@@ -18,6 +18,13 @@ function SearchBox({ query, onQuery }: { query: string; onQuery(query: string): 
       sent.current = sent.current.slice(echo + 1);
       return;
     }
+    // Not one of our own echoes. If the box already reads this (nothing to sync), drop whatever is left in
+    // the queue instead of leaving it there: a render that merges several keystrokes can leave an entry no
+    // echo will ever reach, and that stale entry could wrongly swallow a later outside change.
+    if (query === text) {
+      sent.current = [];
+      return;
+    }
     setText(query);
   }, [query]);
   return (
