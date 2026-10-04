@@ -85,8 +85,10 @@ export function HomePage() {
   const search = route.useSearch();
   const navigate = useNavigate({ from: "/" });
   // The search box replaces the history entry, so typing does not add one per keystroke. Other changes push one,
-  // so Back returns to the previous view.
-  const onSearch = (change: Partial<HomeSearch>) => void navigate({ search: (current) => ({ ...current, ...change }), replace: "q" in change });
+  // so Back returns to the previous view. Reset and "Clear filters" touch `q` too, but alongside every other
+  // filter: that is not the search box typing, so it must push like any other change.
+  const onSearch = (change: Partial<HomeSearch>) =>
+    void navigate({ search: (current) => ({ ...current, ...change }), replace: Object.keys(change).length === 1 && "q" in change });
 
   if (home.isPending) return <HomeSkeleton />;
   if (home.isError) {

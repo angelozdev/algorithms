@@ -179,4 +179,19 @@ describe("home page", () => {
     // Typing replaces the history entry instead of adding one per keystroke.
     expect(router.history.length).toBe(1);
   });
+
+  it("Reset pushes a history entry, so Back returns to the filtered view", async () => {
+    const router = await renderHome("/?status=solved");
+    await screen.findByRole("searchbox", { name: "Search" });
+    await waitFor(() => expect(router.state.location.search).toEqual({ status: "solved" }));
+    expect(rowTitles()).toEqual(["Two Sum"]);
+
+    await userEvent.click(screen.getByRole("button", { name: "Reset" }));
+    await waitFor(() => expect(router.state.location.search).toEqual({}));
+    expect(router.history.length).toBe(2); // pushed a new entry, unlike typing in the search box
+
+    router.history.back();
+    await waitFor(() => expect(router.state.location.search).toEqual({ status: "solved" }));
+    expect(rowTitles()).toEqual(["Two Sum"]);
+  });
 });
