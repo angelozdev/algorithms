@@ -186,6 +186,31 @@ describe("ConceptView", () => {
     await waitFor(() => expect(save).toHaveBeenCalledWith("Old. New."));
   });
 
+  it("ignores a second ⌘S while the first save is still in flight", async () => {
+    let resolveSave: (() => void) | undefined;
+    const save = vi.fn(() => new Promise<void>((resolve) => (resolveSave = resolve)));
+    await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old." }} editable save={save} />);
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    await userEvent.type(screen.getByRole("textbox", { name: "My explanation" }), " New.");
+    await userEvent.keyboard("{Control>}s{/Control}");
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    await userEvent.keyboard("{Control>}s{/Control}"); // a second ⌘S while the PUT is still pending
+    expect(save).toHaveBeenCalledTimes(1);
+    resolveSave?.();
+    await waitFor(() => expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument());
+  });
+
+  it("does nothing on ⌘S when there is no draft open, but still swallows the keystroke", async () => {
+    const save = vi.fn(async () => {});
+    await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old." }} editable save={save} />);
+    const event = new KeyboardEvent("keydown", { key: "s", code: "KeyS", ctrlKey: true, bubbles: true, cancelable: true });
+    act(() => void document.dispatchEvent(event));
+    // preventDefault keeps the browser's own "Save page" dialog from opening.
+    expect(event.defaultPrevented).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.queryByRole("textbox", { name: "My explanation" })).not.toBeInTheDocument();
+  });
+
   it("tells the page whether the draft has unsaved changes", async () => {
     const onDraft = vi.fn();
     await renderWithRouter(<ConceptView concept={{ ...CONCEPT, explanation: "Old." }} editable save={vi.fn(async () => {})} onDraft={onDraft} />);

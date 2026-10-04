@@ -78,7 +78,12 @@ function ExplanationSection({ text, broken, readmePath, editable, save, onDraft 
     onDraft?.({ open, dirty, saving, failed });
   }, [onDraft, open, dirty, saving, failed]);
 
+  // Guards against a second ⌘S while the first save's PUT is still in flight: without it, the second call
+  // reaches the server with the same base version, gets a 409, and leaves a false conflict alert behind
+  // even though the first save already closed the draft.
+  const inFlight = useRef(false);
   const submit = async () => {
+    if (inFlight.current) return;
     if (draft === null || !save || text === null || broken) return;
     // Live events refresh `text` (and the version the page saves with) while the draft is open, so the
     // server's version check alone would accept this save and drop the other text. Changes to other
@@ -88,6 +93,7 @@ function ExplanationSection({ text, broken, readmePath, editable, save, onDraft 
       setError({ message: CONFLICT_MESSAGE, issues: [] });
       return;
     }
+    inFlight.current = true;
     setSaving(true);
     setError(null);
     try {
@@ -98,15 +104,18 @@ function ExplanationSection({ text, broken, readmePath, editable, save, onDraft 
       setError({ message: (reason as Error).message, issues: reason instanceof ApiError ? reason.issues : [] });
     } finally {
       setSaving(false);
+      inFlight.current = false;
     }
   };
 
-  // ⌘S / Ctrl+S saves the open draft, also from inside the editor.
+  // ⌘S / Ctrl+S saves the open draft, also from inside the editor. Always enabled (not just while a draft is
+  // open) so preventDefault keeps firing and the browser's own "Save page" dialog never opens; submit() is a
+  // no-op when there is nothing to save.
   const latestSubmit = useRef(submit);
   useLayoutEffect(() => {
     latestSubmit.current = submit;
   });
-  useHotkeys("mod+s", () => void latestSubmit.current(), { enabled: open, preventDefault: true, enableOnFormTags: true, enableOnContentEditable: true });
+  useHotkeys("mod+s", () => void latestSubmit.current(), { preventDefault: true, enableOnFormTags: true, enableOnContentEditable: true });
 
   if (draft === null && broken) return null;
   if (draft === null && text === null) {

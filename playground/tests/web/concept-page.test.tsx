@@ -1,10 +1,11 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
-import { act, render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ConceptData } from "../../server/types.ts";
 import { keys } from "../../web/api.ts";
+import { shortcut } from "../../web/lib/keys.ts";
 import { routeTree } from "../../web/router.tsx";
 
 // CodeMirror needs layout APIs that jsdom lacks; a textarea stands in for it here. The end-to-end tests use the real editor.
@@ -105,5 +106,15 @@ describe("concept page", () => {
     expect(screen.getByRole("heading", { name: "Array" })).toBeInTheDocument();
     expect(screen.getByRole("textbox", { name: "My explanation" })).toHaveValue("Array text. Mine.");
     expect(screen.getByRole("button", { name: "Save" })).toBeEnabled();
+  });
+
+  it("shows the ⌘S shortcut in the status bar only while a draft is open", async () => {
+    await renderApp("/c/array");
+    const bar = () => screen.getByRole("contentinfo", { name: "Status bar" });
+    expect(within(bar()).queryByText(shortcut("save"))).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(within(bar()).getByText(shortcut("save"))).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(within(bar()).queryByText(shortcut("save"))).not.toBeInTheDocument();
   });
 });

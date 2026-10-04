@@ -125,7 +125,7 @@ function ConceptContent({ slug }: { slug: string }) {
           <ConceptView concept={concept.data} editable save={save} onDraft={setDraft} />
         </div>
       </main>
-      <StatusBar subject="My explanation" save={draftSaveLabel(draft)} shortcuts={[{ keys: shortcut("save"), label: "Save" }]} />
+      <StatusBar subject="My explanation" save={draftSaveLabel(draft)} shortcuts={draft.open ? [{ keys: shortcut("save"), label: "Save" }] : []} />
     </div>
   );
 }
