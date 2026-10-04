@@ -4,12 +4,13 @@
 
 Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
-## arrays-hashing (3/8)
+## arrays-hashing (3/9)
 
 - ✓ [lc-0001 · Two Sum](problems/lc-0001-two-sum/README.md) · easy
 - ○ [lc-0054 · Spiral Matrix](problems/lc-0054-spiral-matrix/README.md) · medium
 - ○ [lc-0169 · Majority Element](problems/lc-0169-majority-element/README.md) · easy
 - ○ [lc-0217 · Contains Duplicate](problems/lc-0217-contains-duplicate/README.md) · easy
+- ○ [lc-0238 · Product of Array Except Self](problems/lc-0238-product-of-array-except-self/README.md) · medium
 - ○ [lc-0242 · Valid Anagram](problems/lc-0242-valid-anagram/README.md) · easy
 - ○ [lc-0383 · Ransom Note](problems/lc-0383-ransom-note/README.md) · easy
 - ✓ [lc-1672 · Richest Customer Wealth](problems/lc-1672-richest-customer-wealth/README.md) · easy
@@ -69,6 +70,11 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0295 · Find Median from Data Stream](problems/lc-0295-find-median-from-data-stream/README.md) · hard
 - ○ [lc-0973 · K Closest Points to Origin](problems/lc-0973-k-closest-points-to-origin/README.md) · medium
 
+## intervals (0/2)
+
+- ○ [lc-0056 · Merge Intervals](problems/lc-0056-merge-intervals/README.md) · medium
+- ○ [lc-0057 · Insert Interval](problems/lc-0057-insert-interval/README.md) · medium
+
 ## linked-list (2/7)
 
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
@@ -94,15 +100,18 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0121 · Best Time to Buy and Sell Stock](problems/lc-0121-best-time-to-buy-and-sell-stock/README.md) · easy
 - ○ [lc-0438 · Find All Anagrams in a String](problems/lc-0438-find-all-anagrams-in-a-string/README.md) · medium
 
-## stack (1/4)
+## stack (1/6)
 
 - ✓ [lc-0020 · Valid Parentheses](problems/lc-0020-valid-parentheses/README.md) · easy
+- ○ [lc-0084 · Largest Rectangle in Histogram](problems/lc-0084-largest-rectangle-in-histogram/README.md) · hard
 - ○ [lc-0150 · Evaluate Reverse Polish Notation](problems/lc-0150-evaluate-reverse-polish-notation/README.md) · medium
 - ○ [lc-0155 · Min Stack](problems/lc-0155-min-stack/README.md) · medium
+- ○ [lc-0224 · Basic Calculator](problems/lc-0224-basic-calculator/README.md) · hard
 - ○ [lc-0232 · Implement Queue using Stacks](problems/lc-0232-implement-queue-using-stacks/README.md) · easy
 
-## strings (5/6)
+## strings (5/7)
 
+- ○ [lc-0008 · String to Integer (atoi)](problems/lc-0008-string-to-integer-atoi/README.md) · medium
 - ✓ [lc-0028 · Find the Index of the First Occurrence in a String](problems/lc-0028-find-the-index-of-the-first-occurrence-in-a-string/README.md) · easy
 - ✓ [lc-0058 · Length of Last Word](problems/lc-0058-length-of-last-word/README.md) · easy
 - ○ [lc-0409 · Longest Palindrome](problems/lc-0409-longest-palindrome/README.md) · easy
@@ -126,12 +135,13 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ○ [lc-0208 · Implement Trie (Prefix Tree)](problems/lc-0208-implement-trie-prefix-tree/README.md) · medium
 
-## two-pointers (2/7)
+## two-pointers (2/8)
 
 - ○ [lc-0011 · Container With Most Water](problems/lc-0011-container-with-most-water/README.md) · medium
 - ○ [lc-0015 · 3Sum](problems/lc-0015-3sum/README.md) · medium
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
 - … [lc-0026 · Remove Duplicates from Sorted Array](problems/lc-0026-remove-duplicates-from-sorted-array/README.md) · easy
 - ✓ [lc-0027 · Remove Element](problems/lc-0027-remove-element/README.md) · easy
+- ○ [lc-0042 · Trapping Rain Water](problems/lc-0042-trapping-rain-water/README.md) · hard
 - ○ [lc-0075 · Sort Colors](problems/lc-0075-sort-colors/README.md) · medium
 - ○ [lc-0125 · Valid Palindrome](problems/lc-0125-valid-palindrome/README.md) · easy

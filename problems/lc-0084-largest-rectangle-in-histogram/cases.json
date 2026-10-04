@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "largestRectangleArea",
+  "params": [
+    {"name":"heights","type":"int[]"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[[2,1,5,6,2,3]],"expected":10},
+    {"input":[[2,4]],"expected":4}
+  ],
+  "hidden": [
+    {"input":[[5]],"expected":5},
+    {"input":[[3,3]],"expected":6},
+    {"input":[[1,2,3,4,5]],"expected":9},
+    {"input":[[5,4,3,2,1]],"expected":9},
+    {"input":[[4,4,4,4]],"expected":16},
+    {"input":[[0,0,0,0]],"expected":0},
+    {"input":[[2,0,2]],"expected":2},
+    {"input":[[1,10,1]],"expected":10},
+    {"input":[[10000,10000]],"expected":20000},
+    {"input":[[6,2,5,4,5,1,6]],"expected":12}
+  ]
+}
