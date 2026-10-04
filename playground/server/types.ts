@@ -95,7 +95,9 @@ export interface ConceptData {
 export type RepoEvent =
   | { kind: "solution"; target: string; lang: Lang; version: string }
   | { kind: "readme"; target?: string; concept?: string }
-  | { kind: "cases" | "stress"; target: string };
+  | { kind: "cases" | "stress"; target: string }
+  /** .study/state.json has a new version (study coach spec §10): recorded progress changed. */
+  | { kind: "progress"; version: string };
 
 export interface ApiErrorBody {
   error: string;

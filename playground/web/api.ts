@@ -82,6 +82,10 @@ export const keys = {
   home: ["home"] as const,
   target: (id: string) => ["target", id] as const,
   concept: (slug: string) => ["concept", slug] as const,
+  /** Every target query (prefix). */
+  targets: ["target"] as const,
+  /** Every concept query (prefix). */
+  concepts: ["concept"] as const,
 };
 
 export const homeQuery = () => queryOptions({ queryKey: keys.home, queryFn: getHome });

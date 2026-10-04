@@ -66,6 +66,11 @@ export function EventsProvider({ children }: { children: ReactNode }) {
         } else if (event.kind === "solution") {
           // A new stub turns a todo item into "in progress".
           void queryClient.invalidateQueries({ queryKey: keys.home });
+        } else if (event.kind === "progress") {
+          // Recorded progress changed (.study/state.json): statuses and hint counts on any page may be stale.
+          void queryClient.invalidateQueries({ queryKey: keys.home });
+          void queryClient.invalidateQueries({ queryKey: keys.targets });
+          void queryClient.invalidateQueries({ queryKey: keys.concepts });
         }
         for (const listener of listeners.current) listener(event);
       };

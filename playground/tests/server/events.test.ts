@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { writeStateFile } from "../../../study/state-file.ts";
 import { createApp } from "../../server/app.ts";
 import { classify, ignoredPath } from "../../server/events.ts";
 import { contentVersion } from "../../server/solutions.ts";
@@ -69,6 +70,12 @@ describe("classify", () => {
       expect(classify(root, file), file).toBeNull();
     }
   });
+
+  it("turns state.json into a progress event carrying its version", () => {
+    expect(classify(root, "/repo/.study/state.json")).toEqual({ kind: "progress", version: "missing" });
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/state.json")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/.state.json.123.tmp")).toBe(true);
+  });
 });
 
 describe("ignoredPath", () => {
@@ -131,6 +138,21 @@ describe("GET /api/events", () => {
       mkdirSync(path.join(root, ".study/solutions/problems/lc-0001"), { recursive: true });
       writeFileSync(path.join(root, ".study/solutions/problems/lc-0001/solution.py"), PY_SUM);
       expect(JSON.parse((await events.next()).data)).toEqual({ kind: "solution", target: "lc-0001", lang: "py", version: contentVersion(PY_SUM) });
+    } finally {
+      await events.close();
+    }
+  });
+
+  it("sends one progress event per new state.json snapshot", async () => {
+    const root = makeRepo();
+    const events = await openEvents(createApp({ root }));
+    try {
+      expect((await events.next()).event).toBe("ready");
+      // Phases a fresh or seeded store never has, so both writes are real changes.
+      const first = writeStateFile(path.join(root, ".study"), { phase: "expand", inProgress: [], today: null }).state;
+      expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: first.version });
+      const second = writeStateFile(path.join(root, ".study"), { phase: "pro", inProgress: [], today: null }).state;
+      expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: second.version });
     } finally {
       await events.close();
     }

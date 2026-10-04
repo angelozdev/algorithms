@@ -5,6 +5,7 @@ import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { exerciseIdFromFolder, problemIdFromFolder } from "../../lib/repo.ts";
 import { studyRoot } from "../../runner/src/paths.ts";
+import { readState, STATE_FILE } from "../../study/state-file.ts";
 import { contentVersion } from "./solutions.ts";
 import type { RepoEvent } from "./types.ts";
 
@@ -24,8 +25,9 @@ function solutionEvent(target: string, name: string, file: string): RepoEvent | 
   return { kind: "solution", target, lang, version: contentVersion(existsSync(file) ? readFileSync(file, "utf8") : "") };
 }
 
-/** Under the study root: solutions/problems/<id>/solution.<lang> and solutions/exercises/<concept>/<NN>/solution.<lang>. */
-function classifyStudy(parts: string[], file: string): RepoEvent | null {
+/** Under the study root: state.json, solutions/problems/<id>/solution.<lang> and solutions/exercises/<concept>/<NN>/solution.<lang>. */
+function classifyStudy(study: string, parts: string[], file: string): RepoEvent | null {
+  if (parts.length === 1 && parts[0] === STATE_FILE) return { kind: "progress", version: readState(study)?.version ?? "missing" };
   if (parts[0] !== "solutions") return null;
   if (parts[1] === "problems" && parts.length === 4) return solutionEvent(parts[2], parts[3], file);
   if (parts[1] === "exercises" && parts.length === 5) return solutionEvent(`${parts[2]}/${parts[3]}`, parts[4], file);
@@ -35,7 +37,7 @@ function classifyStudy(parts: string[], file: string): RepoEvent | null {
 /** What a changed file means for the app, or null when the app does not show it. */
 export function classify(root: string, file: string, study: string = studyRoot(root)): RepoEvent | null {
   const inStudy = segmentsUnder(study, file);
-  if (inStudy !== null) return classifyStudy(inStudy, file);
+  if (inStudy !== null) return classifyStudy(study, inStudy, file);
   const parts = path.relative(root, file).split(path.sep);
   let target: string | undefined;
   let concept: string | undefined;
@@ -62,6 +64,7 @@ export function classify(root: string, file: string, study: string = studyRoot(r
 /** Study-root paths the app shows, or must walk into to reach them: solutions/, without history/. */
 function keptInStudy(parts: string[]): boolean {
   if (parts.length === 0) return true;
+  if (parts.length === 1 && parts[0] === STATE_FILE) return true;
   if (parts[0] !== "solutions") return false;
   return !parts.some((part) => part === "history" || IGNORED_PART.test(part));
 }
@@ -85,6 +88,8 @@ export class EventHub {
   private ready: Promise<void> = Promise.resolve();
   /** Last seen version per file: macOS reports one save twice. */
   private readonly seen = new Map<string, string>();
+  /** Last progress version sent: a state.json rewrite with the same snapshot is not news. */
+  private lastProgress: string | null = null;
 
   constructor(private readonly root: string) {}
 
@@ -132,6 +137,7 @@ export class EventHub {
     void this.watcher?.close();
     this.watcher = null;
     this.seen.clear();
+    this.lastProgress = null;
   }
 
   private changed(kind: string, file: string, stats: Stats | undefined, study: string): void {
@@ -139,7 +145,12 @@ export class EventHub {
     if (this.seen.get(file) === version) return;
     this.seen.set(file, version);
     const event = classify(this.root, file, study);
-    if (event) for (const listener of this.listeners) listener(event);
+    if (!event) return;
+    if (event.kind === "progress") {
+      if (event.version === this.lastProgress) return; // a rewrite with the same snapshot is not news
+      this.lastProgress = event.version;
+    }
+    for (const listener of this.listeners) listener(event);
   }
 }
 

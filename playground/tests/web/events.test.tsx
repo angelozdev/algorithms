@@ -195,4 +195,17 @@ describe("EventsProvider", () => {
     await advance(RECONNECT_MS.max);
     expect(FakeEventSource.all).toHaveLength(1);
   });
+
+  it("refetches what the page shows when recorded progress changes", async () => {
+    renderApp();
+    await settle();
+    act(() => FakeEventSource.latest.ready());
+    await settle();
+    const before = fetches;
+    const event: RepoEvent = { kind: "progress", version: "v2" };
+    act(() => FakeEventSource.latest.send(event));
+    await settle();
+    expect(fetches).toBe(before + 1);
+    expect(heard).toEqual([event]);
+  });
 });
