@@ -97,6 +97,7 @@ describe("WorkHeader", () => {
   it("locks the language switch and says why when nothing would save the text", async () => {
     await renderHeader(target(), HOME, { langLock: "Resolve the conflict first" });
     expect(screen.getByRole("radio", { name: "ts" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "py" })).toBeDisabled(); // the active language too, not just the one not in use
     await userEvent.hover(screen.getByRole("radiogroup", { name: "Language" }));
     expect(await screen.findByRole("tooltip")).toHaveTextContent("Resolve the conflict first");
   });

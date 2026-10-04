@@ -57,6 +57,17 @@ describe("GET /api/home", () => {
     expect(body.problems.find((p: { id: string }) => p.id === "lc-0035").concepts).toEqual([]);
   });
 
+  it("gives a problem with no concepts key at all no concepts", async () => {
+    const root = makeRepo();
+    put(
+      root,
+      "problems/lc-0036-valid-sudoku/README.md",
+      "---\nid: lc-0036\ntitle: Valid Sudoku\ndifficulty: medium\npatterns: [arrays-hashing]\nstatus: todo\n---\n# 36. Valid Sudoku\n",
+    );
+    const { body } = await json(await call(createApp({ root }), "/api/home"));
+    expect(body.problems.find((p: { id: string }) => p.id === "lc-0036").concepts).toEqual([]);
+  });
+
   it("works on an empty repo", async () => {
     const root = makeRepo();
     const empty = path.join(root, "empty");

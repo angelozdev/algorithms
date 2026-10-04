@@ -64,7 +64,7 @@ test("a concept link opens next to the editor, and Back returns to the statement
   await expect(page.getByRole("heading", { name: "Intuition" })).toBeVisible();
   await expect(page.getByText("Statement › hash-map")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "solution.py" })).toBeVisible();
-  await page.getByRole("button", { name: "Back" }).click();
+  await page.getByRole("button", { name: "Back", exact: true }).click();
   await expect(page.getByRole("heading", { name: "1. Two Sum" })).toBeVisible();
 });
 
@@ -103,6 +103,7 @@ test("leaving with an edit the server could not save asks first, and the edit is
   await page.keyboard.insertText("\n# typed while saves fail\n");
   await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Not saved");
   await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "py" })).toBeDisabled(); // the active language too, not just the one not in use
   await page.getByRole("radiogroup", { name: "Language" }).hover();
   await expect(page.getByRole("tooltip")).toHaveText("Not saved yet: press ⌘S to retry first");
 

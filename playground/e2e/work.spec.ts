@@ -76,6 +76,7 @@ test("disables the language switch while a conflict is open", async ({ page }) =
   writeFileSync(repoFile("problems/lc-0001-two-sum/solution.py"), "class Solution:\n    pass\n");
   await expect(page.getByText(/changed on disk/)).toBeVisible({ timeout: 5_000 });
   await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "py" })).toBeDisabled(); // the active language too, not just the one not in use
   await page.getByRole("radiogroup", { name: "Language" }).hover();
   await expect(page.getByRole("tooltip")).toHaveText("Resolve the conflict first");
 });

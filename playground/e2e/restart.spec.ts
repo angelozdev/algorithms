@@ -96,6 +96,7 @@ test("after pnpm play restarts, the same tab reconnects, saves what was typed me
   await page.keyboard.insertText("\n# typed while the server was down\n");
   // Text that cannot be saved locks the language switch at once, not only after the 500 ms autosave fails.
   await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
+  await expect(page.getByRole("radio", { name: "py" })).toBeDisabled(); // the active language too, not just the one not in use
   await expect(status).toHaveText("Not saved");
 
   server = await startServer();
