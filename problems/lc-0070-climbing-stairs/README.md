@@ -6,6 +6,7 @@ url: https://leetcode.com/problems/climbing-stairs/
 difficulty: easy
 patterns: [dp-1d]
 concepts: [dynamic-programming, recursion]
+lists: [grind-75]
 status: solved
 hints: 0
 solution_revealed: false

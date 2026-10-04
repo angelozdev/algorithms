@@ -6,6 +6,7 @@ url: https://leetcode.com/problems/valid-parentheses/
 difficulty: easy
 patterns: [stack]
 concepts: [stack]
+lists: [grind-75]
 status: solved
 hints: 0
 solution_revealed: false

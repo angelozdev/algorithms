@@ -24,10 +24,11 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0078 · Subsets](problems/lc-0078-subsets/README.md) · medium
 - ○ [lc-0079 · Word Search](problems/lc-0079-word-search/README.md) · medium
 
-## binary-search (0/4)
+## binary-search (0/5)
 
 - ○ [lc-0033 · Search in Rotated Sorted Array](problems/lc-0033-search-in-rotated-sorted-array/README.md) · medium
 - … [lc-0035 · Search Insert Position](problems/lc-0035-search-insert-position/README.md) · easy
+- ○ [lc-0278 · First Bad Version](problems/lc-0278-first-bad-version/README.md) · easy
 - ○ [lc-0704 · Binary Search](problems/lc-0704-binary-search/README.md) · easy
 - ○ [lc-0981 · Time Based Key-Value Store](problems/lc-0981-time-based-key-value-store/README.md) · medium
 
@@ -49,9 +50,10 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0005 · Longest Palindromic Substring](problems/lc-0005-longest-palindromic-substring/README.md) · medium
 - ○ [lc-0062 · Unique Paths](problems/lc-0062-unique-paths/README.md) · medium
 
-## graphs (0/8)
+## graphs (0/9)
 
 - ○ [lc-0127 · Word Ladder](problems/lc-0127-word-ladder/README.md) · hard
+- ○ [lc-0133 · Clone Graph](problems/lc-0133-clone-graph/README.md) · medium
 - ○ [lc-0200 · Number of Islands](problems/lc-0200-number-of-islands/README.md) · medium
 - ○ [lc-0207 · Course Schedule](problems/lc-0207-course-schedule/README.md) · medium
 - ○ [lc-0310 · Minimum Height Trees](problems/lc-0310-minimum-height-trees/README.md) · medium
@@ -75,10 +77,11 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0056 · Merge Intervals](problems/lc-0056-merge-intervals/README.md) · medium
 - ○ [lc-0057 · Insert Interval](problems/lc-0057-insert-interval/README.md) · medium
 
-## linked-list (2/7)
+## linked-list (2/8)
 
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
 - ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+- ○ [lc-0141 · Linked List Cycle](problems/lc-0141-linked-list-cycle/README.md) · easy
 - ○ [lc-0146 · LRU Cache](problems/lc-0146-lru-cache/README.md) · medium
 - ○ [lc-0206 · Reverse Linked List](problems/lc-0206-reverse-linked-list/README.md) · easy
 - ○ [lc-0876 · Middle of the Linked List](problems/lc-0876-middle-of-the-linked-list/README.md) · easy
@@ -119,7 +122,7 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-3110 · Score of a String](problems/lc-3110-score-of-a-string/README.md) · easy
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## trees (0/9)
+## trees (0/12)
 
 - ○ [lc-0098 · Validate Binary Search Tree](problems/lc-0098-validate-binary-search-tree/README.md) · medium
 - ○ [lc-0102 · Binary Tree Level Order Traversal](problems/lc-0102-binary-tree-level-order-traversal/README.md) · medium
@@ -129,6 +132,9 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ○ [lc-0199 · Binary Tree Right Side View](problems/lc-0199-binary-tree-right-side-view/README.md) · medium
 - ○ [lc-0226 · Invert Binary Tree](problems/lc-0226-invert-binary-tree/README.md) · easy
 - ○ [lc-0230 · Kth Smallest Element in a BST](problems/lc-0230-kth-smallest-element-in-a-bst/README.md) · medium
+- ○ [lc-0235 · Lowest Common Ancestor of a Binary Search Tree](problems/lc-0235-lowest-common-ancestor-of-a-binary-search-tree/README.md) · medium
+- ○ [lc-0236 · Lowest Common Ancestor of a Binary Tree](problems/lc-0236-lowest-common-ancestor-of-a-binary-tree/README.md) · medium
+- ○ [lc-0297 · Serialize and Deserialize Binary Tree](problems/lc-0297-serialize-and-deserialize-binary-tree/README.md) · hard
 - ○ [lc-0543 · Diameter of Binary Tree](problems/lc-0543-diameter-of-binary-tree/README.md) · easy
 
 ## tries (0/1)

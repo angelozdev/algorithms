@@ -1,0 +1,25 @@
+{
+  "entry": "lowestCommonAncestor",
+  "params": [
+    {"name":"root","type":"TreeNode"},
+    {"name":"p","type":"TreeNode","ref":"root"},
+    {"name":"q","type":"TreeNode","ref":"root"}
+  ],
+  "returns": "TreeNode.val",
+  "compare": "exact",
+  "examples": [
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],2,8],"expected":6},
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],2,4],"expected":2},
+    {"input":[[2,1],2,1],"expected":2}
+  ],
+  "hidden": [
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],0,5],"expected":2},
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],7,9],"expected":8},
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],3,5],"expected":4},
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],6,3],"expected":6},
+    {"input":[[6,2,8,0,4,7,9,null,null,3,5],2,0],"expected":2},
+    {"input":[[0,-5,5,-10,-3,3,8],-10,-3],"expected":-5},
+    {"input":[[0,-1000000000,1000000000],-1000000000,1000000000],"expected":0},
+    {"input":[[1,0],0,1],"expected":1}
+  ]
+}
