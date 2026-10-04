@@ -16,7 +16,7 @@ The magic rule: **pointers never walk back** ⏩. Every step moves at least one 
 Two shapes cover most cases:
 
 - **Converging** ↔️ — one pointer at each end, moving toward each other (a palindrome check, reversing in place).
-- **Parallel** ➡️➡️ — one pointer per sequence, both moving forward (merging two sensor streams sorted by timestamp into one dashboard timeline 📈).
+- **Parallel** ➡️➡️ — one pointer per sequence, both moving forward (comparing two sorted sequences to merge them, find what they share, or spot where they differ 📈).
 
 ## Diagram
 
@@ -31,20 +31,20 @@ Converging — is `"radar"` a palindrome?
 5 letters, 2 comparisons, zero steps backwards.
 ```
 
-Parallel — merge two sensor streams, each sorted by time (ms):
+Parallel — which prices show up on both of two sorted watchlists?
 
 ```
-a = [10, 40, 50]      b = [20, 30, 60]
+a = [10, 20, 40, 50]      b = [15, 20, 40, 60]
 
-step   a[i]   b[j]   take   move
- 1      10     20     10     i →
- 2      40     20     20     j →
- 3      40     30     30     j →
- 4      40     60     40     i →
- 5      50     60     50     i →
-        a is empty → append the rest of b: 60
+step   a[i]   b[j]   compare      move
+ 1      10     15     a[i] < b[j]   i →
+ 2      20     15     a[i] > b[j]   j →
+ 3      20     20     a[i] == b[j]  take 20, i → and j →
+ 4      40     40     a[i] == b[j]  take 40, i → and j →
+ 5      50     60     a[i] < b[j]   i →
+        a is empty → stop (b's leftovers cannot match anything)
 
-out = [10, 20, 30, 40, 50, 60]      ← each step moved exactly ONE cursor
+out = [20, 40]      ← each step moved at least one cursor, never both back
 ```
 
 ## Signals
@@ -95,41 +95,43 @@ function reverseInPlace(items: number[]): void {
 }
 ```
 
-Parallel: merge two sorted lists — Python:
+Parallel: common elements of two sorted lists — Python:
 
 ```python
-def merge(a: list[int], b: list[int]) -> list[int]:
+def common_elements(a: list[int], b: list[int]) -> list[int]:
     i, j = 0, 0
     out: list[int] = []
     while i < len(a) and j < len(b):
-        if a[i] <= b[j]:
+        if a[i] == b[j]:
             out.append(a[i])
             i += 1
-        else:
-            out.append(b[j])
             j += 1
-    out.extend(a[i:])  # at most one of these two
-    out.extend(b[j:])  # still has elements left
+        elif a[i] < b[j]:
+            i += 1  # a[i] is too small to match anything left in b
+        else:
+            j += 1  # b[j] is too small to match anything left in a
     return out
 ```
 
-Parallel: merge two sorted lists — TypeScript:
+Parallel: common elements of two sorted lists — TypeScript:
 
 ```ts
-function merge(a: number[], b: number[]): number[] {
+function commonElements(a: number[], b: number[]): number[] {
   let i = 0;
   let j = 0;
   const out: number[] = [];
   while (i < a.length && j < b.length) {
-    if (a[i] <= b[j]) {
+    if (a[i] === b[j]) {
       out.push(a[i]);
       i++;
-    } else {
-      out.push(b[j]);
       j++;
+    } else if (a[i] < b[j]) {
+      i++; // a[i] is too small to match anything left in b
+    } else {
+      j++; // b[j] is too small to match anything left in a
     }
   }
-  return out.concat(a.slice(i), b.slice(j)); // at most one still has elements left
+  return out;
 }
 ```
 
