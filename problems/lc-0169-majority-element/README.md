@@ -26,8 +26,6 @@ You're given an array of `n` numbers, and you're told one value shows up more th
 
 **Constraints:** `n == nums.length` · `1 <= n <= 5 * 10^4` · `-10^9 <= nums[i] <= 10^9` · a majority element is guaranteed to exist
 
-**Follow-up:** Can you find it using only linear time and constant extra space?
-
 ## Concepts
 
 <!-- auto:concepts -->
