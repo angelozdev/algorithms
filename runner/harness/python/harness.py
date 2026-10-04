@@ -11,6 +11,7 @@ import io
 import json
 import os
 import sys
+import threading
 import time
 import traceback
 
@@ -21,7 +22,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from lc import ListNode, Node, TreeNode  # noqa: E402
 
-sys.setrecursionlimit(10_000)
+# A correct but deeply recursive solution (depth ~100k or more) needs both a higher recursion
+# limit and real C-stack room to back it: raising sys.setrecursionlimit() alone does not grow the
+# interpreter's native stack, so a heavy enough frame could still segfault instead of raising a
+# catchable RecursionError. The safe, documented fix is to run the solution on a dedicated thread
+# created with a larger threading.stack_size(), after raising the limit; see run_all_cases() below.
+sys.setrecursionlimit(300_000)
+STACK_SIZE_BYTES = 64 * 1024 * 1024  # generous headroom for a ~100k-deep call stack
 
 MAX_NODES = 1_000_000
 CAPTURE_LIMIT = 64 * 1024
@@ -465,9 +472,28 @@ def main() -> None:
         emit({"type": "fatal", "error": error("missing-entry", str(exc))})
         return
     emit({"type": "ready"})
-    for case in request["cases"]:
-        emit({"type": "start", "id": case["id"]})
-        run_case(target, module, request, case, solution_path)
+    run_all_cases(target, module, request, solution_path)
+
+
+def run_all_cases(target, module, request: dict, solution_path: str) -> None:
+    """Runs every case on a dedicated thread with a larger C stack (see STACK_SIZE_BYTES above),
+    so a correct but deeply recursive solution does not run out of native stack space. The
+    recursion limit is already raised at import time; threading.stack_size() only affects threads
+    created after the call, so the thread is made right here, right before it is needed.
+    """
+
+    def target_fn() -> None:
+        for case in request["cases"]:
+            emit({"type": "start", "id": case["id"]})
+            run_case(target, module, request, case, solution_path)
+
+    previous_stack_size = threading.stack_size(STACK_SIZE_BYTES)
+    try:
+        worker = threading.Thread(target=target_fn)
+        worker.start()
+        worker.join()
+    finally:
+        threading.stack_size(previous_stack_size)
 
 
 if __name__ == "__main__":

@@ -269,6 +269,55 @@ describe("python harness", () => {
     expect(run?.stdout).toMatch(/… output truncated\n$/);
   });
 
+  it("runs a ~100k-deep recursive solution, and reports runaway recursion as a clean failure", async () => {
+    const deep = solution(
+      "deep-recursion",
+      [
+        "class Solution:",
+        "    def solve(self, n: int) -> int:",
+        "        if n <= 0:",
+        "            return 0",
+        "        return 1 + self.solve(n - 1)",
+        "",
+      ].join("\n"),
+    );
+    const deepOutcome = await runHarness(
+      "py",
+      harnessRequest(deep, {
+        params: [{ name: "n", type: "int" }],
+        returns: "int",
+        cases: [{ id: "a", input: [100_000] }],
+      }),
+      { wallLimitMs: 10_000 },
+    );
+    expect(deepOutcome.fatal).toBeNull();
+    expect(deepOutcome.runs.get("a")).toMatchObject({ ok: true, output: 100_000 });
+
+    const boundless = solution(
+      "boundless-recursion",
+      [
+        "class Solution:",
+        "    def solve(self, n: int) -> int:",
+        "        return 1 + self.solve(n + 1)",
+        "",
+      ].join("\n"),
+    );
+    const boundlessOutcome = await runHarness(
+      "py",
+      harnessRequest(boundless, {
+        params: [{ name: "n", type: "int" }],
+        returns: "int",
+        cases: [{ id: "a", input: [0] }],
+      }),
+      { wallLimitMs: 10_000 },
+    );
+    expect(boundlessOutcome.fatal).toBeNull();
+    const run = boundlessOutcome.runs.get("a");
+    expect(run?.ok).toBe(false);
+    expect(run?.error?.kind).toBe("exception");
+    expect(run?.error?.message).toMatch(/RecursionError/);
+  });
+
   it("kills infinite loops at the wall-clock limit and names the case in flight", async () => {
     const file = solution(
       "loop",
