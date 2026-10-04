@@ -20,6 +20,6 @@
     {"input":["aaaaaaaaaa","aaa"],"expected":"aaa"},
     {"input":["ab","b"],"expected":"b"},
     {"input":["bba","ab"],"expected":"ba"},
-    {"input":["abcabc","abc"],"expected":"abc"}
+    {"input":["xaybzc","abc"],"expected":"aybzc"}
   ]
 }

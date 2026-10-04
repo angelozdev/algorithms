@@ -17,7 +17,7 @@ complexity: null
 
 ## Statement
 
-You get an array `nums` holding only the values `0`, `1` and `2`, standing for the colors red, white and blue respectively. Rearrange `nums` in place so that elements of the same color end up next to each other, in the order red, then white, then blue. The function does not return anything; the judge checks the array itself after the call.
+You get an array `nums` holding only the values `0`, `1` and `2`, standing for the colors red, white and blue respectively. Rearrange `nums` in place so that elements of the same color end up next to each other, in the order red, then white, then blue. The function does not return anything; the judge checks the array itself after the call. You may not reach for a built-in or library sort call to do the rearranging — the ordering has to come from logic you write yourself.
 
 **Examples**
 
