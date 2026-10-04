@@ -1,5 +1,5 @@
 import type { CaseStatus, RunResult, StressCaseResult, StressStatus } from "../../../runner/src/types.ts";
-import { formatMs } from "../components/RunDetails.tsx";
+import { formatMs } from "./format.ts";
 
 export type ChipState = "passed" | "failed" | "error" | "timeout" | "skipped" | "slow";
 

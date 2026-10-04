@@ -3,10 +3,11 @@ import { CircleCheck, CirclePause, CircleX, FlaskConical, LoaderCircle, Lock, ty
 import { Fragment } from "react";
 import { formatNamedInput, formatOutput } from "../../../runner/src/format.ts";
 import type { HarnessError, RunResult, StressStatus } from "../../../runner/src/types.ts";
+import { DISPLAY_MAX, formatMs } from "../lib/format.ts";
 import { shortcut } from "../lib/keys.ts";
 import { type Chip, type ChipState, exampleRowId, HIDDEN_ROW_ID, runChips, stressRowId } from "../lib/run-summary.ts";
 import { Hint } from "./Hint.tsx";
-import { DISPLAY_MAX, ErrorBox, formatMs } from "./RunDetails.tsx";
+import { ErrorBox } from "./RunDetails.tsx";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert.tsx";
 import { Badge } from "./ui/badge.tsx";
 import { Kbd } from "./ui/kbd.tsx";
