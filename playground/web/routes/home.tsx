@@ -30,7 +30,7 @@ export function HomeView({ data, search, onSearch }: HomeViewProps) {
   const sortBy = (key: SortKey) => onSearch(search.sort === key ? { dir: search.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: "asc" });
 
   return (
-    <main className="mx-auto w-full max-w-5xl flex-1 overflow-y-auto px-6 py-6 text-[13px]">
+    <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-6 text-[13px]">
       <HomeHeader solved={solved} total={data.problems.length} query={search.q} onQuery={(q) => onSearch({ q })} />
       <ContinueCards items={continueItems(data, search.q)} />
       <section aria-labelledby="home-problems" className="mb-8">

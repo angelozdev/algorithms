@@ -66,3 +66,37 @@ test("the List facet and the List grouping live in the URL", async ({ page }) =>
   await expect(page.getByRole("button", { name: /^List/ })).toContainText("Grind 75");
   await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
 });
+
+/** This file is also type-checked by the root tsconfig (no DOM lib), so `page.evaluate` callbacks reach
+ * window/document through a cast `globalThis`, like `restart.spec.ts`'s `markTab` does. The cast type is
+ * erased at runtime, but the cast itself must stay inside the callback: it runs in the page, not here, so
+ * it cannot close over a Node-side helper. */
+type BrowserGlobal = { innerHeight: number; scrollY: number; document: { scrollingElement: { scrollHeight: number } } };
+
+test.describe("page scrolling", () => {
+  // A short viewport, not the fixture's own content, forces the overflow: two problems and one concept
+  // comfortably fit a normal window, so the test shrinks the window instead of growing the fixture.
+  test.use({ viewport: { width: 1440, height: 250 } });
+
+  test("the window scrolls, not an inner container", async ({ page }) => {
+    await page.goto("/");
+    const overflows = () =>
+      page.evaluate(() => {
+        const g = globalThis as unknown as BrowserGlobal;
+        return g.document.scrollingElement.scrollHeight > g.innerHeight;
+      });
+    await expect.poll(overflows).toBe(true);
+    // Over the margin, outside the centered `max-w-5xl` column: the bug report asked for the wheel to
+    // scroll the page from anywhere, not just over the content.
+    await page.mouse.move(50, 100);
+    await page.mouse.wheel(0, 300);
+    await expect.poll(() => page.evaluate(() => (globalThis as unknown as BrowserGlobal).scrollY)).toBeGreaterThan(0);
+  });
+
+  test("the problem page still does not scroll the document", async ({ page }) => {
+    await page.goto("/p/lc-0001");
+    await expect(page.getByRole("heading", { name: "1. Two Sum" })).toBeVisible();
+    await page.mouse.wheel(0, 300);
+    expect(await page.evaluate(() => (globalThis as unknown as BrowserGlobal).scrollY)).toBe(0);
+  });
+});
