@@ -6,13 +6,20 @@ export default defineConfig({
   test: {
     testTimeout: 30_000,
     hookTimeout: 30_000,
+    // No test may reach the user's own progress: studyRoot() falls back to <test repo>/.study.
+    env: { ALGO_STUDY: "" },
     projects: [
       {
         extends: true,
         test: {
           name: "node",
           environment: "node",
-          include: ["runner/tests/**/*.test.ts", "scripts/tests/**/*.test.ts", "playground/tests/server/**/*.test.ts"],
+          include: [
+            "runner/tests/**/*.test.ts",
+            "scripts/tests/**/*.test.ts",
+            "playground/tests/server/**/*.test.ts",
+            "study/tests/**/*.test.ts",
+          ],
         },
       },
       {

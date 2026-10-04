@@ -353,6 +353,9 @@ $RECYCLE.BIN/
 # Runner test scratch space
 runner/tests/.tmp/
 
+# Personal study progress (study coach spec §3): solutions, their history, the progress database
+.study/
+
 # Python bytecode caches
 __pycache__/
 *.py[cod]

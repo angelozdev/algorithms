@@ -15,3 +15,12 @@ export const TSX_TSCONFIG = path.join(REPO_ROOT, "tsconfig.json");
 export function contentRoot(): string {
   return process.env.ALGO_ROOT ? path.resolve(process.env.ALGO_ROOT) : REPO_ROOT;
 }
+
+/**
+ * The user's personal progress (study coach spec §3): $ALGO_STUDY, or <content root>/.study.
+ * `root` is the content root being worked on (default: contentRoot()), so a test repo gets its own .study.
+ */
+export function studyRoot(root: string = contentRoot()): string {
+  const override = process.env.ALGO_STUDY;
+  return override ? path.resolve(override) : path.join(root, ".study");
+}

@@ -1,2 +1,5 @@
 allowBuilds:
+  # better-sqlite3 13 ships prebuilt binaries (prebuilds/<platform>.node); its binding.gyp is only a
+  # fallback. false keeps pnpm from compiling SQLite and from failing with ERR_PNPM_IGNORED_BUILDS.
+  better-sqlite3: false
   esbuild: true
