@@ -255,16 +255,65 @@ def resolve_entry(module, request: dict):
     return cls
 
 
+def link_cycle(head, pos, param) -> None:
+    """Links the tail of head back to node pos (Grind 75 spec §3.1); -1 leaves the list as it is."""
+    nodes = []
+    node = head
+    while node is not None and len(nodes) <= MAX_NODES:
+        nodes.append(node)
+        node = node.next
+    if isinstance(pos, bool) or not isinstance(pos, int) or not -1 <= pos < len(nodes):
+        raise SerializationError(
+            f"{param['name']} = {json.dumps(pos)} is out of range for {param['cycle']} ({len(nodes)} nodes)"
+        )
+    if pos >= 0:
+        nodes[-1].next = nodes[pos]
+
+
+def find_node(root, value):
+    """The first node holding value, in level order (Grind 75 spec §3.2)."""
+    queue = [root]
+    head = 0
+    while head < len(queue):
+        node = queue[head]
+        head += 1
+        if node is None:
+            continue
+        if node.val == value:
+            return node
+        queue.append(node.left)
+        queue.append(node.right)
+    return None
+
+
 def build_input(params, raw_input):
     """One built value per param, the arguments the solution receives, and the ids of the input graphs' nodes."""
-    values = [deserialize(value, param["type"]) for value, param in zip(raw_input, params, strict=True)]
+    def marked(param) -> bool:
+        return "cycle" in param or "ref" in param
+
+    values = [
+        value if marked(param) else deserialize(value, param["type"])
+        for value, param in zip(raw_input, params, strict=True)
+    ]
+    names = [param["name"] for param in params]
+    for i, param in enumerate(params):
+        if "cycle" in param:
+            link_cycle(values[names.index(param["cycle"])], raw_input[i], param)
+        elif "ref" in param and raw_input[i] is not None:
+            node = find_node(values[names.index(param["ref"])], raw_input[i])
+            if node is None:
+                raise SerializationError(
+                    f"{param['name']} = {json.dumps(raw_input[i])} is not a value in {param['ref']}"
+                )
+            values[i] = node
     input_graph = {
         id(node)
         for value, param in zip(values, params)
         if param["type"] == "GraphNode"
         for node in reachable(value)
     }
-    return values, values, input_graph
+    args = [value for value, param in zip(values, params) if "cycle" not in param]
+    return values, args, input_graph
 
 
 def run_function(solution_cls, request: dict, raw_input):

@@ -13,6 +13,8 @@ import { _Node, ListNode, TreeNode } from "./lc.ts";
 interface Param {
   name: string;
   type: string;
+  cycle?: string;
+  ref?: string;
 }
 
 interface Request {
@@ -258,14 +260,47 @@ interface Built {
   inputGraph: Set<unknown>;
 }
 
+/** Links the tail of `head` back to node `pos` (Grind 75 spec §3.1); -1 leaves the list as it is. */
+function linkCycle(head: Linked | null, pos: unknown, param: Param): void {
+  const nodes: Linked[] = [];
+  for (let node = head; node && nodes.length <= MAX_NODES; node = node.next) nodes.push(node);
+  if (!Number.isInteger(pos) || (pos as number) < -1 || (pos as number) >= nodes.length) {
+    throw new SerializationError(`${param.name} = ${JSON.stringify(pos)} is out of range for ${param.cycle} (${nodes.length} nodes)`);
+  }
+  if ((pos as number) >= 0) nodes[nodes.length - 1].next = nodes[pos as number];
+}
+
+/** The first node holding `value`, in level order (Grind 75 spec §3.2). */
+function findNode(root: Tree | null, value: unknown): Tree | null {
+  const queue: (Tree | null)[] = [root];
+  for (let head = 0; head < queue.length; head++) {
+    const node = queue[head];
+    if (!node) continue;
+    if (node.val === value) return node;
+    queue.push(node.left, node.right);
+  }
+  return null;
+}
+
 function buildInput(request: Request, input: unknown): Built {
   const raw = input as unknown[];
-  const values = request.params.map((param, i) => deserialize(raw[i], param.type));
+  const marked = (param: Param) => param.cycle !== undefined || param.ref !== undefined;
+  const values = request.params.map((param, i) => (marked(param) ? raw[i] : deserialize(raw[i], param.type)));
+  const valueOf = (name: string | undefined) => values[request.params.findIndex((param) => param.name === name)];
+  request.params.forEach((param, i) => {
+    if (param.cycle !== undefined) linkCycle(valueOf(param.cycle) as Linked | null, raw[i], param);
+    if (param.ref !== undefined && raw[i] !== null) {
+      const node = findNode(valueOf(param.ref) as Tree | null, raw[i]);
+      if (!node) throw new SerializationError(`${param.name} = ${JSON.stringify(raw[i])} is not a value in ${param.ref}`);
+      values[i] = node;
+    }
+  });
   const inputGraph = new Set<unknown>();
   request.params.forEach((param, i) => {
     if (param.type === "GraphNode") for (const node of reachable(values[i] as GraphLike | null)) inputGraph.add(node);
   });
-  return { values, args: values, inputGraph };
+  const args = request.params.flatMap((param, i) => (param.cycle === undefined ? [values[i]] : []));
+  return { values, args, inputGraph };
 }
 
 function runFunction(fn: Callable, request: Request, input: unknown): { output: unknown; ms: number } {

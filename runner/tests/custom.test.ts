@@ -113,4 +113,45 @@ describe("runCustom", () => {
     expect(lines).toHaveLength(21);
     expect(lines[20]).toMatch(/^… \d+ more lines$/);
   });
+
+  it("explains a cycle or ref value that does not fit the input instead of crashing", async () => {
+    const cycle = makeProblem(
+      root,
+      "lc-0901-custom-cycle",
+      {
+        entry: "solve",
+        params: [
+          { name: "head", type: "ListNode" },
+          { name: "pos", type: "int", cycle: "head" },
+        ],
+        returns: "bool",
+        examples: [{ input: [[1, 2], 0], expected: true }],
+        hidden: [],
+      },
+      { "solution.py": "class Solution:\n    def solve(self, head) -> bool:\n        return head is not None\n" },
+    );
+    expect(await runCustom(cycle, "py", [[1, 2], 7])).toMatchObject({
+      fatal: null,
+      error: { kind: "serialization", message: "pos = 7 is out of range for head (2 nodes)" },
+    });
+    const refs = makeProblem(
+      root,
+      "lc-0902-custom-ref",
+      {
+        entry: "solve",
+        params: [
+          { name: "root", type: "TreeNode" },
+          { name: "p", type: "TreeNode", ref: "root" },
+        ],
+        returns: "TreeNode.val",
+        examples: [{ input: [[1], 1], expected: 1 }],
+        hidden: [],
+      },
+      { "solution.ts": 'import { TreeNode } from "lc";\nexport default function solve(root: TreeNode | null, p: TreeNode | null): TreeNode | null {\n  return p;\n}\n' },
+    );
+    expect(await runCustom(refs, "ts", [[1, 2], 5])).toMatchObject({
+      fatal: null,
+      error: { kind: "serialization", message: "p = 5 is not a value in root" },
+    });
+  });
 });

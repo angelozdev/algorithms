@@ -337,3 +337,82 @@ describe("typescript harness: graphs and node values (Grind 75 spec §3.2, §3.3
     });
   });
 });
+
+describe("typescript harness: cycle and ref params (Grind 75 spec §3.1, §3.2)", () => {
+  it("links the tail back to node pos, passes only the list, and keeps pos = -1 a plain list", async () => {
+    const file = solution(
+      "cycle",
+      [
+        'import { ListNode } from "lc";',
+        "export default function solve(...args: unknown[]): number {",
+        "  let node = args[0] as ListNode | null;",
+        "  for (let step = 0; step < 4 && node; step++) node = node.next;",
+        "  if (args.length !== 1) return -99;",
+        "  return node ? node.val : -1;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      harnessRequest(file, {
+        params: [
+          { name: "head", type: "ListNode" },
+          { name: "pos", type: "int", cycle: "head" },
+        ],
+        returns: "int",
+        cases: [
+          { id: "loop", input: [[3, 2, 0, -4], 1] },
+          { id: "plain", input: [[3, 2, 0, -4], -1] },
+          { id: "far", input: [[3, 2], 5] },
+        ],
+      }),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.runs.get("loop")?.output).toBe(2);
+    expect(outcome.runs.get("plain")?.output).toBe(-1);
+    expect(outcome.runs.get("far")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "pos = 5 is out of range for head (2 nodes)" },
+    });
+  });
+
+  it("hands ref params over as the nodes inside the tree", async () => {
+    const file = solution(
+      "refs",
+      [
+        'import { TreeNode } from "lc";',
+        "export default function solve(root: TreeNode | null, p: TreeNode | null, q: TreeNode | null): TreeNode | null {",
+        "  if (root && root.left === p && root.right === q) return root;",
+        "  return q;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      harnessRequest(file, {
+        params: [
+          { name: "root", type: "TreeNode" },
+          { name: "p", type: "TreeNode", ref: "root" },
+          { name: "q", type: "TreeNode", ref: "root" },
+        ],
+        returns: "TreeNode.val",
+        cases: [
+          { id: "children", input: [[2, 1, 3], 1, 3] },
+          { id: "swapped", input: [[2, 1, 3], 3, 1] },
+          { id: "null", input: [[2, 1, 3], 1, null] },
+          { id: "missing", input: [[2, 1, 3], 9, 1] },
+        ],
+      }),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.runs.get("children")?.output).toBe(2);
+    expect(outcome.runs.get("swapped")?.output).toBe(1);
+    expect(outcome.runs.get("null")?.output).toBeNull();
+    expect(outcome.runs.get("missing")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "p = 9 is not a value in root" },
+    });
+  });
+});
