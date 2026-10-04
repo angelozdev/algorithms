@@ -21,3 +21,14 @@ export class TreeNode {
     this.right = right === undefined ? null : right;
   }
 }
+
+/** LeetCode-style graph node (Clone Graph), named as on LeetCode. Solutions import it with `import { _Node } from "lc"`. */
+export class _Node {
+  val: number;
+  neighbors: _Node[];
+
+  constructor(val?: number, neighbors?: _Node[]) {
+    this.val = val === undefined ? 0 : val;
+    this.neighbors = neighbors === undefined ? [] : neighbors;
+  }
+}

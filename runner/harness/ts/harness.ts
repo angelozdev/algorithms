@@ -8,7 +8,7 @@
 import { readFileSync, writeSync } from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { ListNode, TreeNode } from "./lc.ts";
+import { _Node, ListNode, TreeNode } from "./lc.ts";
 
 interface Param {
   name: string;
@@ -28,6 +28,7 @@ interface Request {
 
 type Linked = { val: unknown; next: Linked | null };
 type Tree = { val: unknown; left: Tree | null; right: Tree | null };
+type GraphLike = { val: unknown; neighbors: (GraphLike | null)[] };
 type Callable = (...args: unknown[]) => unknown;
 type Constructor = new (...args: unknown[]) => Record<string, unknown>;
 
@@ -111,10 +112,57 @@ function toTreeNode(values: unknown): TreeNode | null {
   return root;
 }
 
+/** LeetCode's adjacency list: entry i holds the neighbors of the node whose val is i + 1. [] is no graph. */
+function toGraphNode(value: unknown): _Node | null {
+  const lists = (value as unknown[][] | null) ?? [];
+  if (lists.length === 0) return null;
+  const nodes = lists.map((_, i) => new _Node(i + 1));
+  lists.forEach((neighbors, i) => {
+    nodes[i].neighbors = neighbors.map((neighbor) => {
+      const node = Number.isInteger(neighbor) ? nodes[(neighbor as number) - 1] : undefined;
+      if (!node) {
+        throw new SerializationError(`node ${i + 1} lists neighbor ${JSON.stringify(neighbor)}, but the graph has nodes 1..${lists.length}`);
+      }
+      return node;
+    });
+  });
+  return nodes[0];
+}
+
+/** Every node reachable from `start`, in breadth-first order. */
+function reachable(start: GraphLike | null | undefined): GraphLike[] {
+  if (!start) return [];
+  const seen = new Set<GraphLike>([start]);
+  const order: GraphLike[] = [start];
+  for (let head = 0; head < order.length; head++) {
+    for (const next of order[head].neighbors ?? []) {
+      if (next && !seen.has(next)) {
+        seen.add(next);
+        order.push(next);
+        if (order.length > MAX_NODES) throw new SerializationError("graph has more than 10^6 nodes");
+      }
+    }
+  }
+  return order;
+}
+
+/** Reads a returned graph back as an adjacency list; `inputGraph` holds the input's nodes, which a copy must not reuse. */
+function fromGraphNode(start: GraphLike | null | undefined, inputGraph: ReadonlySet<unknown>): unknown[] {
+  const nodes = reachable(start);
+  if (nodes.some((node) => inputGraph.has(node))) {
+    throw new SerializationError("returned a node of the input graph: return a copy");
+  }
+  const byVal = new Map<unknown, GraphLike>(nodes.map((node) => [node.val, node]));
+  const numbered = byVal.size === nodes.length && nodes.every((node) => Number.isInteger(node.val) && (node.val as number) >= 1 && (node.val as number) <= nodes.length);
+  if (!numbered) throw new SerializationError(`graph node values must be 1..${nodes.length}, each used once`);
+  return nodes.map((_, i) => (byVal.get(i + 1) as GraphLike).neighbors.map((neighbor) => neighbor?.val ?? null));
+}
+
 function deserialize(value: unknown, type: string): unknown {
   if (type.endsWith("[]")) return (value as unknown[]).map((item) => deserialize(item, type.slice(0, -2)));
   if (type === "ListNode") return toListNode(value);
   if (type === "TreeNode") return toTreeNode(value);
+  if (type === "GraphNode") return toGraphNode(value);
   return value;
 }
 
@@ -171,11 +219,17 @@ function plain(value: unknown): unknown {
   throw new SerializationError(`return value of type ${typeof value} is not supported`);
 }
 
-function serialize(value: unknown, type: string | null): unknown {
+function serialize(value: unknown, type: string | null, inputGraph: ReadonlySet<unknown> = new Set()): unknown {
   if (type === "ListNode") return fromListNode(value as Linked | null);
   if (type === "TreeNode") return fromTreeNode(value as Tree | null);
+  if (type === "TreeNode.val") {
+    if (value === null || value === undefined) return null;
+    if (typeof value !== "object" || !("val" in value)) throw new SerializationError(`expected a TreeNode, got ${typeof value}`);
+    return plain((value as Tree).val);
+  }
+  if (type === "GraphNode") return fromGraphNode(value as GraphLike | null, inputGraph);
   if (type?.endsWith("[]") && Array.isArray(value)) {
-    return value.map((item) => serialize(item, type.slice(0, -2)));
+    return value.map((item) => serialize(item, type.slice(0, -2), inputGraph));
   }
   return plain(value);
 }
@@ -195,8 +249,27 @@ function userTrace(error: unknown, solutionPath: string): string {
     .join("\n");
 }
 
+interface Built {
+  /** One built value per param, in param order. */
+  values: unknown[];
+  /** The values the solution receives as arguments. */
+  args: unknown[];
+  /** Nodes of the input graphs, which a returned graph must not reuse (Grind 75 spec §3.3). */
+  inputGraph: Set<unknown>;
+}
+
+function buildInput(request: Request, input: unknown): Built {
+  const raw = input as unknown[];
+  const values = request.params.map((param, i) => deserialize(raw[i], param.type));
+  const inputGraph = new Set<unknown>();
+  request.params.forEach((param, i) => {
+    if (param.type === "GraphNode") for (const node of reachable(values[i] as GraphLike | null)) inputGraph.add(node);
+  });
+  return { values, args: values, inputGraph };
+}
+
 function runFunction(fn: Callable, request: Request, input: unknown): { output: unknown; ms: number } {
-  const args = request.params.map((param, i) => deserialize((input as unknown[])[i], param.type));
+  const { values, args, inputGraph } = buildInput(request, input);
   const started = performance.now();
   const returned = fn(...args);
   const ms = performance.now() - started;
@@ -205,11 +278,11 @@ function runFunction(fn: Callable, request: Request, input: unknown): { output: 
   if (inPlace) {
     const index = request.params.findIndex((param) => param.name === inPlace.param);
     return {
-      output: { ret: plain(returned), param: serialize(args[index], request.params[index].type) },
+      output: { ret: plain(returned), param: serialize(values[index], request.params[index].type, inputGraph) },
       ms,
     };
   }
-  return { output: serialize(returned, request.returns), ms };
+  return { output: serialize(returned, request.returns, inputGraph), ms };
 }
 
 function runClass(Cls: Constructor, request: Request, input: unknown): { output: unknown; ms: number } {

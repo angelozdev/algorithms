@@ -19,7 +19,7 @@ import traceback
 sys.dont_write_bytecode = True
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from lc import ListNode, TreeNode  # noqa: E402
+from lc import ListNode, Node, TreeNode  # noqa: E402
 
 sys.setrecursionlimit(10_000)
 
@@ -111,6 +111,54 @@ def to_tree_node(values):
     return root
 
 
+def to_graph_node(lists):
+    """LeetCode's adjacency list: entry i holds the neighbors of the node whose val is i + 1. [] is no graph."""
+    if not lists:
+        return None
+    nodes = [Node(i + 1) for i in range(len(lists))]
+    for i, neighbors in enumerate(lists):
+        for neighbor in neighbors:
+            if isinstance(neighbor, bool) or not isinstance(neighbor, int) or not 1 <= neighbor <= len(lists):
+                raise SerializationError(
+                    f"node {i + 1} lists neighbor {json.dumps(neighbor)}, but the graph has nodes 1..{len(lists)}"
+                )
+            nodes[i].neighbors.append(nodes[neighbor - 1])
+    return nodes[0]
+
+
+def reachable(start) -> list:
+    """Every node reachable from `start`, in breadth-first order."""
+    if start is None:
+        return []
+    seen = {id(start)}
+    order = [start]
+    head = 0
+    while head < len(order):
+        for neighbor in getattr(order[head], "neighbors", None) or []:
+            if neighbor is not None and id(neighbor) not in seen:
+                seen.add(id(neighbor))
+                order.append(neighbor)
+                if len(order) > MAX_NODES:
+                    raise SerializationError("graph has more than 10^6 nodes")
+        head += 1
+    return order
+
+
+def from_graph_node(start, input_graph) -> list:
+    """Reads a returned graph back as an adjacency list; input_graph holds the ids of the input's nodes."""
+    nodes = reachable(start)
+    if any(id(node) in input_graph for node in nodes):
+        raise SerializationError("returned a node of the input graph: return a copy")
+    by_val = {node.val: node for node in nodes}
+    n = len(nodes)
+    numbered = len(by_val) == n and all(
+        isinstance(val, int) and not isinstance(val, bool) and 1 <= val <= n for val in by_val
+    )
+    if not numbered:
+        raise SerializationError(f"graph node values must be 1..{n}, each used once")
+    return [[getattr(neighbor, "val", None) for neighbor in by_val[i + 1].neighbors] for i in range(n)]
+
+
 def deserialize(value, type_name: str):
     if type_name.endswith("[]"):
         return [deserialize(item, type_name[:-2]) for item in value]
@@ -118,6 +166,8 @@ def deserialize(value, type_name: str):
         return to_list_node(value)
     if type_name == "TreeNode":
         return to_tree_node(value)
+    if type_name == "GraphNode":
+        return to_graph_node(value)
     if type_name == "float":
         return float(value)
     return value
@@ -166,13 +216,21 @@ def plain(value):
     return value
 
 
-def serialize(value, type_name):
+def serialize(value, type_name, input_graph=frozenset()):
     if type_name == "ListNode":
         return from_list_node(value)
     if type_name == "TreeNode":
         return from_tree_node(value)
+    if type_name == "TreeNode.val":
+        if value is None:
+            return None
+        if not hasattr(value, "val"):
+            raise SerializationError(f"expected a TreeNode, got {type(value).__name__}")
+        return plain(value.val)
+    if type_name == "GraphNode":
+        return from_graph_node(value, input_graph)
     if type_name and type_name.endswith("[]") and isinstance(value, (list, tuple)):
-        return [serialize(item, type_name[:-2]) for item in value]
+        return [serialize(item, type_name[:-2], input_graph) for item in value]
     return plain(value)
 
 
@@ -197,12 +255,21 @@ def resolve_entry(module, request: dict):
     return cls
 
 
+def build_input(params, raw_input):
+    """One built value per param, the arguments the solution receives, and the ids of the input graphs' nodes."""
+    values = [deserialize(value, param["type"]) for value, param in zip(raw_input, params, strict=True)]
+    input_graph = {
+        id(node)
+        for value, param in zip(values, params)
+        if param["type"] == "GraphNode"
+        for node in reachable(value)
+    }
+    return values, values, input_graph
+
+
 def run_function(solution_cls, request: dict, raw_input):
     params = request["params"]
-    args = [
-        deserialize(value, param["type"])
-        for value, param in zip(raw_input, params, strict=True)
-    ]
+    values, args, input_graph = build_input(params, raw_input)
     method = getattr(solution_cls(), request["entry"])
     started = time.perf_counter()
     returned = method(*args)
@@ -214,10 +281,10 @@ def run_function(solution_cls, request: dict, raw_input):
         index = next(i for i, p in enumerate(params) if p["name"] == in_place["param"])
         output = {
             "ret": plain(returned),
-            "param": serialize(args[index], params[index]["type"]),
+            "param": serialize(values[index], params[index]["type"], input_graph),
         }
         return output, ms
-    return serialize(returned, request["returns"]), ms
+    return serialize(returned, request["returns"], input_graph), ms
 
 
 def run_class(cls, request: dict, raw_input):

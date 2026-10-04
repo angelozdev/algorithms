@@ -235,3 +235,105 @@ describe("typescript harness", () => {
     expect(outcome.timedOutCase).toBe("stuck");
   });
 });
+
+describe("typescript harness: graphs and node values (Grind 75 spec §3.2, §3.3)", () => {
+  const graph = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { params: [{ name: "node", type: "GraphNode" }], returns: "GraphNode", cases });
+
+  it("builds a graph from its adjacency list and reads a returned graph back", async () => {
+    const file = solution(
+      "graph-fixed",
+      [
+        'import { _Node } from "lc";',
+        "export default function solve(node: _Node | null): _Node | null {",
+        "  if (!node) return null;",
+        "  if (node.neighbors.length === 0) return new _Node(1);",
+        "  const one = new _Node(1);",
+        "  const two = new _Node(2);",
+        "  one.neighbors = [two];",
+        "  two.neighbors = [one];",
+        "  return node.neighbors[0].neighbors[0] === node ? one : null;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      graph(file, [
+        { id: "pair", input: [[[2], [1]]] },
+        { id: "single", input: [[[]]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("pair")?.output).toEqual([[2], [1]]);
+    expect(outcome.runs.get("single")?.output).toEqual([[]]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a returned input node, unnumbered nodes and a bad neighbor with readable messages", async () => {
+    const same = solution(
+      "graph-same",
+      ['import { _Node } from "lc";', "export default function solve(node: _Node | null): _Node | null {", "  return node;", "}", ""].join("\n"),
+    );
+    const fresh = solution(
+      "graph-default",
+      ['import { _Node } from "lc";', "export default function solve(node: _Node | null): _Node | null {", "  return new _Node();", "}", ""].join("\n"),
+    );
+    const sameOutcome = await runHarness(
+      "ts",
+      graph(same, [
+        { id: "copy", input: [[[2], [1]]] },
+        { id: "neighbor", input: [[[3], [1]]] },
+      ]),
+      { wallLimitMs: 10_000 },
+    );
+    expect(sameOutcome.runs.get("copy")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "returned a node of the input graph: return a copy" },
+    });
+    expect(sameOutcome.runs.get("neighbor")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "node 1 lists neighbor 3, but the graph has nodes 1..2" },
+    });
+    const freshOutcome = await runHarness("ts", graph(fresh, [{ id: "zero", input: [[[2], [1]]] }]), { wallLimitMs: 10_000 });
+    expect(freshOutcome.runs.get("zero")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "graph node values must be 1..1, each used once" },
+    });
+  });
+
+  it("judges a returned tree node by its value", async () => {
+    const file = solution(
+      "node-value",
+      [
+        'import { TreeNode } from "lc";',
+        "export default function solve(root: TreeNode | null): TreeNode | null {",
+        "  if (root && root.val === 7) return 7 as unknown as TreeNode;",
+        "  return root?.left ?? null;",
+        "}",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "ts",
+      harnessRequest(file, {
+        params: [{ name: "root", type: "TreeNode" }],
+        returns: "TreeNode.val",
+        cases: [
+          { id: "left", input: [[2, 1, 3]] },
+          { id: "none", input: [[2]] },
+          { id: "number", input: [[7]] },
+        ],
+      }),
+      { wallLimitMs: 10_000 },
+    );
+    expect(outcome.runs.get("left")?.output).toBe(1);
+    expect(outcome.runs.get("none")?.output).toBeNull();
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "expected a TreeNode, got number" },
+    });
+  });
+});

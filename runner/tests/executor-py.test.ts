@@ -317,3 +317,104 @@ describe("python harness", () => {
     expect(outcome.runs.get("a")).toMatchObject({ ok: true, output: null });
   });
 });
+
+describe("python harness: graphs and node values (Grind 75 spec §3.2, §3.3)", () => {
+  const graph = (file: string, cases: { id: string; input: unknown }[]) =>
+    harnessRequest(file, { params: [{ name: "node", type: "GraphNode" }], returns: "GraphNode", cases });
+
+  it("builds a graph from its adjacency list and reads a returned graph back", async () => {
+    const file = solution(
+      "graph-fixed",
+      [
+        "from lc import Node",
+        "",
+        "",
+        "class Solution:",
+        "    def solve(self, node):",
+        "        if node is None:",
+        "            return None",
+        "        if not node.neighbors:",
+        "            return Node(1)",
+        "        one, two = Node(1), Node(2)",
+        "        one.neighbors, two.neighbors = [two], [one]",
+        "        return one if node.neighbors[0].neighbors[0] is node else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      graph(file, [
+        { id: "pair", input: [[[2], [1]]] },
+        { id: "single", input: [[[]]] },
+        { id: "empty", input: [[]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.fatal).toBeNull();
+    expect(outcome.runs.get("pair")?.output).toEqual([[2], [1]]);
+    expect(outcome.runs.get("single")?.output).toEqual([[]]);
+    expect(outcome.runs.get("empty")?.output).toEqual([]);
+  });
+
+  it("fails a returned input node, unnumbered nodes and a bad neighbor with readable messages", async () => {
+    const same = solution("graph-same", ["class Solution:", "    def solve(self, node):", "        return node", ""].join("\n"));
+    const fresh = solution(
+      "graph-default",
+      ["from lc import Node", "", "", "class Solution:", "    def solve(self, node):", "        return Node()", ""].join("\n"),
+    );
+    const sameOutcome = await runHarness(
+      "py",
+      graph(same, [
+        { id: "copy", input: [[[2], [1]]] },
+        { id: "neighbor", input: [[[3], [1]]] },
+      ]),
+      { wallLimitMs: 5000 },
+    );
+    expect(sameOutcome.runs.get("copy")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "returned a node of the input graph: return a copy" },
+    });
+    expect(sameOutcome.runs.get("neighbor")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "node 1 lists neighbor 3, but the graph has nodes 1..2" },
+    });
+    const freshOutcome = await runHarness("py", graph(fresh, [{ id: "zero", input: [[[2], [1]]] }]), { wallLimitMs: 5000 });
+    expect(freshOutcome.runs.get("zero")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "graph node values must be 1..1, each used once" },
+    });
+  });
+
+  it("judges a returned tree node by its value", async () => {
+    const file = solution(
+      "node-value",
+      [
+        "class Solution:",
+        "    def solve(self, root):",
+        "        if root is not None and root.val == 7:",
+        "            return 7",
+        "        return root.left if root else None",
+        "",
+      ].join("\n"),
+    );
+    const outcome = await runHarness(
+      "py",
+      harnessRequest(file, {
+        params: [{ name: "root", type: "TreeNode" }],
+        returns: "TreeNode.val",
+        cases: [
+          { id: "left", input: [[2, 1, 3]] },
+          { id: "none", input: [[2]] },
+          { id: "number", input: [[7]] },
+        ],
+      }),
+      { wallLimitMs: 5000 },
+    );
+    expect(outcome.runs.get("left")?.output).toBe(1);
+    expect(outcome.runs.get("none")?.output).toBeNull();
+    expect(outcome.runs.get("number")).toMatchObject({
+      ok: false,
+      error: { kind: "serialization", message: "expected a TreeNode, got int" },
+    });
+  });
+});

@@ -31,3 +31,14 @@ class TreeNode:
 
     def __repr__(self) -> str:
         return f"TreeNode({self.val!r})"
+
+
+class Node:
+    """LeetCode-style graph node (Clone Graph). Solutions import it with `from lc import Node`."""
+
+    def __init__(self, val: int = 0, neighbors: list[Node] | None = None) -> None:
+        self.val = val
+        self.neighbors = neighbors if neighbors is not None else []
+
+    def __repr__(self) -> str:
+        return f"Node({self.val!r})"
