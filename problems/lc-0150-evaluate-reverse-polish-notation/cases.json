@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "evalRPN",
+  "params": [
+    {"name":"tokens","type":"string[]"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[["2","1","+","3","*"]],"expected":9},
+    {"input":[["4","13","5","/","+"]],"expected":6},
+    {"input":[["10","6","9","3","+","-11","*","/","*","17","+","5","+"]],"expected":22}
+  ],
+  "hidden": [
+    {"input":[["5"]],"expected":5},
+    {"input":[["-5"]],"expected":-5},
+    {"input":[["4","-2","+"]],"expected":2},
+    {"input":[["6","3","/"]],"expected":2},
+    {"input":[["7","-2","/"]],"expected":-3},
+    {"input":[["200","200","*"]],"expected":40000},
+    {"input":[["-200","-200","-"]],"expected":0},
+    {"input":[["3","4","+","2","*","7","-"]],"expected":7},
+    {"input":[["0","0","+"]],"expected":0}
+  ]
+}

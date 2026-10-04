@@ -26,9 +26,17 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ✓ [lc-0070 · Climbing Stairs](problems/lc-0070-climbing-stairs/README.md) · easy
 
-## linked-list (2/3)
+## heap (0/1)
+
+- ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+
+## linked-list (2/7)
 
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
+- ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+- ○ [lc-0146 · LRU Cache](problems/lc-0146-lru-cache/README.md) · medium
+- ○ [lc-0206 · Reverse Linked List](problems/lc-0206-reverse-linked-list/README.md) · easy
+- ○ [lc-0876 · Middle of the Linked List](problems/lc-0876-middle-of-the-linked-list/README.md) · easy
 - … [lc-2181 · Merge Nodes in Between Zeros](problems/lc-2181-merge-nodes-in-between-zeros/README.md) · medium
 - ✓ [lc-2807 · Insert Greatest Common Divisors in Linked List](problems/lc-2807-insert-greatest-common-divisors-in-linked-list/README.md) · medium
 
@@ -44,9 +52,12 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ○ [lc-0121 · Best Time to Buy and Sell Stock](problems/lc-0121-best-time-to-buy-and-sell-stock/README.md) · easy
 
-## stack (1/1)
+## stack (1/4)
 
 - ✓ [lc-0020 · Valid Parentheses](problems/lc-0020-valid-parentheses/README.md) · easy
+- ○ [lc-0150 · Evaluate Reverse Polish Notation](problems/lc-0150-evaluate-reverse-polish-notation/README.md) · medium
+- ○ [lc-0155 · Min Stack](problems/lc-0155-min-stack/README.md) · medium
+- ○ [lc-0232 · Implement Queue using Stacks](problems/lc-0232-implement-queue-using-stacks/README.md) · easy
 
 ## strings (5/6)
 

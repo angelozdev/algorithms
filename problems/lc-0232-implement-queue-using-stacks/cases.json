@@ -1,0 +1,18 @@
+{
+  "mode": "class",
+  "entry": "MyQueue",
+  "compare": "exact",
+  "examples": [
+    {"input":{"ops":["MyQueue","push","push","peek","pop","empty"],"args":[[],[1],[2],[],[],[]]},"expected":[null,null,null,1,1,false]}
+  ],
+  "hidden": [
+    {"input":{"ops":["MyQueue","empty"],"args":[[],[]]},"expected":[null,true]},
+    {"input":{"ops":["MyQueue","push","empty"],"args":[[],[5],[]]},"expected":[null,null,false]},
+    {"input":{"ops":["MyQueue","push","push","push","pop","pop","pop","empty"],"args":[[],[1],[2],[3],[],[],[],[]]},"expected":[null,null,null,null,1,2,3,true]},
+    {"input":{"ops":["MyQueue","push","peek","peek","pop"],"args":[[],[7],[],[],[]]},"expected":[null,null,7,7,7]},
+    {"input":{"ops":["MyQueue","push","push","pop","push","pop","pop","empty"],"args":[[],[1],[2],[],[3],[],[],[]]},"expected":[null,null,null,1,null,2,3,true]},
+    {"input":{"ops":["MyQueue","push","push","push","push","pop","push","pop","pop","pop","empty"],"args":[[],[1],[2],[3],[4],[],[5],[],[],[],[]]},"expected":[null,null,null,null,null,1,null,2,3,4,false]},
+    {"input":{"ops":["MyQueue","push","pop","push","pop","empty"],"args":[[],[9],[],[1],[],[]]},"expected":[null,null,9,null,1,true]},
+    {"input":{"ops":["MyQueue","push","push","peek","push","pop","pop","pop","empty"],"args":[[],[2],[4],[],[6],[],[],[],[]]},"expected":[null,null,null,2,null,2,4,6,true]}
+  ]
+}
