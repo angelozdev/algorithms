@@ -1,9 +1,9 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { runHarness } from "../src/executor.ts";
-import { ensureSolution, pyType, renderStub, tsType } from "../src/stubs.ts";
-import type { CaseFile } from "../src/types.ts";
+import { ensureSolution, pyType, renderStub, solutionPath, tsType } from "../src/stubs.ts";
+import type { CaseFile, Target } from "../src/types.ts";
 import { removeTemp, tempDir, write } from "./helpers.ts";
 
 const dir = tempDir();
@@ -71,14 +71,35 @@ describe("renderStub", () => {
   });
 });
 
-describe("ensureSolution", () => {
-  it("creates the file once and never overwrites it", () => {
-    const first = ensureSolution(dir, base, "py");
-    expect(first).toEqual({ path: path.join(dir, "solution.py"), created: true });
+describe("ensureSolution and solutionPath", () => {
+  it("creates the stub under .study once, never overwrites it, and writes .study/tsconfig.json with it", () => {
+    const target: Target = { id: "lc-0301", kind: "problem", dir: path.join(dir, "problems", "lc-0301-stub"), title: "Stub" };
+    const first = ensureSolution(target, base, "py");
+    expect(first).toEqual({ path: path.join(dir, ".study", "solutions", "problems", "lc-0301", "solution.py"), created: true });
+    expect(readFileSync(first.path, "utf8")).toBe(renderStub(base, "py"));
+    expect(existsSync(path.join(dir, ".study", "tsconfig.json"))).toBe(true);
     writeFileSync(first.path, "# my work\n");
-    const second = ensureSolution(dir, { ...base, entry: "other" }, "py");
-    expect(second.created).toBe(false);
+    expect(ensureSolution(target, { ...base, entry: "other" }, "py")).toEqual({ path: first.path, created: false });
     expect(readFileSync(first.path, "utf8")).toBe("# my work\n");
+  });
+
+  it("keeps using a solution that still sits in the content folder (before pnpm study migrate)", () => {
+    const target: Target = { id: "lc-0302", kind: "problem", dir: path.join(dir, "problems", "lc-0302-legacy"), title: "Legacy" };
+    const legacy = write(target.dir, "solution.ts", "// the user's work\n");
+    expect(solutionPath(target, "ts")).toBe(legacy);
+    expect(ensureSolution(target, base, "ts")).toEqual({ path: legacy, created: false });
+    expect(existsSync(path.join(dir, ".study", "solutions", "problems", "lc-0302"))).toBe(false);
+    expect(solutionPath(target, "py")).toBe(path.join(dir, ".study", "solutions", "problems", "lc-0302", "solution.py"));
+  });
+
+  it("puts an exercise's solution under .study/solutions/exercises/<concept>/<NN>", () => {
+    const target: Target = {
+      id: "hash-map/01",
+      kind: "exercise",
+      dir: path.join(dir, "concepts", "hash-map", "exercises", "01-first-repeat"),
+      title: "First repeat",
+    };
+    expect(ensureSolution(target, base, "py").path).toBe(path.join(dir, ".study", "solutions", "exercises", "hash-map", "01", "solution.py"));
   });
 });
 

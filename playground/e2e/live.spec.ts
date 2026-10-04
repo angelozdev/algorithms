@@ -1,9 +1,9 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { expect, type Route, test } from "@playwright/test";
-import { EXPLANATION_NOTE, repoFile, resetRepo, TWO_SUM_PY } from "./fixture.ts";
+import { EXPLANATION_NOTE, repoFile, resetRepo, SOLUTION_PY, TWO_SUM_PY } from "./fixture.ts";
 import { replaceCode } from "./helpers.ts";
 
-const SOLUTION = repoFile("problems/lc-0001-two-sum/solution.py");
+const SOLUTION = SOLUTION_PY;
 const readSolution = () => readFileSync(SOLUTION, "utf8");
 
 test.beforeEach(() => resetRepo());

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
@@ -19,8 +20,8 @@ export function contentVersion(text: string): string {
 
 /** Reads solution.<lang>, creating the stub first when it is missing (throws CaseFileError when it cannot). */
 export function readSolution(target: Target, lang: Lang): SolutionData {
-  const file = solutionPath(target.dir, lang);
-  if (!existsSync(file)) ensureSolution(target.dir, loadCaseFile(target.dir), lang);
+  const file = solutionPath(target, lang);
+  if (!existsSync(file)) ensureSolution(target, loadCaseFile(target.dir), lang);
   const code = readFileSync(file, "utf8");
   return { code, version: contentVersion(code) };
 }
@@ -32,9 +33,10 @@ export type WriteResult = { ok: true; version: string } | { ok: false; current: 
  * Read, compare and write are synchronous, so two saves can never interleave.
  */
 export function writeSolution(target: Target, lang: Lang, code: string, baseVersion: string): WriteResult {
-  const file = solutionPath(target.dir, lang);
+  const file = solutionPath(target, lang);
   const disk = existsSync(file) ? readFileSync(file, "utf8") : "";
   if (contentVersion(disk) !== baseVersion) return { ok: false, current: { code: disk, version: contentVersion(disk) } };
+  mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, code);
   return { ok: true, version: contentVersion(code) };
 }

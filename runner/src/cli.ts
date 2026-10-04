@@ -27,7 +27,7 @@ function parseLang(value: string | undefined, allowAll: boolean): Lang | "all" {
 }
 
 async function testCommand(target: Target, lang: Lang | "all", json: boolean, root: string): Promise<number> {
-  const langs = lang === "all" ? LANGS.filter((l) => existsSync(solutionPath(target.dir, l))) : [lang];
+  const langs = lang === "all" ? LANGS.filter((l) => existsSync(solutionPath(target, l))) : [lang];
   if (langs.length === 0) {
     throw new UsageError(`${target.id} has no solution files yet. Start with: pnpm watch ${target.id} --open`);
   }

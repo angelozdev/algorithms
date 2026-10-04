@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { exerciseIdFromFolder, problemIdFromFolder } from "../../../lib/repo.ts";
+import { exerciseIdFromFolder, problemIdFromFolder } from "../../../lib/ids.ts";
 import { type LinkTarget, routeForLink } from "../../web/links.ts";
 
 const PROBLEM = "problems/lc-0001-two-sum/README.md";

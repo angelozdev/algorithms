@@ -1,6 +1,7 @@
 import { mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
+import { studySolutionPath } from "../src/paths.ts";
 import { renderRun, watchFiles, watchTarget } from "../src/watcher.ts";
 import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
 
@@ -108,5 +109,30 @@ describe("watchTarget", () => {
     const screen = written.filter((chunk) => chunk.startsWith("\x1b[2J")).at(-1);
     expect(screen).toContain("example 1");
     expect(screen).toContain('(Ctrl+C to stop)\nwarning: "code" is not on your PATH');
+  });
+
+  it("reruns on a save of the solution under .study and on a change to cases.json: two folders, two watchers", async () => {
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(root, "lc-0005-two-folders", twice, {
+      "solution.py": "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n",
+    });
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root });
+      await watcher.ready;
+      expect(screens.at(-1)).toContain("watching .study/solutions/problems/lc-0005/solution.py");
+      writeFileSync(studySolutionPath(target, "py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(() => expect(screens.at(-1)).toContain("GREEN"), { timeout: 15_000, interval: 100 });
+      const seen = screens.length;
+      writeFileSync(path.join(target.dir, "cases.json"), JSON.stringify({ ...twice, examples: [{ input: [3], expected: 6 }] }, null, 2));
+      await vi.waitFor(() => expect(screens.length).toBeGreaterThan(seen), { timeout: 15_000, interval: 100 });
+      watcher.close();
+    } finally {
+      stdout.mockRestore();
+    }
   });
 });

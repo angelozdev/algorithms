@@ -78,12 +78,22 @@ export function openInEditor(file: string, onError: (message: string) => void): 
   child.unref();
 }
 
+/** One watcher made of several: ready when all of them are, closed together. */
+function combine(watchers: Watcher[]): Watcher {
+  return {
+    ready: Promise.all(watchers.map((watcher) => watcher.ready)).then(() => undefined),
+    close: () => {
+      for (const watcher of watchers) watcher.close();
+    },
+  };
+}
+
 export async function watchTarget(
   target: Target,
   lang: Lang,
   options: { open: boolean; root: string },
 ): Promise<Watcher> {
-  const solution = ensureSolution(target.dir, loadCaseFile(target.dir), lang).path;
+  const solution = ensureSolution(target, loadCaseFile(target.dir), lang).path;
   // A notice (e.g. the --open warning) is drawn under every screen, so clearing never hides it.
   let notice = "";
   let screen: string | null = null;
@@ -117,5 +127,10 @@ export async function watchTarget(
     running = false;
   };
   await cycle();
-  return watchFiles(target.dir, [path.basename(solution), "cases.json", "stress.ts"], () => void cycle());
+  // Two folders (spec §10): the problem's own files, and the solution under .study. For a solution still in the
+  // content folder both watchers look at the same folder, each for its own files.
+  return combine([
+    watchFiles(target.dir, ["cases.json", "stress.ts"], () => void cycle()),
+    watchFiles(path.dirname(solution), [path.basename(solution)], () => void cycle()),
+  ]);
 }

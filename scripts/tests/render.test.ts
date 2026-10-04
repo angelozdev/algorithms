@@ -29,7 +29,9 @@ describe("isInProgress", () => {
     put(root, "problems/lc-0070-stairs/README.md", readme("lc-0070", "Stairs", ["dp-1d"], "todo"));
     put(root, "problems/lc-0071-path/README.md", readme("lc-0071", "Path", ["dp-2d"], "todo"));
     put(root, "problems/lc-0071-path/solution.ts", "export default function f() {}\n");
+    put(root, "problems/lc-0072-study/README.md", readme("lc-0072", "Study", ["dp-2d"], "todo"));
+    put(root, ".study/solutions/problems/lc-0072/solution.py", "class Solution:\n    pass\n");
     const byId = Object.fromEntries(scanRepo(root).problems.map((p) => [p.folderId, isInProgress(p)]));
-    expect(byId).toEqual({ "lc-0001": false, "lc-0020": true, "lc-0070": false, "lc-0071": true });
+    expect(byId).toEqual({ "lc-0001": false, "lc-0020": true, "lc-0070": false, "lc-0071": true, "lc-0072": true });
   });
 });

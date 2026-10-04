@@ -2,6 +2,8 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import { parseMarkdown } from "./frontmatter.ts";
 import { exerciseIdFromFolder, problemIdFromFolder } from "./ids.ts";
+import { solutionPath } from "../runner/src/stubs.ts";
+import { LANGS } from "../runner/src/types.ts";
 
 export { exerciseIdFromFolder, problemIdFromFolder };
 
@@ -100,13 +102,12 @@ export function scanRepo(root: string): RepoModel {
 }
 
 /**
- * In progress: status solving, or todo with a solution file (created by pnpm watch or the playground).
- * The reminder hook (.claude/hooks/reminder.mjs) applies the same rule in plain JavaScript.
+ * In progress by the frontmatter of READMEs that predate the study coach: status solving, or todo with a
+ * solution file (created by pnpm watch or the playground) in either place. The reminder hook
+ * (.claude/hooks/reminder.mjs) applies the same rule in plain JavaScript. Used only until `pnpm study migrate`.
  */
-export function isInProgress(entry: Pick<DocEntry, "dir" | "data">): boolean {
+export function isInProgress(entry: ProblemEntry | ExerciseEntry): boolean {
   if (entry.data.status === "solving") return true;
-  return (
-    entry.data.status === "todo" &&
-    ["solution.py", "solution.ts"].some((name) => existsSync(path.join(entry.dir, name)))
-  );
+  const target = { id: entry.folderId, kind: entry.kind, dir: entry.dir, title: entry.folder };
+  return entry.data.status === "todo" && LANGS.some((lang) => existsSync(solutionPath(target, lang)));
 }

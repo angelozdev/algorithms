@@ -89,7 +89,7 @@ export function targetData(root: string, target: Target): TargetData {
     signature,
     exampleInput,
     caseError,
-    solutions: { py: existsSync(solutionPath(target.dir, "py")), ts: existsSync(solutionPath(target.dir, "ts")) },
+    solutions: { py: existsSync(solutionPath(target, "py")), ts: existsSync(solutionPath(target, "ts")) },
   };
 }
 

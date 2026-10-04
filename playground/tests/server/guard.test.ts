@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { afterAll, afterEach, describe, expect, it } from "vitest";
+import { studySolutionPath } from "../../../runner/src/paths.ts";
 import { removeTemp, tempDir } from "../../../runner/tests/helpers.ts";
 import { createApp } from "../../server/app.ts";
 import { call, HOST, makeRepo, removeRepos } from "./helpers.ts";
@@ -39,7 +40,8 @@ describe("guard", () => {
   it("rejects any request a browser marks as sent from another site, so a cross-site GET cannot create a stub", async () => {
     const repo = makeRepo();
     const repoApp = createApp({ root: repo });
-    const stub = path.join(repo, "problems/lc-0001-two-sum/solution.ts");
+    const target = { id: "lc-0001", kind: "problem" as const, dir: path.join(repo, "problems/lc-0001-two-sum") };
+    const stub = studySolutionPath(target, "ts");
     const crossSite = await call(repoApp, "/api/solution?id=lc-0001&lang=ts", { headers: { "sec-fetch-site": "cross-site" } });
     expect(crossSite.status).toBe(403);
     expect(await crossSite.json()).toEqual({ error: expect.any(String) });

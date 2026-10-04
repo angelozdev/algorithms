@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
-import { repoFile, resetRepo, TWO_SUM_PY } from "./fixture.ts";
+import { resetRepo, SOLUTION_PY, TWO_SUM_PY } from "./fixture.ts";
 import { replaceCode } from "./helpers.ts";
 
 test.beforeEach(() => resetRepo());
@@ -13,7 +13,7 @@ test("goes from the home page to a green run with ⌘↵", async ({ page }) => {
   await replaceCode(page, TWO_SUM_PY);
   await page.keyboard.press("ControlOrMeta+Enter");
   await expect(page.getByText(/Green in py/)).toBeVisible({ timeout: 20_000 });
-  expect(readFileSync(repoFile("problems/lc-0001-two-sum/solution.py"), "utf8")).toBe(TWO_SUM_PY);
+  expect(readFileSync(SOLUTION_PY, "utf8")).toBe(TWO_SUM_PY);
 });
 
 test("shows what a failing example expected and what the code returned", async ({ page }) => {
@@ -73,7 +73,7 @@ test("disables the language switch while a conflict is open", async ({ page }) =
   await page.goto("/p/lc-0001");
   await replaceCode(page, TWO_SUM_PY);
   // Someone else changes the file on disk before the 500 ms autosave can send this edit.
-  writeFileSync(repoFile("problems/lc-0001-two-sum/solution.py"), "class Solution:\n    pass\n");
+  writeFileSync(SOLUTION_PY, "class Solution:\n    pass\n");
   await expect(page.getByText(/changed on disk/)).toBeVisible({ timeout: 5_000 });
   await expect(page.getByRole("radio", { name: "ts" })).toBeDisabled();
   await expect(page.getByRole("radio", { name: "py" })).toBeDisabled(); // the active language too, not just the one not in use

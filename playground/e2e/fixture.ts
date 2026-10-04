@@ -8,6 +8,9 @@ export const E2E_ROOT = fileURLToPath(new URL("./.tmp/repo/", import.meta.url));
 
 export const repoFile = (rel: string): string => path.join(E2E_ROOT, rel);
 
+/** Where the playground keeps Two Sum's Python solution (spec §3: .study/solutions/problems/<id>/). */
+export const SOLUTION_PY = repoFile(".study/solutions/problems/lc-0001/solution.py");
+
 export const TWO_SUM_PY = [
   "class Solution:",
   "    def twoSum(self, nums: list[int], target: int) -> list[int]:",
@@ -131,7 +134,10 @@ const FILES: Record<string, string> = {
 
 /** Puts the e2e repo back in its starting state without deleting folders the server is watching. */
 export function resetRepo(): void {
-  for (const lang of ["py", "ts"]) rmSync(repoFile(`problems/lc-0001-two-sum/solution.${lang}`), { force: true });
+  for (const lang of ["py", "ts"]) {
+    rmSync(repoFile(`problems/lc-0001-two-sum/solution.${lang}`), { force: true });
+    rmSync(repoFile(`.study/solutions/problems/lc-0001/solution.${lang}`), { force: true });
+  }
   for (const [rel, content] of Object.entries(FILES)) {
     mkdirSync(path.dirname(repoFile(rel)), { recursive: true });
     writeFileSync(repoFile(rel), content);

@@ -79,7 +79,7 @@ export async function runTarget(target: Target, lang: Lang, options: RunOptions 
   const wallMs = options.examplesWallMs ?? EXAMPLES_WALL_MS;
   const cf = loadCaseFile(target.dir);
   assertHiddenFilled(cf);
-  const solution = ensureSolution(target.dir, cf, lang).path;
+  const solution = ensureSolution(target, cf, lang).path;
   const rel = (file: string): string => path.relative(root, file).split(path.sep).join("/");
   const request = {
     solutionPath: solution,

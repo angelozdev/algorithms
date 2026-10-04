@@ -2,13 +2,13 @@ import { type ChildProcess, spawn } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { expect, type Page, type Route, test } from "@playwright/test";
-import { E2E_PORT, E2E_ROOT, repoFile, resetRepo } from "./fixture.ts";
+import { E2E_PORT, E2E_ROOT, resetRepo, SOLUTION_PY } from "./fixture.ts";
 
 // A server of its own, so these tests can stop it and start it again like a user restarting `pnpm play`.
 const PORT = E2E_PORT + 1;
 const ORIGIN = `http://127.0.0.1:${PORT}`;
 const REPO_ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const SOLUTION = repoFile("problems/lc-0001-two-sum/solution.py");
+const SOLUTION = SOLUTION_PY;
 const readSolution = () => readFileSync(SOLUTION, "utf8");
 
 const health = async (): Promise<number> => {
