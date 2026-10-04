@@ -6,6 +6,7 @@ import {
   difficultyLabel,
   difficultyOf,
   leetcodeNumber,
+  listLabel,
   patternLabel,
   STATUS_LABEL,
   type StatusKind,
@@ -15,6 +16,7 @@ import type { GroupBy, HomeSearch, SortDir, SortKey } from "./search.ts";
 
 export const NO_PATTERN_LABEL = "(no pattern yet)";
 export const NO_CONCEPT_LABEL = "(no concept yet)";
+export const NO_LIST_LABEL = "No list";
 export const NO_DIFFICULTY_LABEL = "No difficulty";
 const STATUS_ORDER: readonly StatusKind[] = ["in-progress", "todo", "revealed", "solved"];
 
@@ -35,7 +37,7 @@ export function matchesQuery(item: { id: string; title: string }, q: string): bo
   return item.id.toLowerCase().includes(query) || item.title.toLowerCase().includes(query) || (number !== null && String(number).includes(query));
 }
 
-export type Facet = "difficulty" | "pattern" | "concept";
+export type Facet = "difficulty" | "pattern" | "concept" | "list";
 
 const FACET_VALUES: Record<Facet, (problem: HomeProblem) => readonly string[]> = {
   difficulty: (problem) => {
@@ -44,8 +46,9 @@ const FACET_VALUES: Record<Facet, (problem: HomeProblem) => readonly string[]> =
   },
   pattern: (problem) => problem.patterns,
   concept: (problem) => problem.concepts,
+  list: (problem) => problem.lists,
 };
-const FACETS: readonly Facet[] = ["difficulty", "pattern", "concept"];
+const FACETS: readonly Facet[] = ["difficulty", "pattern", "concept", "list"];
 
 /** The problems that the search box, the status filter and the facet filters let through, in their given order. */
 export function filterProblems(problems: readonly HomeProblem[], search: HomeSearch): HomeProblem[] {
@@ -78,12 +81,14 @@ export function facetOptions(data: HomeData, search: HomeSearch, facet: Facet): 
     difficulty: facet === "difficulty" ? [] : search.difficulty,
     pattern: facet === "pattern" ? [] : search.pattern,
     concept: facet === "concept" ? [] : search.concept,
+    list: facet === "list" ? [] : search.list,
   };
   const others = filterProblems(data.problems, withoutThisFacet);
   const all = new Set<string>([...data.problems.flatMap((problem) => values(problem)), ...search[facet]]);
   const label = (value: string): string => {
     if (facet === "difficulty") return difficultyLabel(value as Difficulty);
     if (facet === "pattern") return patternLabel(value);
+    if (facet === "list") return listLabel(value);
     return conceptLabel(value, data.concepts);
   };
   const options = [...all].map((value) => ({ value, label: label(value), count: others.filter((problem) => values(problem).includes(value)).length }));
@@ -143,6 +148,9 @@ function bucketsOf(problem: HomeProblem, by: GroupBy, concepts: readonly HomeCon
         conceptSlug: concepts.some((concept) => concept.slug === slug) ? slug : null,
         rank: 0,
       }));
+    case "list":
+      if (problem.lists.length === 0) return [{ key: "list:", label: NO_LIST_LABEL, conceptSlug: null, rank: 1 }];
+      return problem.lists.map((slug) => ({ key: `list:${slug}`, label: listLabel(slug), conceptSlug: null, rank: 0 }));
     case "difficulty": {
       const difficulty = difficultyOf(problem.difficulty);
       if (!difficulty) return [{ key: "difficulty:", label: NO_DIFFICULTY_LABEL, conceptSlug: null, rank: DIFFICULTIES.length }];

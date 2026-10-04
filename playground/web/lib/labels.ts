@@ -37,6 +37,13 @@ export function conceptLabel(slug: string, concepts: readonly Pick<HomeConcept, 
   return concepts.find((concept) => concept.slug === slug)?.title ?? prettifySlug(slug);
 }
 
+/** Display names of curated problem lists (Grind 75 spec §5); unknown slugs are made readable. */
+export const LIST_LABELS: Readonly<Record<string, string>> = { "grind-75": "Grind 75" };
+
+export function listLabel(slug: string): string {
+  return LIST_LABELS[slug] ?? prettifySlug(slug);
+}
+
 /** LeetCode's problem number from an id like "lc-0035", or null for any other id. */
 export function leetcodeNumber(id: string): number | null {
   const match = /^lc-(\d+)$/.exec(id);

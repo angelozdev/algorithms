@@ -37,3 +37,13 @@ describe("home search params", () => {
     expect(router.buildLocation({ to: "/", search: { ...DEFAULT_SEARCH, group: "status" } }).href).toBe("/?group=status");
   });
 });
+
+describe("the list filter (Grind 75 spec §5)", () => {
+  it("reads like the other facets and counts as a filter", () => {
+    expect(homeSearchSchema.parse({ list: ["grind-75", 3, null] }).list).toEqual(["grind-75"]);
+    expect(homeSearchSchema.parse({}).list).toEqual([]);
+    expect(homeSearchSchema.parse({ group: "list" }).group).toBe("list");
+    expect(isFiltered({ ...DEFAULT_SEARCH, list: ["grind-75"] })).toBe(true);
+    expect(clearFilters({ ...DEFAULT_SEARCH, list: ["grind-75"], group: "list" })).toEqual({ ...DEFAULT_SEARCH, group: "list" });
+  });
+});

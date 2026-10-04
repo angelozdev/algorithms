@@ -148,3 +148,29 @@ describe("home list model", () => {
     expect(conceptRows(DATA, "zzz")).toEqual([]);
   });
 });
+
+describe("lists (Grind 75 spec §5)", () => {
+  const listed: HomeData = {
+    ...DATA,
+    problems: DATA.problems.map((p) =>
+      p.id === "lc-0001" ? { ...p, lists: ["grind-75"] } : p.id === "lc-0021" ? { ...p, lists: ["grind-75", "blind-75"] } : p,
+    ),
+  };
+
+  it("filters by list and counts each list against the other filters", () => {
+    expect(filterProblems(listed.problems, { ...DEFAULT_SEARCH, list: ["blind-75"] }).map((p) => p.id)).toEqual(["lc-0021"]);
+    expect(facetOptions(listed, { ...DEFAULT_SEARCH, status: "solved" }, "list")).toEqual([
+      { value: "blind-75", label: "Blind 75", count: 1 },
+      { value: "grind-75", label: "Grind 75", count: 2 },
+    ]);
+  });
+
+  it("groups by list, a problem in each of its lists, and the unlisted ones last", () => {
+    const groups = groupProblems(sortProblems(listed.problems, "num", "asc"), "list", listed.concepts);
+    expect(groups.map((g) => [g.label, g.problems.map((p) => p.id)])).toEqual([
+      ["Blind 75", ["lc-0021"]],
+      ["Grind 75", ["lc-0001", "lc-0021"]],
+      ["No list", ["lc-0035", "lc-0042", "lc-2181", "cf-0001"]],
+    ]);
+  });
+});

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { DIFFICULTIES, type Difficulty } from "../lib/labels.ts";
 
-export const GROUP_BY = ["none", "pattern", "concept", "difficulty", "status"] as const;
+export const GROUP_BY = ["none", "pattern", "concept", "list", "difficulty", "status"] as const;
 export type GroupBy = (typeof GROUP_BY)[number];
 export const SORT_KEYS = ["num", "title", "difficulty"] as const;
 export type SortKey = (typeof SORT_KEYS)[number];
@@ -34,6 +34,7 @@ export const homeSearchSchema = z.object({
   difficulty: list(isDifficulty),
   pattern: list(isString),
   concept: list(isString),
+  list: list(isString),
 });
 
 export type HomeSearch = z.output<typeof homeSearchSchema>;
@@ -47,6 +48,7 @@ export const DEFAULT_SEARCH: HomeSearch = {
   difficulty: [],
   pattern: [],
   concept: [],
+  list: [],
 };
 
 /** True when the search box or a filter narrows the list. Grouping and sorting do not count. */
@@ -56,11 +58,12 @@ export function isFiltered(search: HomeSearch): boolean {
     search.status !== "all" ||
     search.difficulty.length > 0 ||
     search.pattern.length > 0 ||
-    search.concept.length > 0
+    search.concept.length > 0 ||
+    search.list.length > 0
   );
 }
 
 /** The same view with the search box and every filter cleared. Grouping and sorting stay. */
 export function clearFilters(search: HomeSearch): HomeSearch {
-  return { ...search, q: "", status: "all", difficulty: [], pattern: [], concept: [] };
+  return { ...search, q: "", status: "all", difficulty: [], pattern: [], concept: [], list: [] };
 }

@@ -48,3 +48,21 @@ test("the search box finds a problem by its LeetCode number", async ({ page }) =
   await page.reload();
   await expect(page.getByRole("searchbox", { name: "Search" })).toHaveValue("20");
 });
+
+test("the List facet and the List grouping live in the URL", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "List", exact: true }).click();
+  await page.getByRole("option", { name: "Grind 75 1" }).click();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Two Sum" })).toBeVisible();
+
+  await page.getByRole("combobox", { name: "Group by" }).click();
+  await page.getByRole("option", { name: "List" }).click();
+  await expect(page.getByRole("button", { name: /^Grind 75/ })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole("combobox", { name: "Group by" })).toHaveText("List");
+  await expect(page.getByRole("button", { name: /^List/ })).toContainText("Grind 75");
+  await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
+});

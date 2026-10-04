@@ -8,7 +8,7 @@ import { FacetFilter } from "./FacetFilter.tsx";
 import { facetOptions } from "./model.ts";
 import { clearFilters, GROUP_BY, type GroupBy, type HomeSearch, isFiltered, STATUS_FILTERS, type StatusFilter } from "./search.ts";
 
-const GROUP_LABEL: Record<GroupBy, string> = { none: "None", pattern: "Pattern", concept: "Concept", difficulty: "Difficulty", status: "Status" };
+const GROUP_LABEL: Record<GroupBy, string> = { none: "None", pattern: "Pattern", concept: "Concept", list: "List", difficulty: "Difficulty", status: "Status" };
 const STATUS_FILTER_LABEL: Record<StatusFilter, string> = { all: "All", pending: "Pending", solved: "Solved" };
 
 interface ProblemToolbarProps {
@@ -61,6 +61,7 @@ export function ProblemToolbar({ data, search, onSearch }: ProblemToolbarProps) 
       />
       <FacetFilter title="Pattern" options={facetOptions(data, search, "pattern")} picked={search.pattern} onChange={(pattern) => onSearch({ pattern })} />
       <FacetFilter title="Concept" options={facetOptions(data, search, "concept")} picked={search.concept} onChange={(concept) => onSearch({ concept })} />
+      <FacetFilter title="List" options={facetOptions(data, search, "list")} picked={search.list} onChange={(list) => onSearch({ list })} />
       {isFiltered(search) && (
         <Button variant="ghost" size="sm" onClick={() => onSearch(clearFilters(search))}>
           Reset
