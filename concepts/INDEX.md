@@ -26,7 +26,6 @@
 - binary-search — referenced by lc-0033, lc-0035, lc-0278, lc-0704, lc-0981, lc-1235
 - binary-search-tree — referenced by lc-0098, lc-0230, lc-0235
 - binary-tree — referenced by lc-0098, lc-0102, lc-0104, lc-0105, lc-0110, lc-0199, lc-0226, lc-0230, lc-0236, lc-0297, lc-0543
-- boyer-moore-voting — referenced by lc-0169
 - carry-propagation — referenced by lc-0066, lc-0067
 - class-design — referenced by lc-0146, lc-0155, lc-0208, lc-0232, lc-0295, lc-0981
 - digit-manipulation — referenced by lc-0009
@@ -34,7 +33,7 @@
 - dummy-node — referenced by lc-0021
 - dynamic-programming — referenced by lc-0005, lc-0053, lc-0062, lc-0070, lc-0139, lc-0322, lc-0416, lc-1235
 - fast-slow-pointers — referenced by lc-0141, lc-0876
-- frequency-counting — referenced by lc-0076, lc-0242, lc-0383, lc-0409, lc-0438, lc-0621
+- frequency-counting — referenced by lc-0076, lc-0169, lc-0242, lc-0383, lc-0409, lc-0438, lc-0621
 - gcd — referenced by lc-2807
 - graph-bfs — referenced by lc-0127, lc-0310, lc-0542, lc-0994
 - graph-dfs — referenced by lc-0133, lc-0200, lc-0207, lc-0733

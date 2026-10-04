@@ -5,7 +5,7 @@ source: leetcode
 url: https://leetcode.com/problems/majority-element/
 difficulty: easy
 patterns: [arrays-hashing]
-concepts: [boyer-moore-voting]
+concepts: [frequency-counting]
 lists: [grind-75]
 status: todo
 hints: 0
@@ -29,7 +29,7 @@ You're given an array of `n` numbers, and you're told one value shows up more th
 ## Concepts
 
 <!-- auto:concepts -->
-- boyer-moore-voting (missing)
+- frequency-counting (missing)
 <!-- /auto -->
 
 ## Log
