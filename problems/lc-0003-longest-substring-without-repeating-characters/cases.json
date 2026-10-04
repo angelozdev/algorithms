@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "lengthOfLongestSubstring",
+  "params": [
+    {"name":"s","type":"string"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":["abcabcbb"],"expected":3},
+    {"input":["bbbbb"],"expected":1},
+    {"input":["pwwkew"],"expected":3}
+  ],
+  "hidden": [
+    {"input":[""],"expected":0},
+    {"input":["a"],"expected":1},
+    {"input":["aaaaaa"],"expected":1},
+    {"input":["abcdef"],"expected":6},
+    {"input":["abba"],"expected":2},
+    {"input":["tmmzuxt"],"expected":5},
+    {"input":[" "],"expected":1},
+    {"input":["!!##"],"expected":2}
+  ]
+}

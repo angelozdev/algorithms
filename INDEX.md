@@ -14,9 +14,11 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-1672 · Richest Customer Wealth](problems/lc-1672-richest-customer-wealth/README.md) · easy
 - ✓ [lc-1920 · Build Array from Permutation](problems/lc-1920-build-array-from-permutation/README.md) · easy
 
-## binary-search (0/1)
+## binary-search (0/3)
 
+- ○ [lc-0033 · Search in Rotated Sorted Array](problems/lc-0033-search-in-rotated-sorted-array/README.md) · medium
 - … [lc-0035 · Search Insert Position](problems/lc-0035-search-insert-position/README.md) · easy
+- ○ [lc-0704 · Binary Search](problems/lc-0704-binary-search/README.md) · easy
 
 ## bit-manipulation (1/1)
 
@@ -48,9 +50,12 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-2807 · Insert Greatest Common Divisors in Linked List](problems/lc-2807-insert-greatest-common-divisors-in-linked-list/README.md) · medium
 - ✓ [lc-2894 · Divisible and Non-divisible Sums Difference](problems/lc-2894-divisible-and-non-divisible-sums-difference/README.md) · easy
 
-## sliding-window (0/1)
+## sliding-window (0/4)
 
+- ○ [lc-0003 · Longest Substring Without Repeating Characters](problems/lc-0003-longest-substring-without-repeating-characters/README.md) · medium
+- ○ [lc-0076 · Minimum Window Substring](problems/lc-0076-minimum-window-substring/README.md) · hard
 - ○ [lc-0121 · Best Time to Buy and Sell Stock](problems/lc-0121-best-time-to-buy-and-sell-stock/README.md) · easy
+- ○ [lc-0438 · Find All Anagrams in a String](problems/lc-0438-find-all-anagrams-in-a-string/README.md) · medium
 
 ## stack (1/4)
 
@@ -68,9 +73,12 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-3110 · Score of a String](problems/lc-3110-score-of-a-string/README.md) · easy
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## two-pointers (2/4)
+## two-pointers (2/7)
 
+- ○ [lc-0011 · Container With Most Water](problems/lc-0011-container-with-most-water/README.md) · medium
+- ○ [lc-0015 · 3Sum](problems/lc-0015-3sum/README.md) · medium
 - ✓ [lc-0021 · Merge Two Sorted Lists](problems/lc-0021-merge-two-sorted-lists/README.md) · easy
 - … [lc-0026 · Remove Duplicates from Sorted Array](problems/lc-0026-remove-duplicates-from-sorted-array/README.md) · easy
 - ✓ [lc-0027 · Remove Element](problems/lc-0027-remove-element/README.md) · easy
+- ○ [lc-0075 · Sort Colors](problems/lc-0075-sort-colors/README.md) · medium
 - ○ [lc-0125 · Valid Palindrome](problems/lc-0125-valid-palindrome/README.md) · easy
