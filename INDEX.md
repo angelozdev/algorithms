@@ -73,6 +73,17 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-3110 · Score of a String](problems/lc-3110-score-of-a-string/README.md) · easy
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
+## trees (0/8)
+
+- ○ [lc-0098 · Validate Binary Search Tree](problems/lc-0098-validate-binary-search-tree/README.md) · medium
+- ○ [lc-0102 · Binary Tree Level Order Traversal](problems/lc-0102-binary-tree-level-order-traversal/README.md) · medium
+- ○ [lc-0104 · Maximum Depth of Binary Tree](problems/lc-0104-maximum-depth-of-binary-tree/README.md) · easy
+- ○ [lc-0110 · Balanced Binary Tree](problems/lc-0110-balanced-binary-tree/README.md) · easy
+- ○ [lc-0199 · Binary Tree Right Side View](problems/lc-0199-binary-tree-right-side-view/README.md) · medium
+- ○ [lc-0226 · Invert Binary Tree](problems/lc-0226-invert-binary-tree/README.md) · easy
+- ○ [lc-0230 · Kth Smallest Element in a BST](problems/lc-0230-kth-smallest-element-in-a-bst/README.md) · medium
+- ○ [lc-0543 · Diameter of Binary Tree](problems/lc-0543-diameter-of-binary-tree/README.md) · easy
+
 ## two-pointers (2/7)
 
 - ○ [lc-0011 · Container With Most Water](problems/lc-0011-container-with-most-water/README.md) · medium
