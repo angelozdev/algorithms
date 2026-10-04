@@ -1,0 +1,25 @@
+{
+  "entry": "leastInterval",
+  "params": [
+    {"name":"tasks","type":"string[]"},
+    {"name":"n","type":"int"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[["A","A","A","B","B","B"],2],"expected":8},
+    {"input":[["A","C","A","B","D","B"],1],"expected":6},
+    {"input":[["A","A","A","B","B","B"],3],"expected":10}
+  ],
+  "hidden": [
+    {"input":[["A"],0],"expected":1},
+    {"input":[["A","A","A"],0],"expected":3},
+    {"input":[["A","B","C","D"],10],"expected":4},
+    {"input":[["A","B","A","B","C","C"],0],"expected":6},
+    {"input":[["A","A","A","A","A","B","C"],2],"expected":13},
+    {"input":[["A","A","B","B"],100],"expected":103},
+    {"input":[["A","A","A","A","A","A"],1],"expected":11},
+    {"input":[["A","A","A","B","B","B","C","C","C"],2],"expected":9},
+    {"input":[["Z"],100],"expected":1}
+  ]
+}

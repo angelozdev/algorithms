@@ -1,0 +1,18 @@
+{
+  "mode": "class",
+  "entry": "Trie",
+  "compare": "exact",
+  "examples": [
+    {"input":{"ops":["Trie","insert","search","search","startsWith","insert","search"],"args":[[],["apple"],["apple"],["app"],["app"],["app"],["app"]]},"expected":[null,null,true,false,true,null,true]}
+  ],
+  "hidden": [
+    {"input":{"ops":["Trie","search","startsWith"],"args":[[],["a"],["a"]]},"expected":[null,false,false]},
+    {"input":{"ops":["Trie","insert","search","startsWith","search"],"args":[[],["cat"],["cat"],["ca"],["ca"]]},"expected":[null,null,true,true,false]},
+    {"input":{"ops":["Trie","insert","search","insert","search"],"args":[[],["apple"],["app"],["app"],["app"]]},"expected":[null,null,false,null,true]},
+    {"input":{"ops":["Trie","insert","insert","search"],"args":[[],["dog"],["dog"],["dog"]]},"expected":[null,null,null,true]},
+    {"input":{"ops":["Trie","insert","insert","search","search","startsWith"],"args":[[],["bat"],["cat"],["bat"],["xyz"],["ca"]]},"expected":[null,null,null,true,false,true]},
+    {"input":{"ops":["Trie","insert","search","startsWith","search"],"args":[[],["a"],["a"],["a"],["b"]]},"expected":[null,null,true,true,false]},
+    {"input":{"ops":["Trie","insert","insert","insert","search","startsWith","search"],"args":[[],["apple"],["app"],["application"],["appl"],["appl"],["application"]]},"expected":[null,null,null,null,false,true,true]},
+    {"input":{"ops":["Trie","insert","insert","search","search","startsWith"],"args":[[],["aaa"],["aaaa"],["aaa"],["aaaaa"],["aaaa"]]},"expected":[null,null,null,true,false,true]}
+  ]
+}

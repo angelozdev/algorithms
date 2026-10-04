@@ -20,21 +20,22 @@
 
 - arithmetic-series — referenced by lc-2894
 - binary-representation — referenced by lc-0067, lc-3280
-- binary-search — referenced by lc-0033, lc-0035, lc-0704
+- binary-search — referenced by lc-0033, lc-0035, lc-0704, lc-0981
 - binary-search-tree — referenced by lc-0098, lc-0230
-- binary-tree — referenced by lc-0098, lc-0102, lc-0104, lc-0110, lc-0199, lc-0226, lc-0230, lc-0543
+- binary-tree — referenced by lc-0098, lc-0102, lc-0104, lc-0105, lc-0110, lc-0199, lc-0226, lc-0230, lc-0543
 - boyer-moore-voting — referenced by lc-0169
 - carry-propagation — referenced by lc-0066, lc-0067
-- class-design — referenced by lc-0146, lc-0155, lc-0232
+- class-design — referenced by lc-0146, lc-0155, lc-0208, lc-0232, lc-0295, lc-0981
 - digit-manipulation — referenced by lc-0009
-- divide-and-conquer — referenced by lc-0023
+- divide-and-conquer — referenced by lc-0023, lc-0105
 - dummy-node — referenced by lc-0021
 - dynamic-programming — referenced by lc-0070
 - fast-slow-pointers — referenced by lc-0876
-- frequency-counting — referenced by lc-0076, lc-0242, lc-0383, lc-0409, lc-0438
+- frequency-counting — referenced by lc-0076, lc-0242, lc-0383, lc-0409, lc-0438, lc-0621
 - gcd — referenced by lc-2807
+- greedy — referenced by lc-0621
 - hash-set — referenced by lc-0003, lc-0217
-- heap — referenced by lc-0023
+- heap — referenced by lc-0023, lc-0295, lc-0973
 - in-place-array-modification — referenced by lc-0026, lc-0027, lc-0075, lc-1920
 - linked-list — referenced by lc-0021, lc-0023, lc-0146, lc-0206, lc-0876, lc-2181, lc-2807
 - matrix-traversal — referenced by lc-1672
@@ -48,4 +49,5 @@
 - string-traversal — referenced by lc-0058, lc-0125, lc-2942, lc-3110
 - tree-bfs — referenced by lc-0102, lc-0199
 - tree-dfs — referenced by lc-0098, lc-0104, lc-0110, lc-0226, lc-0230, lc-0543
+- trie — referenced by lc-0208
 - two-pointers — referenced by lc-0011, lc-0015, lc-0021, lc-0026, lc-0027, lc-0075, lc-0125, lc-2181

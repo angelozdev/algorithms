@@ -14,11 +14,12 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-1672 · Richest Customer Wealth](problems/lc-1672-richest-customer-wealth/README.md) · easy
 - ✓ [lc-1920 · Build Array from Permutation](problems/lc-1920-build-array-from-permutation/README.md) · easy
 
-## binary-search (0/3)
+## binary-search (0/4)
 
 - ○ [lc-0033 · Search in Rotated Sorted Array](problems/lc-0033-search-in-rotated-sorted-array/README.md) · medium
 - … [lc-0035 · Search Insert Position](problems/lc-0035-search-insert-position/README.md) · easy
 - ○ [lc-0704 · Binary Search](problems/lc-0704-binary-search/README.md) · easy
+- ○ [lc-0981 · Time Based Key-Value Store](problems/lc-0981-time-based-key-value-store/README.md) · medium
 
 ## bit-manipulation (1/1)
 
@@ -28,9 +29,15 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ✓ [lc-0070 · Climbing Stairs](problems/lc-0070-climbing-stairs/README.md) · easy
 
-## heap (0/1)
+## greedy (0/1)
+
+- ○ [lc-0621 · Task Scheduler](problems/lc-0621-task-scheduler/README.md) · medium
+
+## heap (0/3)
 
 - ○ [lc-0023 · Merge k Sorted Lists](problems/lc-0023-merge-k-sorted-lists/README.md) · hard
+- ○ [lc-0295 · Find Median from Data Stream](problems/lc-0295-find-median-from-data-stream/README.md) · hard
+- ○ [lc-0973 · K Closest Points to Origin](problems/lc-0973-k-closest-points-to-origin/README.md) · medium
 
 ## linked-list (2/7)
 
@@ -73,16 +80,21 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 - ✓ [lc-3110 · Score of a String](problems/lc-3110-score-of-a-string/README.md) · easy
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## trees (0/8)
+## trees (0/9)
 
 - ○ [lc-0098 · Validate Binary Search Tree](problems/lc-0098-validate-binary-search-tree/README.md) · medium
 - ○ [lc-0102 · Binary Tree Level Order Traversal](problems/lc-0102-binary-tree-level-order-traversal/README.md) · medium
 - ○ [lc-0104 · Maximum Depth of Binary Tree](problems/lc-0104-maximum-depth-of-binary-tree/README.md) · easy
+- ○ [lc-0105 · Construct Binary Tree from Preorder and Inorder Traversal](problems/lc-0105-construct-binary-tree-from-preorder-and-inorder-traversal/README.md) · medium
 - ○ [lc-0110 · Balanced Binary Tree](problems/lc-0110-balanced-binary-tree/README.md) · easy
 - ○ [lc-0199 · Binary Tree Right Side View](problems/lc-0199-binary-tree-right-side-view/README.md) · medium
 - ○ [lc-0226 · Invert Binary Tree](problems/lc-0226-invert-binary-tree/README.md) · easy
 - ○ [lc-0230 · Kth Smallest Element in a BST](problems/lc-0230-kth-smallest-element-in-a-bst/README.md) · medium
 - ○ [lc-0543 · Diameter of Binary Tree](problems/lc-0543-diameter-of-binary-tree/README.md) · easy
+
+## tries (0/1)
+
+- ○ [lc-0208 · Implement Trie (Prefix Tree)](problems/lc-0208-implement-trie-prefix-tree/README.md) · medium
 
 ## two-pointers (2/7)
 
