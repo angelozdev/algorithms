@@ -19,6 +19,7 @@
 ## Missing
 
 - arithmetic-series — referenced by lc-2894
+- backtracking — referenced by lc-0017, lc-0039, lc-0046, lc-0078, lc-0079
 - binary-representation — referenced by lc-0067, lc-3280
 - binary-search — referenced by lc-0033, lc-0035, lc-0704, lc-0981
 - binary-search-tree — referenced by lc-0098, lc-0230
@@ -40,10 +41,10 @@
 - heap — referenced by lc-0023, lc-0295, lc-0973
 - in-place-array-modification — referenced by lc-0026, lc-0027, lc-0075, lc-1920
 - linked-list — referenced by lc-0021, lc-0023, lc-0146, lc-0206, lc-0876, lc-2181, lc-2807
-- matrix-traversal — referenced by lc-0200, lc-0542, lc-0733, lc-0994, lc-1672
+- matrix-traversal — referenced by lc-0054, lc-0079, lc-0200, lc-0542, lc-0733, lc-0994, lc-1672
 - modular-arithmetic — referenced by lc-1920
 - queue — referenced by lc-0102, lc-0232, lc-0542, lc-0994
-- recursion — referenced by lc-0070, lc-0104, lc-0110, lc-0226, lc-0543
+- recursion — referenced by lc-0017, lc-0039, lc-0046, lc-0070, lc-0078, lc-0104, lc-0110, lc-0226, lc-0543
 - sliding-window — referenced by lc-0003, lc-0076, lc-0121, lc-0438
 - sorting — referenced by lc-0721
 - stack — referenced by lc-0020, lc-0150, lc-0155, lc-0232

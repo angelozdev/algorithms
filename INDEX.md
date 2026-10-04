@@ -4,15 +4,24 @@
 
 Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
-## arrays-hashing (3/7)
+## arrays-hashing (3/8)
 
 - ✓ [lc-0001 · Two Sum](problems/lc-0001-two-sum/README.md) · easy
+- ○ [lc-0054 · Spiral Matrix](problems/lc-0054-spiral-matrix/README.md) · medium
 - ○ [lc-0169 · Majority Element](problems/lc-0169-majority-element/README.md) · easy
 - ○ [lc-0217 · Contains Duplicate](problems/lc-0217-contains-duplicate/README.md) · easy
 - ○ [lc-0242 · Valid Anagram](problems/lc-0242-valid-anagram/README.md) · easy
 - ○ [lc-0383 · Ransom Note](problems/lc-0383-ransom-note/README.md) · easy
 - ✓ [lc-1672 · Richest Customer Wealth](problems/lc-1672-richest-customer-wealth/README.md) · easy
 - ✓ [lc-1920 · Build Array from Permutation](problems/lc-1920-build-array-from-permutation/README.md) · easy
+
+## backtracking (0/5)
+
+- ○ [lc-0017 · Letter Combinations of a Phone Number](problems/lc-0017-letter-combinations-of-a-phone-number/README.md) · medium
+- ○ [lc-0039 · Combination Sum](problems/lc-0039-combination-sum/README.md) · medium
+- ○ [lc-0046 · Permutations](problems/lc-0046-permutations/README.md) · medium
+- ○ [lc-0078 · Subsets](problems/lc-0078-subsets/README.md) · medium
+- ○ [lc-0079 · Word Search](problems/lc-0079-word-search/README.md) · medium
 
 ## binary-search (0/4)
 
