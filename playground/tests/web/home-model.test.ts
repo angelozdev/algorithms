@@ -17,6 +17,7 @@ const problem = (id: string, title: string, extra: Partial<HomeProblem> = {}): H
   difficulty: "easy",
   patterns: [],
   concepts: [],
+  lists: [],
   status: "todo",
   inProgress: false,
   error: null,

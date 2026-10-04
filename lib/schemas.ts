@@ -38,6 +38,8 @@ export const problemFrontmatter = z
     difficulty: z.enum(["easy", "medium", "hard"]),
     patterns: z.array(z.enum(PATTERNS)),
     concepts: z.array(z.string().min(1)),
+    /** Curated lists the problem was imported from, e.g. [grind-75] (Grind 75 spec §5). */
+    lists: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, "must be kebab-case")).optional(),
     complexity: z
       .object({ time: z.string().min(1), space: z.string().min(1), optimal: z.boolean() })
       .strict()

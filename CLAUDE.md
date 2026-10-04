@@ -68,6 +68,7 @@ Use `pnpm -s` whenever you parse output, so pnpm's banner does not corrupt the J
 - **In progress** = `status: solving`, or `status: todo` with a `solution.py`/`solution.ts` in its folder (for example, created by `pnpm watch`). The reminder lists these items. `hint`, `review` and `give-up` set a `todo` item they act on to `solving` (`review` sets `solved` when it is green).
 - Concept `status`: `new` (created ahead of time) · `learning` · `mastered`.
 - `patterns` (the groups in `INDEX.md`): arrays-hashing, two-pointers, sliding-window, stack, binary-search, linked-list, trees, tries, heap, backtracking, graphs, dp-1d, dp-2d, greedy, intervals, math, bit-manipulation, strings.
+- `lists` (problems only, optional): the curated lists a problem belongs to, kebab-case (`grind-75`). The playground home page filters and groups by them; `INDEX.md` does not show them.
 - Log lines: `- YYYY-MM-DD · <event>`, appended at the end of the README.
 
 The full file formats are in spec §4 (problem README, `cases.json`, `stress.ts`, concept note).

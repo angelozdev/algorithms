@@ -19,8 +19,8 @@ describe("GET /api/home", () => {
     const { status, body } = await json(await call(createApp({ root }), "/api/home"));
     expect(status).toBe(200);
     expect(body.problems).toEqual([
-      { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], concepts: ["hash-map"], status: "solved", inProgress: false, error: null },
-      { id: "lc-0020", title: "Valid Parentheses", difficulty: "easy", patterns: ["stack"], concepts: [], status: "todo", inProgress: true, error: null },
+      { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], concepts: ["hash-map"], lists: [], status: "solved", inProgress: false, error: null },
+      { id: "lc-0020", title: "Valid Parentheses", difficulty: "easy", patterns: ["stack"], concepts: [], lists: [], status: "todo", inProgress: true, error: null },
     ]);
     expect(body.groups).toEqual([
       { pattern: "arrays-hashing", ids: ["lc-0001"] },
@@ -73,6 +73,18 @@ describe("GET /api/home", () => {
     const empty = path.join(root, "empty");
     const { body } = await json(await call(createApp({ root: empty }), "/api/home"));
     expect(body).toEqual({ problems: [], groups: [], concepts: [] });
+  });
+
+  it("reads the lists a problem belongs to, and gives none when the field is missing", async () => {
+    const root = makeRepo();
+    put(
+      root,
+      "problems/lc-0035-search-insert-position/README.md",
+      "---\nid: lc-0035\ntitle: Search Insert Position\ndifficulty: easy\npatterns: [binary-search]\nconcepts: [binary-search]\nlists: [grind-75]\nstatus: todo\n---\n# 35. Search Insert Position\n",
+    );
+    const { body } = await json(await call(createApp({ root }), "/api/home"));
+    expect(body.problems.find((p: { id: string }) => p.id === "lc-0035").lists).toEqual(["grind-75"]);
+    expect(body.problems.find((p: { id: string }) => p.id === "lc-0001").lists).toEqual([]);
   });
 });
 

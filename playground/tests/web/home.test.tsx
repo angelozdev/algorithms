@@ -13,9 +13,9 @@ import { renderWithRouter } from "./render.tsx";
 
 const DATA: HomeData = {
   problems: [
-    { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], concepts: ["hash-map"], status: "solved", inProgress: false, error: null },
-    { id: "lc-0026", title: "Remove Duplicates", difficulty: "easy", patterns: ["two-pointers"], concepts: ["two-pointers"], status: "solving", inProgress: true, error: null },
-    { id: "lc-0030", title: "lc-0030-broken", difficulty: null, patterns: [], concepts: [], status: "todo", inProgress: false, error: "frontmatter: bad" },
+    { id: "lc-0001", title: "Two Sum", difficulty: "easy", patterns: ["arrays-hashing"], concepts: ["hash-map"], lists: [], status: "solved", inProgress: false, error: null },
+    { id: "lc-0026", title: "Remove Duplicates", difficulty: "easy", patterns: ["two-pointers"], concepts: ["two-pointers"], lists: [], status: "solving", inProgress: true, error: null },
+    { id: "lc-0030", title: "lc-0030-broken", difficulty: null, patterns: [], concepts: [], lists: [], status: "todo", inProgress: false, error: "frontmatter: bad" },
   ],
   groups: [],
   concepts: [

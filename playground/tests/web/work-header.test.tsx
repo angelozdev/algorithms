@@ -27,7 +27,7 @@ const target = (extra: Partial<TargetData> = {}): TargetData => ({
 
 const HOME: HomeData = {
   problems: [
-    { id: "lc-0021", title: "Merge Two Sorted Lists", difficulty: "medium", patterns: ["linked-list", "two-pointers"], concepts: [], status: "solving", inProgress: true, error: null },
+    { id: "lc-0021", title: "Merge Two Sorted Lists", difficulty: "medium", patterns: ["linked-list", "two-pointers"], concepts: [], lists: [], status: "solving", inProgress: true, error: null },
   ],
   groups: [],
   concepts: [{ slug: "hash-map", title: "Hash map", status: "learning", error: null, exercises: [] }],

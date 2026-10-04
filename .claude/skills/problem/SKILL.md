@@ -24,6 +24,7 @@ url: https://leetcode.com/problems/trapping-rain-water/
 difficulty: hard
 patterns: []
 concepts: []
+lists: []
 status: solving
 hints: 0
 solution_revealed: false
@@ -55,6 +56,7 @@ complexity: null
 ```
 
 - Quote a `title` that contains a colon (`title: "Foo: Bar"`).
+- `lists`: the curated lists the problem was imported from, kebab-case (`[grind-75]`); keep `[]` otherwise.
 - Use `status: todo` instead of `solving` if the user says the problem is for later.
 - Run `pnpm -s leetcode --check-paraphrase problems/<folder>/README.md` and rewrite every sentence it flags until `copied` is empty.
 

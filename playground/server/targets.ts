@@ -35,6 +35,7 @@ export function homeData(root: string): HomeData {
       difficulty: str(p.data.difficulty) || null,
       patterns: strList(p.data.patterns),
       concepts: strList(p.data.concepts),
+      lists: strList(p.data.lists),
       status: itemStatus(p.data.status),
       inProgress: isInProgress(p),
       error: p.error,

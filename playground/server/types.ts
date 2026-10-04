@@ -10,6 +10,8 @@ export interface HomeProblem {
   patterns: string[];
   /** Concept slugs from the frontmatter; [] when the field is missing or not a list. */
   concepts: string[];
+  /** List slugs from the frontmatter (e.g. "grind-75"); [] when the field is missing or not a list. */
+  lists: string[];
   status: ItemStatus;
   inProgress: boolean;
   /** README missing or its frontmatter unparsable. */
