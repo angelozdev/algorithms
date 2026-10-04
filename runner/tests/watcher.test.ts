@@ -1,4 +1,4 @@
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { studySolutionPath } from "../src/paths.ts";
@@ -131,6 +131,34 @@ describe("watchTarget", () => {
       writeFileSync(path.join(target.dir, "cases.json"), JSON.stringify({ ...twice, examples: [{ input: [3], expected: 6 }] }, null, 2));
       await vi.waitFor(() => expect(screens.length).toBeGreaterThan(seen), { timeout: 15_000, interval: 100 });
       watcher.close();
+    } finally {
+      stdout.mockRestore();
+    }
+  });
+
+  it("keeps watching a solution that still sits in the content folder (before pnpm study migrate), never under .study", async () => {
+    const target = makeProblem(root, "lc-0006-legacy-watch", {
+      entry: "solve",
+      params: [{ name: "n", type: "int" }],
+      returns: "int",
+      examples: [{ input: [2], expected: 4 }],
+      hidden: [],
+    });
+    write(target.dir, "solution.py", "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n");
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root });
+      await watcher.ready;
+      expect(screens.at(-1)).toContain("watching problems/lc-0006-legacy-watch/solution.py");
+      expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
+      writeFileSync(path.join(target.dir, "solution.py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(() => expect(screens.at(-1)).toContain("GREEN"), { timeout: 15_000, interval: 100 });
+      watcher.close();
+      expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
     } finally {
       stdout.mockRestore();
     }
