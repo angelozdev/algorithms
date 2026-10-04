@@ -34,9 +34,19 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ✓ [lc-3280 · Convert Date to Binary](problems/lc-3280-convert-date-to-binary/README.md) · easy
 
-## dp-1d (1/1)
+## dp-1d (1/6)
 
+- ○ [lc-0053 · Maximum Subarray](problems/lc-0053-maximum-subarray/README.md) · medium
 - ✓ [lc-0070 · Climbing Stairs](problems/lc-0070-climbing-stairs/README.md) · easy
+- ○ [lc-0139 · Word Break](problems/lc-0139-word-break/README.md) · medium
+- ○ [lc-0322 · Coin Change](problems/lc-0322-coin-change/README.md) · medium
+- ○ [lc-0416 · Partition Equal Subset Sum](problems/lc-0416-partition-equal-subset-sum/README.md) · medium
+- ○ [lc-1235 · Maximum Profit in Job Scheduling](problems/lc-1235-maximum-profit-in-job-scheduling/README.md) · hard
+
+## dp-2d (0/2)
+
+- ○ [lc-0005 · Longest Palindromic Substring](problems/lc-0005-longest-palindromic-substring/README.md) · medium
+- ○ [lc-0062 · Unique Paths](problems/lc-0062-unique-paths/README.md) · medium
 
 ## graphs (0/8)
 
