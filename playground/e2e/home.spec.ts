@@ -21,6 +21,25 @@ test("the home view lives in the URL: grouping and filters survive a reload", as
   await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
 });
 
+test("a sort order and a pattern facet survive a reload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Sort by title" }).click();
+  await expect(page).toHaveURL(/sort=title/);
+  await expect(page.getByRole("columnheader", { name: "Sort by title" })).toHaveAttribute("aria-sort", "ascending");
+
+  await page.getByRole("button", { name: "Pattern" }).click();
+  await page.getByRole("option", { name: /^Arrays & hashing/ }).click();
+  await expect(page).toHaveURL(/arrays-hashing/);
+  await expect(page.getByRole("link", { name: "Two Sum" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByRole("columnheader", { name: "Sort by title" })).toHaveAttribute("aria-sort", "ascending");
+  await expect(page.getByRole("button", { name: /^Pattern/ })).toHaveText(/Arrays & hashing/);
+  await expect(page.getByRole("link", { name: "Two Sum" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Valid Parentheses" })).toHaveCount(0);
+});
+
 test("the search box finds a problem by its LeetCode number", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("searchbox", { name: "Search" }).fill("20");
