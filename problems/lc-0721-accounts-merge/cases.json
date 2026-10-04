@@ -1,0 +1,22 @@
+{
+  "entry": "accountsMerge",
+  "params": [
+    {"name":"accounts","type":"string[][]"}
+  ],
+  "returns": "string[][]",
+  "compare": "unordered",
+  "examples": [
+    {"input":[[["John","johnsmith@mail.com","john_newyork@mail.com"],["John","johnsmith@mail.com","john00@mail.com"],["Mary","mary@mail.com"],["John","johnnybravo@mail.com"]]],"expected":[["John","john00@mail.com","john_newyork@mail.com","johnsmith@mail.com"],["Mary","mary@mail.com"],["John","johnnybravo@mail.com"]]},
+    {"input":[[["Gabe","Gabe0@m.co","Gabe3@m.co","Gabe1@m.co"],["Kevin","Kevin3@m.co","Kevin5@m.co","Kevin0@m.co"],["Ethan","Ethan5@m.co","Ethan4@m.co","Ethan0@m.co"],["Hanzo","Hanzo3@m.co","Hanzo1@m.co","Hanzo0@m.co"],["Fern","Fern5@m.co","Fern1@m.co","Fern0@m.co"]]],"expected":[["Ethan","Ethan0@m.co","Ethan4@m.co","Ethan5@m.co"],["Gabe","Gabe0@m.co","Gabe1@m.co","Gabe3@m.co"],["Hanzo","Hanzo0@m.co","Hanzo1@m.co","Hanzo3@m.co"],["Kevin","Kevin0@m.co","Kevin3@m.co","Kevin5@m.co"],["Fern","Fern0@m.co","Fern1@m.co","Fern5@m.co"]]}
+  ],
+  "hidden": [
+    {"input":[[["Alice","alice@mail.com"]]],"expected":[["Alice","alice@mail.com"]]},
+    {"input":[[["Bob","bob1@mail.com"],["Bob","bob2@mail.com"]]],"expected":[["Bob","bob1@mail.com"],["Bob","bob2@mail.com"]]},
+    {"input":[[["A","a1@mail.com","a2@mail.com"],["A","a2@mail.com","a3@mail.com"],["A","a3@mail.com","a4@mail.com"]]],"expected":[["A","a1@mail.com","a2@mail.com","a3@mail.com","a4@mail.com"]]},
+    {"input":[[["Mary","mary1@mail.com"],["Mary","mary2@mail.com"],["Mary","mary3@mail.com"]]],"expected":[["Mary","mary1@mail.com"],["Mary","mary2@mail.com"],["Mary","mary3@mail.com"]]},
+    {"input":[[["Z","z9@mail.com","z1@mail.com","z5@mail.com","z3@mail.com","z7@mail.com","z2@mail.com","z8@mail.com","z4@mail.com","z6@mail.com"]]],"expected":[["Z","z1@mail.com","z2@mail.com","z3@mail.com","z4@mail.com","z5@mail.com","z6@mail.com","z7@mail.com","z8@mail.com","z9@mail.com"]]},
+    {"input":[[["X","hub@mail.com","x1@mail.com"],["X","hub@mail.com","x2@mail.com"],["X","hub@mail.com","x3@mail.com"]]],"expected":[["X","hub@mail.com","x1@mail.com","x2@mail.com","x3@mail.com"]]},
+    {"input":[[["A","a1@mail.com","a2@mail.com"],["B","b1@mail.com","b2@mail.com"],["A","a2@mail.com","a3@mail.com"]]],"expected":[["A","a1@mail.com","a2@mail.com","a3@mail.com"],["B","b1@mail.com","b2@mail.com"]]},
+    {"input":[[["Carl","c1@mail.com"],["Carl","c2@mail.com"],["Carl","c1@mail.com","c3@mail.com"]]],"expected":[["Carl","c1@mail.com","c3@mail.com"],["Carl","c2@mail.com"]]}
+  ]
+}

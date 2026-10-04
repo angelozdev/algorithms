@@ -29,6 +29,17 @@ Status: ✓ solved · … solving · ↺ revealed · ○ todo
 
 - ✓ [lc-0070 · Climbing Stairs](problems/lc-0070-climbing-stairs/README.md) · easy
 
+## graphs (0/8)
+
+- ○ [lc-0127 · Word Ladder](problems/lc-0127-word-ladder/README.md) · hard
+- ○ [lc-0200 · Number of Islands](problems/lc-0200-number-of-islands/README.md) · medium
+- ○ [lc-0207 · Course Schedule](problems/lc-0207-course-schedule/README.md) · medium
+- ○ [lc-0310 · Minimum Height Trees](problems/lc-0310-minimum-height-trees/README.md) · medium
+- ○ [lc-0542 · 01 Matrix](problems/lc-0542-01-matrix/README.md) · medium
+- ○ [lc-0721 · Accounts Merge](problems/lc-0721-accounts-merge/README.md) · medium
+- ○ [lc-0733 · Flood Fill](problems/lc-0733-flood-fill/README.md) · easy
+- ○ [lc-0994 · Rotting Oranges](problems/lc-0994-rotting-oranges/README.md) · medium
+
 ## greedy (0/1)
 
 - ○ [lc-0621 · Task Scheduler](problems/lc-0621-task-scheduler/README.md) · medium

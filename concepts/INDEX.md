@@ -33,21 +33,26 @@
 - fast-slow-pointers — referenced by lc-0876
 - frequency-counting — referenced by lc-0076, lc-0242, lc-0383, lc-0409, lc-0438, lc-0621
 - gcd — referenced by lc-2807
+- graph-bfs — referenced by lc-0127, lc-0310, lc-0542, lc-0994
+- graph-dfs — referenced by lc-0200, lc-0207, lc-0733
 - greedy — referenced by lc-0621
-- hash-set — referenced by lc-0003, lc-0217
+- hash-set — referenced by lc-0003, lc-0127, lc-0217
 - heap — referenced by lc-0023, lc-0295, lc-0973
 - in-place-array-modification — referenced by lc-0026, lc-0027, lc-0075, lc-1920
 - linked-list — referenced by lc-0021, lc-0023, lc-0146, lc-0206, lc-0876, lc-2181, lc-2807
-- matrix-traversal — referenced by lc-1672
+- matrix-traversal — referenced by lc-0200, lc-0542, lc-0733, lc-0994, lc-1672
 - modular-arithmetic — referenced by lc-1920
-- queue — referenced by lc-0102, lc-0232
+- queue — referenced by lc-0102, lc-0232, lc-0542, lc-0994
 - recursion — referenced by lc-0070, lc-0104, lc-0110, lc-0226, lc-0543
 - sliding-window — referenced by lc-0003, lc-0076, lc-0121, lc-0438
+- sorting — referenced by lc-0721
 - stack — referenced by lc-0020, lc-0150, lc-0155, lc-0232
 - string-matching — referenced by lc-0028
 - string-parsing — referenced by lc-0150
 - string-traversal — referenced by lc-0058, lc-0125, lc-2942, lc-3110
+- topological-sort — referenced by lc-0207, lc-0310
 - tree-bfs — referenced by lc-0102, lc-0199
 - tree-dfs — referenced by lc-0098, lc-0104, lc-0110, lc-0226, lc-0230, lc-0543
 - trie — referenced by lc-0208
 - two-pointers — referenced by lc-0011, lc-0015, lc-0021, lc-0026, lc-0027, lc-0075, lc-0125, lc-2181
+- union-find — referenced by lc-0721

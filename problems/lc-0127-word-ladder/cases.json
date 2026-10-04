@@ -1,0 +1,24 @@
+{
+  "entry": "ladderLength",
+  "params": [
+    {"name":"beginWord","type":"string"},
+    {"name":"endWord","type":"string"},
+    {"name":"wordList","type":"string[]"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":["hit","cog",["hot","dot","dog","lot","log","cog"]],"expected":5},
+    {"input":["hit","cog",["hot","dot","dog","lot","log"]],"expected":0}
+  ],
+  "hidden": [
+    {"input":["a","c",["c"]],"expected":2},
+    {"input":["hot","dog",["hot","lot","log"]],"expected":0},
+    {"input":["hot","hop",["hop"]],"expected":2},
+    {"input":["abc","xyz",["abd","xyz"]],"expected":0},
+    {"input":["a","z",["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]],"expected":2},
+    {"input":["cat","dog",["cot","cog","dog"]],"expected":4},
+    {"input":["hot","dot",["hot","dot"]],"expected":2},
+    {"input":["abcd","wxyz",["abcf","wxyz"]],"expected":0}
+  ]
+}
