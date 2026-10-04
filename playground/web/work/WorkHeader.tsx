@@ -84,7 +84,10 @@ function LanguageSwitch({ lang, onLang, lock }: { lang: Lang; onLang(lang: Lang)
 export function WorkHeader({ target, lang, onLang, running, elapsedMs, canRun, onRun, langLock }: WorkHeaderProps) {
   const home = useQuery(homeQuery());
   const crumbs = middleCrumbs(target, home.data);
-  const kind = statusKind(target.status, false);
+  // Mirrors lib/repo.ts's isInProgress: a "todo" item with a solution file on disk already reads "In progress"
+  // on the home page, and the header must agree with it.
+  const inProgress = target.status === "todo" && (target.solutions.py || target.solutions.ts);
+  const kind = statusKind(target.status, inProgress);
   const short = target.kind === "exercise" ? target.id.slice(target.id.indexOf("/") + 1) : target.id;
   return (
     <header className="flex h-10 shrink-0 items-center gap-3 border-b bg-card px-3 text-[13px]">
