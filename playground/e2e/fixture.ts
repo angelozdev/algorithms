@@ -3,6 +3,12 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resetStudy, seedClosedAttempt } from "../../study/tests/seed.ts";
 
+// No e2e run may reach the user's own progress (vitest.config.ts does the same for unit tests with `env`, which
+// Playwright has no equivalent of): studyRoot() prefers $ALGO_STUDY to <E2E_ROOT>/.study, so with it set in the
+// shell resetRepo() would empty the user's real store. Every e2e entry point (the config, serve.ts, each spec)
+// imports this file, nothing reads ALGO_STUDY at import time, and the servers they spawn inherit the cleared value.
+process.env.ALGO_STUDY = "";
+
 export const E2E_PORT = 4391;
 /** Inside the project, so TypeScript solutions resolve "lc" like everywhere else. */
 export const E2E_ROOT = fileURLToPath(new URL("./.tmp/repo/", import.meta.url));
