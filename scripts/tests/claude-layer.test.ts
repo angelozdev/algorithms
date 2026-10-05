@@ -31,3 +31,33 @@ describe("CLAUDE.md", () => {
     for (let i = 1; i <= 7; i++) expect(text).toMatch(new RegExp(`^${i}\\. `, "m"));
   });
 });
+
+describe("progress goes through the study CLI (study coach spec §7, §8)", () => {
+  const text = (name: string) => readFileSync(path.join(REPO_ROOT, ".claude", "skills", name, "SKILL.md"), "utf8");
+
+  it.each([
+    ["hint", ["pnpm -s study status <id> --json", "pnpm -s study record hint <id>", "--no-record", "exam"]],
+    ["give-up", ["pnpm -s study record give-up <id>"]],
+    ["review", ["--no-record", "pnpm -s study status <id> --json", "pnpm -s study record complexity <id>"]],
+    ["concept", ["pnpm -s study status <slug> --json", "pnpm -s study record explanation <slug>"]],
+    ["problem", ["pnpm -s study status <slug> --json"]],
+  ])("%s reads and records through the CLI", (name, phrases) => {
+    for (const phrase of phrases) expect(text(name)).toContain(phrase);
+  });
+
+  it("hint, give-up and review no longer write progress into READMEs", () => {
+    for (const name of ["hint", "give-up", "review"]) {
+      for (const stale of ["solution_revealed", "solved_in", "to the Log", "set it to `solving`", "pnpm -s sync"]) {
+        expect(text(name), `${name}: ${stale}`).not.toContain(stale);
+      }
+    }
+  });
+
+  it("CLAUDE.md reads solved and revealed from study status and runs tests with --no-record", () => {
+    const claude = readFileSync(path.join(REPO_ROOT, "CLAUDE.md"), "utf8");
+    expect(claude).toContain("pnpm -s study status <id> --json");
+    expect(claude).toContain("`everGreen: true`");
+    expect(claude).toContain("never volunteer a solved problem's code or approach");
+    expect(claude).toContain("pnpm -s test <query> --lang all --json --no-record");
+  });
+});

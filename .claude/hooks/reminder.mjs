@@ -5,12 +5,14 @@ import path from "node:path";
 
 const RULES = [
   "[algorithms study rules — see CLAUDE.md]",
-  "1. No solution code or pseudocode for problems/exercises that are not solved or revealed.",
-  "2. Never edit solution.py / solution.ts.",
+  "1. No solution code or pseudocode for problems/exercises that are not solved or revealed " +
+    "(pnpm -s study status <id> --json: everGreen / revealed). Never volunteer a solved problem's code or approach.",
+  "2. Never edit solution files or anything under .study/.",
   "3. 'Help' or 'why does it fail' on unsolved work = the hint skill, one level at a time. " +
     "Language/syntax questions are not hints: answer with small generic examples that do not reveal the approach.",
   "4. Never describe hidden cases beyond the runner output.",
   "5. Optimal solution only when green AND explicitly asked, or via /give-up.",
+  "Your own test runs: pnpm -s test <id> --lang all --json --no-record.",
   "Chat in Spanish; write files in English.",
 ];
 
@@ -43,8 +45,8 @@ function items(root) {
 }
 
 /**
- * In progress by READMEs that predate the study coach: status solving, or todo with a solution file in its
- * folder or under .study/solutions. Mirrors lib/repo.ts's isInProgress.
+ * LEGACY, until pnpm study migrate: in progress by READMEs that predate the study coach: status solving, or
+ * todo with a solution file in its folder or under .study/solutions. Mirrors lib/repo.ts's isInProgress.
  */
 function inProgress(root, item, text) {
   const status = field(text, "status");
@@ -54,12 +56,25 @@ function inProgress(root, item, text) {
   return status === "todo" && dirs.some((dir) => ["solution.py", "solution.ts"].some((name) => existsSync(path.join(dir, name))));
 }
 
+/** Open attempts from .study/state.json (study coach spec §4), or null before `pnpm study init` / `migrate`. */
+function fromState(root) {
+  try {
+    const state = JSON.parse(readFileSync(path.join(studyDir(root), "state.json"), "utf8"));
+    if (!Array.isArray(state.inProgress)) return null;
+    return state.inProgress.map((item) => `${item.id} (${item.kind}, hints ${item.hints})`);
+  } catch {
+    return null;
+  }
+}
+
 try {
   const root = process.env.CLAUDE_PROJECT_DIR || process.cwd();
-  const inProgressItems = items(root)
-    .map((item) => ({ item, text: readFileSync(path.join(item.dir, "README.md"), "utf8") }))
-    .filter(({ item, text }) => inProgress(root, item, text))
-    .map(({ text }) => `${field(text, "id")} (hints ${field(text, "hints") ?? "0"})`);
+  const inProgressItems =
+    fromState(root) ??
+    items(root)
+      .map((item) => ({ item, text: readFileSync(path.join(item.dir, "README.md"), "utf8") }))
+      .filter(({ item, text }) => inProgress(root, item, text))
+      .map(({ text }) => `${field(text, "id")} (hints ${field(text, "hints") ?? "0"})`);
   const context = [
     ...RULES,
     inProgressItems.length ? `In progress: ${inProgressItems.join(", ")}.` : "In progress: nothing.",

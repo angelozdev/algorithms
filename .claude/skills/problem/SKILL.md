@@ -110,8 +110,8 @@ export default function stress(rng: Rng): StressCase[] {
 ## 6. Name the concepts
 
 1. Decide `patterns` (from the vocabulary in `CLAUDE.md`) and `concepts` (kebab-case slugs) for the **optimal** solution, and write them into the frontmatter.
-2. For each concept, read `concepts/<slug>/README.md` to get its status (`mastered`, `learning`, `new`), or note that it is **missing**.
-3. For each concept that is not mastered, walk its `requires` and collect the prerequisites that are not mastered either.
+2. For each concept, run `pnpm -s study status <slug> --json`: `learned: true` reads as mastered; `accepted: true`, or any exercise that is not `todo`, reads as learning; otherwise new. A concept with no folder is **missing**.
+3. For each concept that is not learned, walk its `requires` and collect the prerequisites that are not learned either.
 
 ## 7. Sync and validate
 

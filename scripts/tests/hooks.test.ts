@@ -488,7 +488,7 @@ describe("reminder hook", () => {
     const output = hook("reminder.mjs", { prompt: "hola" }, root);
     expect(output.hookSpecificOutput.hookEventName).toBe("UserPromptSubmit");
     const context = output.hookSpecificOutput.additionalContext as string;
-    expect(context).toContain("2. Never edit solution.py / solution.ts.");
+    expect(context).toContain("2. Never edit solution files or anything under .study/.");
     expect(context).toContain("Language/syntax questions are not hints");
     expect(context).toContain("In progress: lc-0001 (hints 1), hash-map/01 (hints 0).");
     expect(context).not.toContain("lc-0009");
@@ -529,6 +529,29 @@ describe("reminder hook", () => {
     put(root, ".study/solutions/exercises/hash-map/01/solution.ts", "export default function f() {}\n");
     const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
     expect(context).toContain("In progress: lc-0070 (hints 0), hash-map/01 (hints 1).");
+  });
+
+  it("lists the open attempts from .study/state.json once the study store exists, ignoring old frontmatter", () => {
+    const root = makeTempDir("algo-hook-");
+    put(root, "problems/lc-0001-two-sum/README.md", "---\nid: lc-0001\nstatus: solving\nhints: 1\n---\n");
+    put(
+      root,
+      ".study/state.json",
+      JSON.stringify({ version: "abc", phase: null, inProgress: [{ id: "lc-0020", kind: "review", hints: 2, startedAt: "2026-10-04T10:00:00.000Z" }], today: null }),
+    );
+    const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: lc-0020 (review, hints 2).");
+    expect(context).not.toContain("lc-0001");
+    expect(context).toContain("--no-record");
+  });
+
+  it("reads state.json from ALGO_STUDY and says when nothing is open", () => {
+    const root = makeTempDir("algo-hook-");
+    const study = makeTempDir("algo-progress-");
+    put(study, "state.json", JSON.stringify({ version: "abc", phase: null, inProgress: [], today: null }));
+    put(root, "problems/lc-0001-two-sum/README.md", "---\nid: lc-0001\nstatus: solving\nhints: 1\n---\n");
+    const context = hook("reminder.mjs", { prompt: "hola" }, root, { ALGO_STUDY: study }).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: nothing.");
   });
 });
 
