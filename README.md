@@ -53,7 +53,7 @@ uv python install 3.13   # only if `uv python find` finds nothing
 
 `pnpm play` starts a local server on `127.0.0.1` (port 4173, or the next free one) and opens the browser.
 
-- **Home:** work in progress, problems by pattern, concepts with their exercises. Status badges update live when Claude edits a README.
+- **Home:** work in progress, problems by pattern, concepts with their exercises. Status badges update live as you work: recorded saves, runs and reviews refresh them automatically.
 - **Work view:** the statement with clickable concept links (a concept opens next to the editor), an editor with syntax colors, auto-indent and bracket matching, but no autocomplete, no suggestions and no AI. Your code is saved to `.study/solutions/…/solution.py` / `solution.ts` 500 ms after you stop typing, so Claude always reads what you see.
 - **Run (⌘↵):** the same examples, hidden and stress cases as `pnpm test`. Hidden answers never reach the browser.
 - **Custom input (⇧⌘↵):** run your code on your own input and see what it returns and prints.
