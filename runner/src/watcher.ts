@@ -1,7 +1,9 @@
 import { spawn } from "node:child_process";
-import { type Stats, statSync } from "node:fs";
+import { existsSync, readFileSync, type Stats, statSync } from "node:fs";
 import path from "node:path";
 import { watch } from "chokidar";
+import type { EventSource } from "../../study/schema.ts";
+import { recordSolutionChange } from "./recording.ts";
 import { formatTerminal } from "./reporter.ts";
 import { runTarget } from "./run.ts";
 import { CaseFileError, loadCaseFile } from "./schema.ts";
@@ -58,9 +60,9 @@ export function watchFiles(
 }
 
 /** One run as terminal text. Case-file problems are shown, not thrown, so watch keeps going. */
-export async function renderRun(target: Target, lang: Lang, root: string): Promise<string> {
+export async function renderRun(target: Target, lang: Lang, root: string, record?: EventSource): Promise<string> {
   try {
-    return formatTerminal(await runTarget(target, lang, { root }));
+    return formatTerminal(await runTarget(target, lang, { root, record }));
   } catch (error) {
     if (error instanceof CaseFileError) {
       return `Case file error (not your code — fix the problem files):\n${error.message}`;
@@ -91,9 +93,10 @@ function combine(watchers: Watcher[]): Watcher {
 export async function watchTarget(
   target: Target,
   lang: Lang,
-  options: { open: boolean; root: string },
+  options: { open: boolean; root: string; record?: boolean },
 ): Promise<Watcher> {
   const solution = ensureSolution(target, loadCaseFile(target.dir), lang).path;
+  const record = options.record ?? false;
   // A notice (e.g. the --open warning) is drawn under every screen, so clearing never hides it.
   let notice = "";
   let screen: string | null = null;
@@ -111,7 +114,10 @@ export async function watchTarget(
   }
   let running = false;
   let again = false;
-  const cycle = async (): Promise<void> => {
+  /** A save of the solution asked for the pending run: that run is the user's and gets recorded. */
+  let savedByUser = false;
+  const cycle = async (afterSave = false): Promise<void> => {
+    if (afterSave) savedByUser = true;
     if (running) {
       again = true;
       return;
@@ -119,18 +125,25 @@ export async function watchTarget(
     running = true;
     do {
       again = false;
-      screen = await renderRun(target, lang, options.root).catch(
+      const source: EventSource | undefined = record && savedByUser ? "watch" : undefined;
+      savedByUser = false;
+      screen = await renderRun(target, lang, options.root, source).catch(
         (error: unknown) => `Runner error: ${(error as Error).message}`,
       );
       draw();
     } while (again);
     running = false;
   };
+  // The first run is like opening the problem: it records nothing (spec §7).
   await cycle();
+  const onSave = (): void => {
+    if (record && existsSync(solution)) recordSolutionChange(target, lang, readFileSync(solution, "utf8"), "edit", "watch");
+    void cycle(true);
+  };
   // Two folders (spec §10): the problem's own files, and the solution under .study. For a solution still in the
   // content folder both watchers look at the same folder, each for its own files.
   return combine([
     watchFiles(target.dir, ["cases.json", "stress.ts"], () => void cycle()),
-    watchFiles(path.dirname(solution), [path.basename(solution)], () => void cycle()),
+    watchFiles(path.dirname(solution), [path.basename(solution)], onSave),
   ]);
 }

@@ -1,5 +1,6 @@
 import { removeTemp, tempDir } from "../../../runner/tests/helpers.ts";
 import { conceptReadme, exerciseReadme, problemReadme, put } from "../../../scripts/tests/fixture.ts";
+import { closeCachedStudies } from "../../../study/store.ts";
 import type { createApp } from "../../server/app.ts";
 
 export const HOST = "127.0.0.1:4173";
@@ -52,5 +53,6 @@ export function makeRepo(): string {
 }
 
 export function removeRepos(): void {
+  closeCachedStudies();
   for (const root of repos.splice(0)) removeTemp(root);
 }

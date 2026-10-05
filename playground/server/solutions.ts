@@ -5,6 +5,7 @@ import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import { CustomInputError, runCustom } from "../../runner/src/custom.ts";
+import { recordSolutionChange } from "../../runner/src/recording.ts";
 import { runTarget } from "../../runner/src/run.ts";
 import { CaseFileError, loadCaseFile } from "../../runner/src/schema.ts";
 import { ensureSolution, solutionPath } from "../../runner/src/stubs.ts";
@@ -71,6 +72,8 @@ export function solutionRoutes(root: string) {
       const target = findTarget(root, body.id);
       if (!target) return c.json(unknownTarget(body.id), 404);
       const result = writeSolution(target, body.lang, body.code, body.baseVersion);
+      // An autosave of the user's editor (spec §7): it can start the first attempt, or join the open one.
+      if (result.ok) recordSolutionChange(target, body.lang, body.code, "save", "playground");
       return result.ok ? c.json({ version: result.version }, 200) : c.json(result.current, 409);
     })
     .post("/run", valid("json", z.object({ id, lang })), async (c) => {
@@ -78,7 +81,7 @@ export function solutionRoutes(root: string) {
       const target = findTarget(root, body.id);
       if (!target) return c.json(unknownTarget(body.id), 404);
       try {
-        return c.json(await runTarget(target, body.lang, { root }), 200);
+        return c.json(await runTarget(target, body.lang, { root, record: "playground" }), 200);
       } catch (error) {
         return caseFileError422(c, error);
       }

@@ -1,5 +1,10 @@
 import { spawnSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import { afterAll, describe, expect, it } from "vitest";
+import { fixedClock } from "../../study/clock.ts";
+import { initStudy } from "../../study/init.ts";
+import { itemStatusView } from "../../study/schema.ts";
+import { openStudy } from "../../study/store.ts";
 import { REPO_ROOT, TSX_BIN } from "../src/paths.ts";
 import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
 
@@ -79,5 +84,31 @@ describe("pnpm test", () => {
     const run = cli("test", "lc-0001", "--nope");
     expect(run.status).toBe(1);
     expect(run.stderr).toContain("Usage:");
+  });
+});
+
+describe("recording the user's runs (study coach spec §7)", () => {
+  it("records pnpm test's run and green, and nothing with --no-record", () => {
+    const rec = tempDir();
+    try {
+      makeProblem(rec, "lc-0001-sum", { ...CASES, hidden: [{ input: [[4]], expected: 4 }] }, { "solution.py": PY });
+      initStudy(rec, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+      const run = (...args: string[]) => spawnSync(TSX_BIN, ["runner/src/cli.ts", ...args], { cwd: REPO_ROOT, env: { ...process.env, ALGO_ROOT: rec }, encoding: "utf8" });
+      const statuses = () => {
+        const study = openStudy(rec);
+        try {
+          return study.db.select().from(itemStatusView).all().map((row) => [row.itemId, row.status]);
+        } finally {
+          study.close();
+        }
+      };
+      expect(run("test", "lc-0001", "--no-record").status).toBe(0);
+      expect(statuses()).toEqual([]);
+      expect(run("test", "lc-0001").status).toBe(0);
+      expect(statuses()).toEqual([["lc-0001", "solved"]]);
+      expect(existsSync(`${rec}/.study/state.json`)).toBe(true);
+    } finally {
+      removeTemp(rec);
+    }
   });
 });

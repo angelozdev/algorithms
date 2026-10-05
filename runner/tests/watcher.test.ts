@@ -1,6 +1,10 @@
 import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
+import { fixedClock } from "../../study/clock.ts";
+import { initStudy } from "../../study/init.ts";
+import { attemptEvents } from "../../study/schema.ts";
+import { closeCachedStudies, openStudy } from "../../study/store.ts";
 import { studySolutionPath } from "../src/paths.ts";
 import { renderRun, watchFiles, watchTarget } from "../src/watcher.ts";
 import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
@@ -161,6 +165,41 @@ describe("watchTarget", () => {
       expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
     } finally {
       stdout.mockRestore();
+    }
+  });
+
+  it("records a save and the run it triggers, but not the first automatic run, which is like opening the problem", async () => {
+    const own = tempDir();
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(own, "lc-0006-recorded", twice, { "solution.py": "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n" });
+    initStudy(own, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    const recorded = () => {
+      const study = openStudy(own);
+      try {
+        return study.db.select({ type: attemptEvents.type, source: attemptEvents.source }).from(attemptEvents).orderBy(attemptEvents.id).all();
+      } finally {
+        study.close();
+      }
+    };
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root: own, record: true });
+      await watcher.ready;
+      expect(recorded()).toEqual([]);
+      writeFileSync(studySolutionPath(target, "py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(
+        () =>
+          expect(recorded()).toEqual([
+            { type: "edit", source: "watch" },
+            { type: "run", source: "watch" },
+          ]),
+        { timeout: 15_000, interval: 100 },
+      );
+      watcher.close();
+    } finally {
+      stdout.mockRestore();
+      closeCachedStudies();
+      removeTemp(own);
     }
   });
 });
