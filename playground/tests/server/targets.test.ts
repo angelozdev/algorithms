@@ -160,7 +160,7 @@ describe("statuses from the study store (study coach spec §10)", () => {
     expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "solving", hints: 1 });
   });
 
-  it("keep reading the old frontmatter while there is no study database", async () => {
+  it("keep reading the old frontmatter for items and concepts while there is no study database", async () => {
     const root = makeRepo();
     put(
       root,
@@ -168,7 +168,11 @@ describe("statuses from the study store (study coach spec §10)", () => {
       "---\nid: lc-0001\ntitle: Two Sum\ndifficulty: easy\npatterns: [arrays-hashing]\nconcepts: [hash-map]\nstatus: solved\nhints: 2\n---\n# Two Sum\n",
     );
     const app = createApp({ root });
-    expect((await json(await call(app, "/api/home"))).body.problems[0]).toMatchObject({ id: "lc-0001", status: "solved" });
+    const { body } = await json(await call(app, "/api/home"));
+    expect(body.problems[0]).toMatchObject({ id: "lc-0001", status: "solved" });
+    // conceptView's own fallback (not just itemView's): makeRepo's hash-map concept reads "learning" straight
+    // from its frontmatter, since there is no study database for conceptProgress to derive it from instead.
+    expect(body.concepts[0]).toMatchObject({ slug: "hash-map", status: "learning" });
     expect((await json(await call(app, "/api/target?id=lc-0001"))).body).toMatchObject({ status: "solved", hints: 2 });
   });
 });
