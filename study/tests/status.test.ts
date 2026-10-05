@@ -135,6 +135,36 @@ describe("before the study database exists", () => {
     expect((await cli(root, "status", "--json")).json()).toEqual({ initialized: false, inProgress: [], solved: [], revealed: [], orphans: [] });
     expect(await cli(root, "record", "hint", "lc-0001")).toMatchObject({ code: 0, err: expect.stringContaining("Not recorded: there is no study database yet") });
   });
+
+  it("gives an exercise's uninitialized status the exercise shape, with concept set and conceptLearned false", async () => {
+    const root = makeStudyRepo();
+    expect((await cli(root, "status", "hash-map/01", "--json")).json()).toEqual({
+      initialized: false,
+      id: "hash-map/01",
+      kind: "exercise",
+      status: "todo",
+      everGreen: false,
+      revealed: false,
+      open: null,
+      exam: false,
+      concept: "hash-map",
+      conceptLearned: false,
+      nextDue: null,
+    });
+  });
+
+  it("gives a concept's uninitialized status every exercise todo, not accepted, not learned", async () => {
+    const root = makeStudyRepo();
+    expect((await cli(root, "status", "hash-map", "--json")).json()).toEqual({
+      initialized: false,
+      id: "hash-map",
+      kind: "concept",
+      accepted: false,
+      acceptedAt: null,
+      learned: false,
+      exercises: [{ id: "hash-map/01", status: "todo", done: false }],
+    });
+  });
 });
 
 describe("pnpm study record", () => {
