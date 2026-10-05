@@ -3,6 +3,7 @@ import { parseArgs } from "node:util";
 import type { Lang } from "../runner/src/types.ts";
 import type { Clock } from "./clock.ts";
 import { initStudy, isTimezone } from "./init.ts";
+import { applyMigration, describeAction, MigrationError, nothingToMigrate, planMigration } from "./migrate.ts";
 import { StudySchemaOutdatedError } from "./store.ts";
 
 /** Everything a command needs from the outside world, so tests run it in-process with a fixed clock. */
@@ -63,6 +64,34 @@ function initCommand(args: string[], io: CliIo): number {
   return 0;
 }
 
+function migrateCommand(args: string[], io: CliIo): number {
+  const { values } = parsed(() =>
+    parseArgs({ args, strict: true, options: { "dry-run": { type: "boolean", default: false }, timezone: { type: "string" } } }),
+  );
+  if (values.timezone !== undefined && !isTimezone(values.timezone)) {
+    throw new UsageError(`--timezone must be an IANA time zone such as America/Bogota (got "${values.timezone}")`);
+  }
+  const plan = planMigration(io.root, io.clock.now());
+  for (const action of plan.actions) io.out(`${describeAction(plan, action)}\n`);
+  if (plan.blockers.length > 0) {
+    io.err(`Cannot migrate yet. Fix these READMEs first:\n${plan.blockers.map((blocker) => `  - ${blocker}`).join("\n")}\n`);
+    return 1;
+  }
+  if (values["dry-run"]) {
+    io.out("Dry run: nothing was changed. Run pnpm study migrate to apply.\n");
+    return 0;
+  }
+  if (nothingToMigrate(plan)) {
+    io.out("Nothing to migrate.\n");
+    return 0;
+  }
+  applyMigration(plan, { clock: io.clock, timezone: values.timezone });
+  io.out(
+    "Migrated. Review `git status`, then commit the stripped READMEs and the removed solution files (git history keeps them).\n",
+  );
+  return 0;
+}
+
 /** `pnpm study <command> …` (spec §11). Returns the exit code; prints through `io`. */
 export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
   const [command, ...rest] = argv;
@@ -70,6 +99,8 @@ export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
     switch (command) {
       case "init":
         return initCommand(rest, io);
+      case "migrate":
+        return migrateCommand(rest, io);
       case "today":
         // Plan B (the scheduler) replaces this command.
         io.err("pnpm today arrives with the scheduler (study coach, plan B).\n");
@@ -78,7 +109,7 @@ export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
         throw new UsageError(USAGE);
     }
   } catch (error) {
-    if (error instanceof UsageError || error instanceof StudySchemaOutdatedError) {
+    if (error instanceof UsageError || error instanceof StudySchemaOutdatedError || error instanceof MigrationError) {
       io.err(`${error.message}\n`);
       return 1;
     }
