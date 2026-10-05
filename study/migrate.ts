@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { constants, copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { scanRepo } from "../lib/repo.ts";
 import { historyPath, historyStamp, studyRoot } from "../runner/src/paths.ts";
@@ -122,8 +122,21 @@ function archive(root: string, action: Extract<MigrationAction, { kind: "archive
   const bytes = readFileSync(action.from);
   if (!sameLegacyCopy(path.dirname(action.to), path.extname(action.to), bytes)) {
     mkdirSync(path.dirname(action.to), { recursive: true });
-    copyFileSync(action.from, action.to, constants.COPYFILE_EXCL);
-    if (!readFileSync(action.to).equals(bytes)) throw new MigrationError(`the copy of ${rel(root, action.from)} differs from it; nothing was deleted`);
+    try {
+      copyFileSync(action.from, action.to, constants.COPYFILE_EXCL);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") {
+        throw new MigrationError(`a previous archive copy at ${rel(root, action.to)} is corrupted or incomplete — remove it and retry`);
+      }
+      throw new MigrationError(`could not copy ${rel(root, action.from)} to ${rel(root, action.to)}: ${(error as Error).message}`);
+    }
+    let copied: Buffer;
+    try {
+      copied = readFileSync(action.to);
+    } catch (error) {
+      throw new MigrationError(`could not read back ${rel(root, action.to)} to verify the copy: ${(error as Error).message}`);
+    }
+    if (!copied.equals(bytes)) throw new MigrationError(`the copy of ${rel(root, action.from)} differs from it; nothing was deleted`);
   }
   if (action.tracked) {
     const run = spawnSync("git", ["-C", root, "rm", "--cached", "--quiet", "--", rel(root, action.from)], { encoding: "utf8" });
@@ -135,6 +148,18 @@ function archive(root: string, action: Extract<MigrationAction, { kind: "archive
 function writeNew(file: string, content: string): void {
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, content, { flag: "wx" });
+}
+
+/**
+ * Writes `content` to `file` through a sibling temp file and an atomic rename, mirroring
+ * `state-file.ts`'s `writeStateFile`: a crash mid-write leaves either the old `file` intact or the
+ * new content fully in place, never a truncated mix (`writeFileSync`'s default `'w'` flag would
+ * truncate `file` before writing, which a kill mid-write could leave empty or garbled).
+ */
+function writeAtomic(file: string, content: string): void {
+  const temp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
+  writeFileSync(temp, content);
+  renameSync(temp, file);
 }
 
 /** Applies a plan in order. It stops at the first error; everything done before it is safe to keep, and a re-run resumes. */
@@ -153,7 +178,7 @@ export function applyMigration(plan: MigrationPlan, options: { clock: Clock; tim
         if (action.keep === "study") writeNew(action.history!, `${action.text.trim()}\n`);
         break;
       case "strip":
-        writeFileSync(action.file, action.text);
+        writeAtomic(action.file, action.text);
         break;
     }
   }

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanupTempDirs, put } from "../../scripts/tests/fixture.ts";
 import { fixedClock } from "../clock.ts";
 import { type CliIo, runStudyCli } from "../commands.ts";
+import { applyMigration, MigrationError, planMigration } from "../migrate.ts";
 import { profile } from "../schema.ts";
 import { openStudy } from "../store.ts";
 import { EXPLANATION_TEXT, git, makeLegacyRepo, snapshotTree } from "./legacy-fixture.ts";
@@ -85,6 +86,17 @@ describe("pnpm study migrate", () => {
     expect(existsSync(path.join(root, ".study", "state.json"))).toBe(true);
   });
 
+  it("writes each stripped README through a temp file and a rename, leaving no stray temp file behind", async () => {
+    const root = makeLegacyRepo();
+    expect((await migrate(root)).code).toBe(0);
+    for (const file of snapshotTree(root).keys()) {
+      expect(file, file).not.toMatch(/\.tmp$/);
+    }
+    // The final content is still correct (asserted in detail by the test above): a rename only ever
+    // lands the fully-written temp file on the real path, never a half-written one.
+    expect(read(root, "problems/lc-9001-sample-sum/README.md")).not.toMatch(/^status:/m);
+  });
+
   it("finds nothing left to do the second time", async () => {
     const root = makeLegacyRepo();
     await migrate(root);
@@ -116,6 +128,24 @@ describe("pnpm study migrate", () => {
     expect(existsSync(path.join(root, "problems/lc-9002-sample-pairs/solution.ts"))).toBe(false);
   });
 
+  it("fails clearly instead of a raw error when a previous archive attempt left a corrupted copy at the destination", async () => {
+    const root = makeLegacyRepo();
+    const history = path.join(root, ".study/solutions/problems/lc-9002/history");
+    mkdirSync(history, { recursive: true });
+    // Same timestamp the plan will compute (the clock is fixed to T0), but different bytes: not the
+    // interrupted-run case above, so the retry's copy (COPYFILE_EXCL) hits an existing file and raises EEXIST.
+    const corrupted = path.join(history, `${STAMP}-legacy.ts`);
+    writeFileSync(corrupted, "truncated by a crash");
+    const result = await migrate(root);
+    expect(result.code).toBe(1);
+    expect(result.err).toContain(
+      `a previous archive copy at .study/solutions/problems/lc-9002/history/${STAMP}-legacy.ts is corrupted or incomplete — remove it and retry`,
+    );
+    // Neither the user's original nor the corrupted leftover was touched: nothing was lost.
+    expect(readFileSync(corrupted, "utf8")).toBe("truncated by a crash");
+    expect(readFileSync(path.join(root, "problems/lc-9002-sample-pairs/solution.ts"), "utf8")).toBe("// untracked work\n");
+  });
+
   it("refuses to start while a README cannot be stripped, and changes nothing", async () => {
     const root = makeLegacyRepo();
     put(root, "problems/lc-9003-broken/README.md", "---\ntitle: [unclosed\n---\n# Broken\n");
@@ -123,6 +153,16 @@ describe("pnpm study migrate", () => {
     const result = await migrate(root);
     expect(result.code).toBe(1);
     expect(result.err).toContain("Cannot migrate yet. Fix these READMEs first:\n  - problems/lc-9003-broken/README.md: frontmatter:");
+    expect(snapshotTree(root)).toEqual(tree);
+  });
+
+  it("applyMigration itself refuses a blocked plan, even called directly and bypassing the CLI's own check", async () => {
+    const root = makeLegacyRepo();
+    put(root, "problems/lc-9003-broken/README.md", "---\ntitle: [unclosed\n---\n# Broken\n");
+    const plan = planMigration(root, new Date(T0));
+    expect(plan.blockers.length).toBeGreaterThan(0);
+    const tree = snapshotTree(root);
+    expect(() => applyMigration(plan, { clock: fixedClock(T0), timezone: "UTC" })).toThrow(MigrationError);
     expect(snapshotTree(root)).toEqual(tree);
   });
 });
