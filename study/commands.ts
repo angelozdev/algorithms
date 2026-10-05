@@ -1,10 +1,14 @@
 import path from "node:path";
 import { parseArgs } from "node:util";
-import type { Lang } from "../runner/src/types.ts";
+import { scanRepo } from "../lib/repo.ts";
+import { listTargets, QueryError, resolveQuery } from "../runner/src/resolver.ts";
+import type { Lang, Target } from "../runner/src/types.ts";
 import type { Clock } from "./clock.ts";
 import { initStudy, isTimezone } from "./init.ts";
 import { applyMigration, describeAction, MigrationError, nothingToMigrate, planMigration } from "./migrate.ts";
-import { StudySchemaOutdatedError } from "./store.ts";
+import { acceptExplanation, giveUp, recordComplexity, recordHint } from "./record.ts";
+import { conceptStatusJson, describeConcept, describeItem, describeSummary, itemStatusJson, summaryJson } from "./status.ts";
+import { openStudy, type Study, StudyNotInitializedError, StudySchemaOutdatedError } from "./store.ts";
 
 /** Everything a command needs from the outside world, so tests run it in-process with a fixed clock. */
 export interface CliIo {
@@ -92,6 +96,146 @@ function migrateCommand(args: string[], io: CliIo): number {
   return 0;
 }
 
+/** The study, or null before `pnpm study init` / `migrate`. An outdated schema still throws. */
+function openOrNull(io: CliIo): Study | null {
+  try {
+    return openStudy(io.root, { clock: io.clock });
+  } catch (error) {
+    if (error instanceof StudyNotInitializedError) return null;
+    throw error;
+  }
+}
+
+const NOT_INITIALIZED =
+  "Not recorded: there is no study database yet. The user runs `pnpm study init` (new repo) or `pnpm study migrate` (existing repo).\n";
+
+/** Runs `fn` on the study; before init, prints NOT_INITIALIZED and succeeds (skills keep going, spec §13). */
+function withStudy(io: CliIo, fn: (study: Study) => number): number {
+  const study = openOrNull(io);
+  if (!study) {
+    io.err(NOT_INITIALIZED);
+    return 0;
+  }
+  try {
+    return fn(study);
+  } finally {
+    study.close();
+  }
+}
+
+/** An exact problem or exercise id: the record commands never guess (skills always pass the id). */
+function exactTarget(root: string, id: string | undefined): Target {
+  if (!id) throw new UsageError(`Give a problem or exercise id.\n\n${USAGE}`);
+  const target = listTargets(root).find((candidate) => candidate.id === id);
+  if (!target) throw new UsageError(`There is no problem or exercise with id "${id}". Use its exact id (lc-0001, hash-map/01).`);
+  return target;
+}
+
+type Found = { kind: "target"; target: Target } | { kind: "concept"; slug: string };
+
+/** status takes an exact item id, a concept slug, or anything `pnpm test` understands. */
+function findForStatus(root: string, query: string): Found {
+  const targets = listTargets(root);
+  const exact = targets.find((target) => target.id === query);
+  if (exact) return { kind: "target", target: exact };
+  if (scanRepo(root).concepts.some((concept) => concept.slug === query)) return { kind: "concept", slug: query };
+  return { kind: "target", target: resolveQuery(targets, query) };
+}
+
+function statusCommand(args: string[], io: CliIo): number {
+  const { values, positionals } = parsed(() =>
+    parseArgs({ args, strict: true, allowPositionals: true, options: { json: { type: "boolean", default: false } } }),
+  );
+  const query = positionals.join(" ").trim();
+  const found = query ? findForStatus(io.root, query) : null;
+  const study = openOrNull(io);
+  try {
+    const print = (json: object, text: string): void => io.out(values.json ? `${JSON.stringify(json, null, 2)}\n` : `${text}\n`);
+    if (!found) {
+      const json = summaryJson(study, io.root);
+      print(json, describeSummary(json));
+    } else if (found.kind === "concept") {
+      const json = conceptStatusJson(study, io.root, found.slug);
+      print(json, describeConcept(json));
+    } else {
+      const json = itemStatusJson(study, io.root, found.target);
+      print(json, describeItem(json));
+    }
+    return 0;
+  } finally {
+    study?.close();
+  }
+}
+
+function recordCommand(args: string[], io: CliIo): number {
+  const [what, ...rest] = args;
+  if (what === "hint" || what === "give-up") {
+    const { positionals } = parsed(() => parseArgs({ args: rest, strict: true, allowPositionals: true, options: {} }));
+    const target = exactTarget(io.root, positionals[0]);
+    return withStudy(io, (study) => {
+      if (what === "give-up") {
+        const result = giveUp(study, target.id);
+        io.out(result.recorded ? `Recorded: ${target.id} given up (revealed).\n` : `Not recorded: ${target.id} has no open attempt (it is solved or revealed).\n`);
+        return 0;
+      }
+      const result = recordHint(study, target.id);
+      if (result.recorded) {
+        io.out(`Recorded hint ${result.hints} for ${target.id}.\n`);
+        return 0;
+      }
+      if (result.reason === "exam") {
+        io.err(`Refused: ${target.id} is in an exam attempt, and exams take no hints.\n`);
+        return 2;
+      }
+      io.out(`Not recorded: ${target.id} has no open attempt (it is solved or revealed).\n`);
+      return 0;
+    });
+  }
+  if (what === "complexity") {
+    const { values, positionals } = parsed(() =>
+      parseArgs({
+        args: rest,
+        strict: true,
+        allowPositionals: true,
+        options: {
+          time: { type: "string" },
+          space: { type: "string" },
+          optimal: { type: "boolean", default: false },
+          "not-optimal": { type: "boolean", default: false },
+        },
+      }),
+    );
+    const target = exactTarget(io.root, positionals[0]);
+    if (target.kind !== "problem") throw new UsageError(`complexity is recorded for problems only (${target.id} is an exercise)`);
+    const time = values.time;
+    const space = values.space;
+    if (!time || !space) throw new UsageError(`record complexity needs --time and --space\n\n${USAGE}`);
+    if (values.optimal === values["not-optimal"]) throw new UsageError(`record complexity needs exactly one of --optimal and --not-optimal\n\n${USAGE}`);
+    const optimal = values.optimal;
+    return withStudy(io, (study) => {
+      const result = recordComplexity(study, target.id, { time, space, optimal });
+      if (!result.recorded) {
+        io.err(`Not recorded: ${target.id} has no green attempt. The user's own run (pnpm test, pnpm watch or ▶ Run) records green.\n`);
+        return 1;
+      }
+      io.out(`Recorded complexity for ${target.id}: time ${time}, space ${space}, ${optimal ? "optimal" : "not optimal"}.\n`);
+      return 0;
+    });
+  }
+  if (what === "explanation") {
+    const { positionals } = parsed(() => parseArgs({ args: rest, strict: true, allowPositionals: true, options: {} }));
+    const slug = positionals[0];
+    if (!slug) throw new UsageError(`Give a concept slug.\n\n${USAGE}`);
+    if (!scanRepo(io.root).concepts.some((concept) => concept.slug === slug)) throw new UsageError(`There is no concept "${slug}".`);
+    return withStudy(io, (study) => {
+      const result = acceptExplanation(study, slug);
+      io.out(result.already ? `Already accepted on ${result.acceptedAt.toISOString().slice(0, 10)}: ${slug}.\n` : `Recorded: the ${slug} explanation is accepted.\n`);
+      return 0;
+    });
+  }
+  throw new UsageError(USAGE);
+}
+
 /** `pnpm study <command> …` (spec §11). Returns the exit code; prints through `io`. */
 export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
   const [command, ...rest] = argv;
@@ -101,6 +245,10 @@ export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
         return initCommand(rest, io);
       case "migrate":
         return migrateCommand(rest, io);
+      case "status":
+        return statusCommand(rest, io);
+      case "record":
+        return recordCommand(rest, io);
       case "today":
         // Plan B (the scheduler) replaces this command.
         io.err("pnpm today arrives with the scheduler (study coach, plan B).\n");
@@ -109,6 +257,11 @@ export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
         throw new UsageError(USAGE);
     }
   } catch (error) {
+    if (error instanceof QueryError) {
+      const list = error.candidates.map((target) => `  ${target.id.padEnd(16)} ${target.title}`).join("\n");
+      io.err(`${error.message}\n${list}${list ? "\n" : ""}`);
+      return 1;
+    }
     if (error instanceof UsageError || error instanceof StudySchemaOutdatedError || error instanceof MigrationError) {
       io.err(`${error.message}\n`);
       return 1;
