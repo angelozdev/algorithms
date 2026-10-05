@@ -1,9 +1,9 @@
-import { existsSync, mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { fixedClock } from "../../study/clock.ts";
 import { initStudy } from "../../study/init.ts";
-import { attemptEvents } from "../../study/schema.ts";
+import { attemptEvents, attempts } from "../../study/schema.ts";
 import { closeCachedStudies, openStudy } from "../../study/store.ts";
 import { studySolutionPath } from "../src/paths.ts";
 import { renderRun, watchFiles, watchTarget } from "../src/watcher.ts";
@@ -196,6 +196,45 @@ describe("watchTarget", () => {
         { timeout: 15_000, interval: 100 },
       );
       watcher.close();
+    } finally {
+      stdout.mockRestore();
+      closeCachedStudies();
+      removeTemp(own);
+    }
+  });
+
+  it("records nothing when a save only reformats the stub (CRLF, trailing blanks), not even the run it triggers", async () => {
+    const own = tempDir();
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(own, "lc-0007-reformatted", twice);
+    initStudy(own, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    const recorded = () => {
+      const study = openStudy(own);
+      try {
+        return {
+          attempts: study.db.select().from(attempts).all(),
+          events: study.db.select().from(attemptEvents).all(),
+        };
+      } finally {
+        study.close();
+      }
+    };
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root: own, record: true });
+      await watcher.ready;
+      const solution = studySolutionPath(target, "py");
+      const stub = readFileSync(solution, "utf8"); // watchTarget wrote it: the solution did not exist
+      const seen = screens.length;
+      writeFileSync(solution, `${stub.replace(/\n/g, "  \r\n")}\r\n\r\n`);
+      // The save's run has finished drawing, so it would have been recorded by now.
+      await vi.waitFor(() => expect(screens.length).toBeGreaterThan(seen), { timeout: 15_000, interval: 100 });
+      watcher.close();
+      expect(recorded()).toEqual({ attempts: [], events: [] });
     } finally {
       stdout.mockRestore();
       closeCachedStudies();

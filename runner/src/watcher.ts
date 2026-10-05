@@ -1,9 +1,9 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync, type Stats, statSync } from "node:fs";
+import { readFileSync, type Stats, statSync } from "node:fs";
 import path from "node:path";
 import { watch } from "chokidar";
 import type { EventSource } from "../../study/schema.ts";
-import { recordSolutionChange } from "./recording.ts";
+import { type Recording, recordSolutionChange } from "./recording.ts";
 import { formatTerminal } from "./reporter.ts";
 import { runTarget } from "./run.ts";
 import { CaseFileError, loadCaseFile } from "./schema.ts";
@@ -136,9 +136,22 @@ export async function watchTarget(
   };
   // The first run is like opening the problem: it records nothing (spec §7).
   await cycle();
+  /** Records the saved solution as an edit; null when not recording, or when the file is gone again (the run says so). */
+  const recordEdit = (): Recording | null => {
+    if (!record) return null;
+    let code: string;
+    try {
+      code = readFileSync(solution, "utf8");
+    } catch {
+      return null; // a save is a timer callback: a throw here would stop pnpm watch
+    }
+    return recordSolutionChange(target, lang, code, "edit", "watch");
+  };
   const onSave = (): void => {
-    if (record && existsSync(solution)) recordSolutionChange(target, lang, readFileSync(solution, "utf8"), "edit", "watch");
-    void cycle(true);
+    // An edit the lifecycle ignores starts nothing, and neither does its run: a save that leaves the stub as it was
+    // (an editor reformatting it, spec §7) is not work. "off" and "failed" are about the database, not the save,
+    // so those runs are still the user's.
+    void cycle(recordEdit()?.status !== "ignored");
   };
   // Two folders (spec §10): the problem's own files, and the solution under .study. For a solution still in the
   // content folder both watchers look at the same folder, each for its own files.
