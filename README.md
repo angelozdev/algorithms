@@ -16,12 +16,14 @@ pnpm install
 uv python install 3.13   # only if `uv python find` finds nothing
 ```
 
+**Your progress** lives in `.study/` (git-ignored): your solutions and their history, your "My explanation" texts, and `study.db`. A fresh clone starts it with `pnpm study init`. A repo whose READMEs still hold progress from before the study coach moves it once with `pnpm study migrate` (try `pnpm study migrate --dry-run` first, stop `pnpm play` and `pnpm watch`, then commit what it strips).
+
 **Start Claude Code from this folder.** The anti-spoiler hooks in `.claude/settings.json` only load when Claude Code starts here.
 
 ## Daily flow
 
 1. Paste a problem statement or a LeetCode link into Claude Code. You get back only the concepts you need.
-2. A concept is missing? Say "creemos el concepto". Claude writes the note and the exercises; you write "My explanation".
+2. A concept is missing? Say "creemos el concepto". Claude writes the note and the exercises; you write "My explanation" (it is saved in .study/explanations, not in the README).
 3. `pnpm play <problem>` opens the web playground: statement and concept notes on the left, the editor on the right, ▶ Run (⌘↵) for the tests. Prefer the terminal? `pnpm watch <problem> --open` reruns the tests on every save in VS Code.
 4. Stuck? Ask for a hint ("pista"). There are two levels, and neither includes code.
 5. Green? Say "ya pasa" to get a complexity review. Giving up? Type `/give-up`.
@@ -33,8 +35,11 @@ uv python install 3.13   # only if `uv python find` finds nothing
 | `pnpm play [query] [--no-open] [--port <n>]` | Opens the web playground (home page, or the problem you name) |
 | `pnpm e2e` | Runs the playground's browser tests (first time: `pnpm exec playwright install chromium`) |
 | `pnpm watch <query> [--lang py\|ts] [--open]` | Reruns the tests on every save |
-| `pnpm test <query> [--lang py\|ts\|all] [--json]` | Runs once |
+| `pnpm test <query> [--lang py\|ts\|all] [--json] [--no-record]` | Runs once and records the run as your practice (`--no-record` skips that) |
 | `pnpm fill-expected <query> --ref <file>` | Fills hidden expected values from a reference solution outside the repo |
+| `pnpm study init [--minutes <n>] [--lang py\|ts] [--timezone <zone>]` | Starts `.study/` (your progress) in a fresh clone |
+| `pnpm study migrate [--dry-run]` | Once, in a repo with progress in its READMEs: archives the solutions and strips the READMEs |
+| `pnpm study status [<id>] [--json]` | Your progress on a problem, an exercise, a concept, or everything |
 | `pnpm leetcode <slug\|url>` | Prints a LeetCode problem as a JSON draft |
 | `pnpm leetcode --list <slug\|url>` | Prints a LeetCode problem list (for example Grind 75) as JSON |
 | `pnpm leetcode --check-paraphrase <README>` | Flags runs of 10+ words a problem README copies from LeetCode's statement |
@@ -49,12 +54,12 @@ uv python install 3.13   # only if `uv python find` finds nothing
 `pnpm play` starts a local server on `127.0.0.1` (port 4173, or the next free one) and opens the browser.
 
 - **Home:** work in progress, problems by pattern, concepts with their exercises. Status badges update live when Claude edits a README.
-- **Work view:** the statement with clickable concept links (a concept opens next to the editor), an editor with syntax colors, auto-indent and bracket matching, but no autocomplete, no suggestions and no AI. Your code is saved to `solution.py` / `solution.ts` 500 ms after you stop typing, so Claude always reads what you see.
+- **Work view:** the statement with clickable concept links (a concept opens next to the editor), an editor with syntax colors, auto-indent and bracket matching, but no autocomplete, no suggestions and no AI. Your code is saved to `.study/solutions/…/solution.py` / `solution.ts` 500 ms after you stop typing, so Claude always reads what you see.
 - **Run (⌘↵):** the same examples, hidden and stress cases as `pnpm test`. Hidden answers never reach the browser.
 - **Custom input (⇧⌘↵):** run your code on your own input and see what it returns and prints.
-- **Concept page:** read the note and write "My explanation" (the only part of a README the playground edits).
+- **Concept page:** read the note and write "My explanation" (saved in `.study/explanations`).
 
-When you are green, ask Claude for `/review` in the terminal: the playground never changes a problem's status.
+Your saves and runs count as practice: an attempt starts with your first real edit or run and ends at your first green run. Ask Claude for `/review` when you are green.
 
 Browser tests: `pnpm e2e` (first time, install its browser once with `pnpm exec playwright install chromium`).
 

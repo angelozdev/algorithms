@@ -20,7 +20,6 @@ If `concepts/<slug>/` already exists, do not recreate or rewrite any of it. Teac
 ---
 slug: two-pointers
 title: Two pointers
-status: learning
 requires: []
 related: []
 ---
@@ -56,13 +55,14 @@ related: []
    - **Typical complexity:** time and space of the canonical forms.
    - **Template:** a generic skeleton in Python **and** TypeScript. It must not be shaped after any problem that is not `solved` or `revealed` (`pnpm -s study status --json` lists `solved` and `revealed`; with `initialized: false`, treat every problem as unsolved). If a template would give one away, keep it more abstract.
    - **Quick checks:** 2–4 questions the user answers in chat.
-   - **My explanation:** empty, except for the comment.
+   - **My explanation:** the heading and the comment only. The user's text is saved in `.study/explanations/<slug>.md` (the playground writes it there).
 3. **Frontmatter:**
-   - `status: learning` if the user is studying the concept now; `new` if you are creating it ahead of time (for example as a prerequisite).
    - `requires`: prerequisite slugs.
    - `related`: neighbouring concepts.
+
+   Progress (whether the user is learning or has learned the concept) lives in `.study`, never in the README.
 4. **Exercises:** 2–4, in increasing difficulty. Each lives in `concepts/<slug>/exercises/<NN>-<slug>/` with:
-   - `README.md`: frontmatter `id: <slug>/<NN>`, `title`, `concept: <slug>`, `status: todo`, `hints: 0`, `solution_revealed: false`, `solved_in: []`; then `# <title>`, `## Statement` (with examples and constraints), and `## Log`.
+   - `README.md`: frontmatter `id: <slug>/<NN>`, `title`, `concept: <slug>`; then `# <title>` and `## Statement` (with examples and constraints).
    - `cases.json`, following the same rules as step 3 of the `problem` skill, and `stress.ts` only if input size matters.
    - Hidden `expected` values filled with the reference procedure from step 5 of the `problem` skill. The reference lives outside the repo and is deleted afterwards.
    - Exercises practise the concept in isolation and must not be isomorphic to an unsolved problem (the same check as the Template).

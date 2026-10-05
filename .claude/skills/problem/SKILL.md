@@ -11,7 +11,7 @@ The hard rules in `CLAUDE.md` apply. Reply to the user in Spanish; write files i
 
 - **LeetCode** (URL, slug, or number + title): run `pnpm -s leetcode <slug>`. It prints JSON with `id`, `folder`, `title`, `difficulty`, `url`, `statement` (Markdown), `cases` (a draft `cases.json` with the examples and no hidden cases) and `warnings`. If you only have a number, work out the slug from the title, and ask the user if you are unsure.
 - **Other platforms or pasted text:** build the same data from the statement. The folder is `<platform>-<NNNN>-<slug>` (for example `hr-0042-…`), or `<platform>-<slug>` when the platform has no numeric ids.
-- **Already registered** (`problems/<folder>/` exists): do not recreate anything. Jump to step 6 using its frontmatter.
+- **Already registered** (`problems/<folder>/` exists): do not recreate anything. Jump to step 6 using its frontmatter and `pnpm -s study status <id> --json`.
 
 ## 2. Write `problems/<folder>/README.md`
 
@@ -25,11 +25,6 @@ difficulty: hard
 patterns: []
 concepts: []
 lists: []
-status: solving
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 42. Trapping Rain Water
 
@@ -49,15 +44,10 @@ complexity: null
 
 <!-- auto:concepts -->
 <!-- /auto -->
-
-## Log
-
-- YYYY-MM-DD · registered
 ```
 
 - Quote a `title` that contains a colon (`title: "Foo: Bar"`).
 - `lists`: the curated lists the problem was imported from, kebab-case (`[grind-75]`); keep `[]` otherwise.
-- Use `status: todo` instead of `solving` if the user says the problem is for later.
 - Run `pnpm -s leetcode --check-paraphrase problems/<folder>/README.md` and rewrite every sentence it flags until `copied` is empty.
 
 ## 3. Write `cases.json`

@@ -61,3 +61,24 @@ describe("progress goes through the study CLI (study coach spec §7, §8)", () =
     expect(claude).toContain("pnpm -s test <query> --lang all --json --no-record");
   });
 });
+
+describe("content-only templates and docs (study coach spec §3, §10)", () => {
+  const text = (name: string) => readFileSync(path.join(REPO_ROOT, ".claude", "skills", name, "SKILL.md"), "utf8");
+
+  it("the problem and concept templates hold content only", () => {
+    // Frontmatter lines and the Log heading, anchored at the line start ("**Typical complexity:**" is content).
+    for (const stale of [/^status: /m, /^hints: /m, /^solution_revealed: /m, /^solved_in: /m, /^complexity: /m, /^## Log$/m]) {
+      expect(text("problem"), String(stale)).not.toMatch(stale);
+      expect(text("concept"), String(stale)).not.toMatch(stale);
+    }
+  });
+
+  it("CLAUDE.md maps .study and README.md explains init, migrate and status", () => {
+    const claude = readFileSync(path.join(REPO_ROOT, "CLAUDE.md"), "utf8");
+    expect(claude).toContain("`.study/`");
+    expect(claude).toContain("`study/`");
+    expect(claude).not.toContain("Log lines");
+    const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+    for (const command of ["pnpm study init", "pnpm study migrate", "pnpm study status", "--no-record"]) expect(readme).toContain(command);
+  });
+});
