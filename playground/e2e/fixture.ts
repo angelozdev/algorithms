@@ -1,6 +1,7 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resetStudy, seedClosedAttempt } from "../../study/tests/seed.ts";
 
 export const E2E_PORT = 4391;
 /** Inside the project, so TypeScript solutions resolve "lc" like everywhere else. */
@@ -32,11 +33,6 @@ difficulty: easy
 patterns: [arrays-hashing]
 concepts: [hash-map]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 1. Two Sum
 
@@ -47,12 +43,8 @@ Return the indices of the two numbers in \`nums\` that add up to \`target\`.
 ## Concepts
 
 <!-- auto:concepts -->
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-28 · created for the end-to-end tests
 `;
 
 const CASES = {
@@ -78,7 +70,6 @@ export const EXPLANATION_NOTE = "<!-- Write this yourself, in your own words. Cl
 const CONCEPT_README = `---
 slug: hash-map
 title: Hash map
-status: learning
 requires: []
 related: []
 ---
@@ -100,7 +91,7 @@ ${EXPLANATION_NOTE}
 ## Problems
 
 <!-- auto:problems -->
-- ○ [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
+- [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
 <!-- /auto -->
 `;
 
@@ -112,11 +103,6 @@ url: https://leetcode.com/problems/valid-parentheses/
 difficulty: easy
 patterns: [stack]
 concepts: [stack]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [py]
-complexity: null
 ---
 # 20. Valid Parentheses
 
@@ -143,4 +129,8 @@ export function resetRepo(): void {
     mkdirSync(path.dirname(repoFile(rel)), { recursive: true });
     writeFileSync(repoFile(rel), content);
   }
+  // Progress (study coach spec §10): emptied in place, so the running server keeps its handle; then Valid
+  // Parentheses solved, which the home page's status tests rely on.
+  resetStudy(E2E_ROOT);
+  seedClosedAttempt(E2E_ROOT, "lc-0020", "green");
 }

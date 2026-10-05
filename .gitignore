@@ -356,6 +356,10 @@ runner/tests/.tmp/
 # Personal study progress (study coach spec §3): solutions, their history, the progress database
 .study/
 
+# Solutions live in .study/solutions (study coach spec §3); `pnpm check` reports any left in content folders
+problems/**/solution.*
+concepts/**/solution.*
+
 # Python bytecode caches
 __pycache__/
 *.py[cod]

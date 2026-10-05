@@ -1,11 +1,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
 import type { z } from "zod";
-import { type DocEntry, type ExerciseEntry, type ProblemEntry, type RepoModel, scanRepo, str, strList } from "../../lib/repo.ts";
-import { conceptFrontmatter, exerciseFrontmatter, problemFrontmatter } from "../../lib/schemas.ts";
+import { type ConceptEntry, type DocEntry, type ExerciseEntry, type ProblemEntry, type RepoModel, scanRepo, str, strList } from "../../lib/repo.ts";
+import { conceptFrontmatter, exerciseFrontmatter, LEGACY_PERSONAL_FIELDS, problemFrontmatter } from "../../lib/schemas.ts";
+import { studyRoot } from "../../runner/src/paths.ts";
 import { assertHiddenFilled, CaseFileError, formatPath, loadCaseFile } from "../../runner/src/schema.ts";
 import { loadStressCases } from "../../runner/src/stress.ts";
 import type { CaseFile } from "../../runner/src/types.ts";
+import { dbPath } from "../../study/store.ts";
+import { StripError, stripReadme } from "../../study/strip.ts";
 import { replaceAuto } from "./auto.ts";
 import { missingConcepts } from "./render.ts";
 
@@ -84,15 +87,45 @@ export async function checkRepo(root: string, options: CheckOptions = {}): Promi
     errors.push({ file, message });
   };
 
-  const validate = (entry: DocEntry, schema: z.ZodType): boolean => {
+  /**
+   * Personal progress left in content (spec D1, §10). While the study store does not exist (the user has not
+   * migrated yet) it is one warning; once .study/study.db exists, every place is an error that
+   * `pnpm study migrate` fixes.
+   */
+  const migrated = existsSync(dbPath(studyRoot(root)));
+  const personal: Issue[] = [];
+  const MIGRATE_HINT = "pnpm study migrate moves it to .study/";
+
+  /** Validates the content fields; personal keys are left to findPersonal. */
+  const validate = (entry: DocEntry, schema: z.ZodType, personalKeys: readonly string[]): boolean => {
     if (entry.error) {
       error(entry.rel, entry.error);
       return false;
     }
-    const parsed = schema.safeParse(entry.data);
+    const data = Object.fromEntries(Object.entries(entry.data).filter(([key]) => !personalKeys.includes(key)));
+    const parsed = schema.safeParse(data);
     if (parsed.success) return true;
     for (const issue of parsed.error.issues) error(entry.rel, `frontmatter ${formatPath(issue.path)}: ${issue.message}`);
     return false;
+  };
+
+  const findPersonal = (entry: ProblemEntry | ExerciseEntry | ConceptEntry): void => {
+    if (entry.error) return;
+    try {
+      const found = stripReadme(entry.head + entry.body, entry.kind);
+      const what = [...found.fields, ...(found.log ? ["## Log"] : []), ...(found.explanation !== null ? ['"My explanation" text'] : [])];
+      if (what.length > 0) personal.push({ file: entry.rel, message: `personal progress in content: ${what.join(", ")} (${MIGRATE_HINT})` });
+    } catch (caught) {
+      if (!(caught instanceof StripError)) throw caught;
+      personal.push({ file: entry.rel, message: `${caught.message} (fix it by hand, then run pnpm study migrate)` });
+    }
+  };
+
+  const findSolutions = (entry: ProblemEntry | ExerciseEntry): void => {
+    for (const lang of ["py", "ts"]) {
+      const file = path.join(entry.dir, `solution.${lang}`);
+      if (existsSync(file)) personal.push({ file: rel(file), message: "solution file in a content folder (pnpm study migrate archives it in .study/solutions)" });
+    }
   };
 
   const requireAuto = (entry: DocEntry, names: string[]): void => {
@@ -129,46 +162,40 @@ export async function checkRepo(root: string, options: CheckOptions = {}): Promi
     }
   };
 
-  const requireSolvedIn = (entry: DocEntry): void => {
-    if (entry.data.status === "solved" && strList(entry.data.solved_in).length === 0) {
-      error(entry.rel, "status is solved but solved_in is empty");
-    }
-  };
-
   for (const problem of repo.problems) {
-    if (validate(problem, problemFrontmatter)) {
+    if (validate(problem, problemFrontmatter, LEGACY_PERSONAL_FIELDS.problem)) {
       if (problem.data.id !== problem.folderId) {
         error(problem.rel, `id "${str(problem.data.id)}" does not match the folder id "${problem.folderId}"`);
       }
-      requireSolvedIn(problem);
     }
     requireAuto(problem, ["concepts"]);
+    findPersonal(problem);
+    findSolutions(problem);
     await checkStress(problem, requireCases(problem));
   }
 
   for (const exercise of repo.exercises) {
-    if (validate(exercise, exerciseFrontmatter)) {
+    if (validate(exercise, exerciseFrontmatter, LEGACY_PERSONAL_FIELDS.exercise)) {
       if (exercise.data.id !== exercise.folderId) {
         error(exercise.rel, `id "${str(exercise.data.id)}" does not match the folder id "${exercise.folderId}"`);
       }
       if (exercise.data.concept !== exercise.concept) {
         error(exercise.rel, `concept "${str(exercise.data.concept)}" does not match the parent folder "${exercise.concept}"`);
       }
-      requireSolvedIn(exercise);
     }
+    findPersonal(exercise);
+    findSolutions(exercise);
     await checkStress(exercise, requireCases(exercise));
   }
 
   for (const concept of repo.concepts) {
-    if (validate(concept, conceptFrontmatter)) {
+    if (validate(concept, conceptFrontmatter, LEGACY_PERSONAL_FIELDS.concept)) {
       if (concept.data.slug !== concept.slug) {
         error(concept.rel, `slug "${str(concept.data.slug)}" does not match the folder "${concept.slug}"`);
       }
-      if (concept.data.status === "mastered" && !sectionText(concept.body, "My explanation")) {
-        error(concept.rel, 'status is mastered but "My explanation" is empty');
-      }
     }
     requireAuto(concept, ["exercises", "problems"]);
+    findPersonal(concept);
   }
 
   const cycle = findCycle(repo);
@@ -188,6 +215,14 @@ export async function checkRepo(root: string, options: CheckOptions = {}): Promi
 
   for (const [slug, by] of missingConcepts(repo)) {
     warnings.push({ file: "concepts", message: `"${slug}" is referenced but not created (${by.join(", ")})` });
+  }
+
+  if (migrated) errors.push(...personal);
+  else if (personal.length > 0) {
+    warnings.push({
+      file: ".",
+      message: `${personal.length} place(s) still hold personal progress from before the study coach; ${MIGRATE_HINT} (study coach spec §9)`,
+    });
   }
   return { errors, warnings };
 }

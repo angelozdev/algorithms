@@ -104,3 +104,16 @@ test("the status bar shows the connection, the file and the shortcuts", async ({
   await expect(bar).toContainText(/(⌘↵|Ctrl\+Enter)\s*Run/);
   await expect(page.getByRole("status", { name: "Save status" })).toHaveText("Saved");
 });
+
+test("opening a problem starts nothing; running it starts an attempt that the home page shows in progress", async ({ page }) => {
+  const twoSum = () => page.getByRole("row", { name: /Two Sum/ });
+  await page.goto("/p/lc-0001");
+  await expect(page.getByRole("textbox", { name: "solution.py" })).toContainText("def twoSum");
+  await page.goto("/");
+  await expect(twoSum().getByRole("img", { name: "To do" })).toBeVisible();
+  await page.goto("/p/lc-0001");
+  await page.getByRole("button", { name: "Run", exact: true }).click();
+  await expect(page.getByRole("button", { name: /^Example 1:/ })).toBeVisible({ timeout: 20_000 });
+  await page.goto("/");
+  await expect(twoSum().getByRole("img", { name: "In progress" })).toBeVisible();
+});

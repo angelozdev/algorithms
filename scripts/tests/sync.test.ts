@@ -95,10 +95,9 @@ describe("sync", () => {
 
   it("never writes past an unclosed auto marker", () => {
     const root = makeStudyRepo();
-    const unclosed = conceptReadme({ slug: "arrays", title: "Arrays", status: "mastered", requires: [], explanation: "USER WROTE THIS" }).replace(
-      "<!-- auto:exercises -->\n<!-- /auto -->",
-      "<!-- auto:exercises -->",
-    );
+    const unclosed = conceptReadme({ slug: "arrays", title: "Arrays", requires: [] })
+      .replace("An analogy.", "USER WROTE THIS")
+      .replace("<!-- auto:exercises -->\n<!-- /auto -->", "<!-- auto:exercises -->");
     put(root, "concepts/arrays/README.md", unclosed);
     sync(root);
     const untouched = unclosed.slice(0, unclosed.indexOf("<!-- auto:problems -->"));

@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { checkRepo } from "../../scripts/lib/checks.ts";
 import { cleanupTempDirs, put } from "../../scripts/tests/fixture.ts";
 import { fixedClock } from "../clock.ts";
 import { type CliIo, runStudyCli } from "../commands.ts";
@@ -177,5 +178,13 @@ describe("pnpm study migrate", () => {
       "<!-- auto:concepts -->\n- [Sample map](../../concepts/sample-map/README.md)\n<!-- /auto -->",
     );
     expect(read(root, "concepts/INDEX.md")).not.toContain("## By status");
+  });
+
+  it("leaves a repo that pnpm check accepts, with no personal data left (spec §9.4)", async () => {
+    const root = makeLegacyRepo();
+    expect((await migrate(root)).code).toBe(0);
+    const report = await checkRepo(root);
+    expect(report.errors).toEqual([]);
+    expect(report.warnings).toEqual([]);
   });
 });
