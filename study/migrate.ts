@@ -4,6 +4,7 @@ import path from "node:path";
 import { scanRepo } from "../lib/repo.ts";
 import { historyPath, historyStamp, studyRoot } from "../runner/src/paths.ts";
 import { LANGS } from "../runner/src/types.ts";
+import { sync } from "../scripts/lib/sync.ts";
 import type { Clock } from "./clock.ts";
 import { initStudy } from "./init.ts";
 import { refreshState } from "./state.ts";
@@ -14,7 +15,8 @@ export type MigrationAction =
   | { kind: "init"; dir: string; exists: boolean }
   | { kind: "archive"; from: string; to: string; tracked: boolean }
   | { kind: "explanation"; slug: string; to: string; text: string; keep: "readme" | "same" | "study"; history: string | null }
-  | { kind: "strip"; file: string; text: string; fields: string[]; log: boolean; explanation: boolean };
+  | { kind: "strip"; file: string; text: string; fields: string[]; log: boolean; explanation: boolean }
+  | { kind: "sync" };
 
 export interface MigrationPlan {
   /** Content root. */
@@ -80,12 +82,13 @@ export function planMigration(root: string, at: Date): MigrationPlan {
       actions.push({ kind: "strip", file: entry.readme, text: stripped.text, fields: stripped.fields, log: stripped.log, explanation: stripped.explanation !== null });
     }
   }
+  actions.push({ kind: "sync" });
   return { root, dir, at, actions, blockers };
 }
 
-/** True when the plan only re-initializes an existing store. */
+/** True when the plan only re-initializes an existing store and/or regenerates the indexes. */
 export function nothingToMigrate(plan: MigrationPlan): boolean {
-  return plan.actions.every((action) => action.kind === "init" && action.exists);
+  return plan.actions.every((action) => (action.kind === "init" && action.exists) || action.kind === "sync");
 }
 
 /** One line per action, paths relative to the content root. */
@@ -108,6 +111,8 @@ export function describeAction(plan: MigrationPlan, action: MigrationAction): st
       const what = [...action.fields, ...(action.log ? ["## Log"] : []), ...(action.explanation ? ["My explanation text"] : [])];
       return line("strip", `${show(action.file)} (${what.join(", ")})`);
     }
+    case "sync":
+      return line("sync", "INDEX.md, concepts/INDEX.md and the auto-sections, as pure content");
   }
 }
 
@@ -179,6 +184,9 @@ export function applyMigration(plan: MigrationPlan, options: { clock: Clock; tim
         break;
       case "strip":
         writeAtomic(action.file, action.text);
+        break;
+      case "sync":
+        sync(plan.root);
         break;
     }
   }

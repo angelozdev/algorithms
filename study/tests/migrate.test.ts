@@ -42,6 +42,7 @@ describe("pnpm study migrate --dry-run", () => {
         "strip       concepts/sample-map/exercises/01-first/README.md (status, hints, solution_revealed, solved_in, ## Log)",
         "explanation sample-map → .study/explanations/sample-map.md",
         "strip       concepts/sample-map/README.md (status, My explanation text)",
+        "sync        INDEX.md, concepts/INDEX.md and the auto-sections, as pure content",
         "Dry run: nothing was changed. Run pnpm study migrate to apply.",
       ]),
     );
@@ -164,5 +165,17 @@ describe("pnpm study migrate", () => {
     const tree = snapshotTree(root);
     expect(() => applyMigration(plan, { clock: fixedClock(T0), timezone: "UTC" })).toThrow(MigrationError);
     expect(snapshotTree(root)).toEqual(tree);
+  });
+
+  it("regenerates INDEX.md and the auto-sections as pure content", async () => {
+    const root = makeLegacyRepo();
+    expect((await migrate(root)).code).toBe(0);
+    const index = read(root, "INDEX.md");
+    expect(index).toContain("- [lc-9001 · Sample Sum](problems/lc-9001-sample-sum/README.md) · easy");
+    expect(index).not.toMatch(/[✓…↺○]/);
+    expect(read(root, "problems/lc-9001-sample-sum/README.md")).toContain(
+      "<!-- auto:concepts -->\n- [Sample map](../../concepts/sample-map/README.md)\n<!-- /auto -->",
+    );
+    expect(read(root, "concepts/INDEX.md")).not.toContain("## By status");
   });
 });
