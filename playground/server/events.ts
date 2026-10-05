@@ -28,6 +28,7 @@ function solutionEvent(target: string, name: string, file: string): RepoEvent | 
 /** Under the study root: state.json, solutions/problems/<id>/solution.<lang> and solutions/exercises/<concept>/<NN>/solution.<lang>. */
 function classifyStudy(study: string, parts: string[], file: string): RepoEvent | null {
   if (parts.length === 1 && parts[0] === STATE_FILE) return { kind: "progress", version: readState(study)?.version ?? "missing" };
+  if (parts[0] === "explanations" && parts.length === 2 && parts[1].endsWith(".md")) return { kind: "readme", concept: parts[1].slice(0, -3) };
   if (parts[0] !== "solutions") return null;
   if (parts[1] === "problems" && parts.length === 4) return solutionEvent(parts[2], parts[3], file);
   if (parts[1] === "exercises" && parts.length === 5) return solutionEvent(`${parts[2]}/${parts[3]}`, parts[4], file);
@@ -65,6 +66,7 @@ export function classify(root: string, file: string, study: string = studyRoot(r
 function keptInStudy(parts: string[]): boolean {
   if (parts.length === 0) return true;
   if (parts.length === 1 && parts[0] === STATE_FILE) return true;
+  if (parts[0] === "explanations") return parts.length === 1 || (parts.length === 2 && parts[1].endsWith(".md"));
   if (parts[0] !== "solutions") return false;
   return !parts.some((part) => part === "history" || IGNORED_PART.test(part));
 }

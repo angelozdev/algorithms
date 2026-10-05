@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { explanationIssues, joinExplanation, splitExplanation } from "../../lib/explanation.ts";
+import { joinExplanation, splitExplanation } from "../../lib/explanation.ts";
 
 const BODY =
   "# Hash map\n\n## Intuition\n\nAn analogy.\n\n## My explanation\n\n<!-- USER: in your own words -->\n\n## Problems\n\n- one\n";
@@ -28,21 +28,5 @@ describe("splitExplanation", () => {
     const joined = joinExplanation(split, text);
     expect(splitExplanation(joined)!.text).toBe(text);
     expect(splitExplanation(joined)!.after).toBe(split.after);
-  });
-});
-
-describe("explanationIssues", () => {
-  const split = splitExplanation(BODY)!;
-
-  it("accepts prose, lists and ### headings", () => {
-    expect(explanationIssues(split, "A hash map turns keys into positions.\n\n### Cost\n\n- O(1) average")).toEqual([]);
-  });
-
-  it("rejects headings that would end the section, auto markers and an open code block", () => {
-    expect(explanationIssues(split, "## Mine")[0]).toMatch(/### or deeper/);
-    expect(explanationIssues(split, "# Mine")[0]).toMatch(/### or deeper/);
-    expect(explanationIssues(split, "Title\n---")[0]).toMatch(/### or deeper/);
-    expect(explanationIssues(split, "<!-- /auto -->")[0]).toMatch(/auto/);
-    expect(explanationIssues(split, "```python\nx = 1")[0]).toMatch(/code block/);
   });
 });

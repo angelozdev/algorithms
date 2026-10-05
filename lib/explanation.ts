@@ -50,19 +50,3 @@ export function joinExplanation(split: ExplanationSplit, text: string): string {
   const blocks = [split.heading, ...split.comments, ...(text.trim() ? [text.trim()] : [])];
   return `${split.before}${blocks.join("\n\n")}${split.after ? "\n\n" : "\n"}${split.after}`;
 }
-
-/** Why `text` cannot be saved into the section, or [] when it can. */
-export function explanationIssues(split: ExplanationSplit, text: string): string[] {
-  const issues: string[] = [];
-  if (fromMarkdown(text).children.some(endsSection)) {
-    issues.push("Use ### or deeper for headings: a # or ## heading (or a line of --- under text) would end the section.");
-  }
-  if (/<!--\s*\/?auto/.test(text)) issues.push("Remove the <!-- auto --> markers: those blocks belong to pnpm sync.");
-  if (issues.length === 0) {
-    const again = splitExplanation(joinExplanation(split, text));
-    if (!again || again.before !== split.before || again.after !== split.after) {
-      issues.push("The text would change the rest of the README. Is a code block left open (``` without its closing ```)?");
-    }
-  }
-  return issues;
-}

@@ -1,11 +1,12 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { Hono } from "hono";
 import { z } from "zod";
-import { explanationIssues, joinExplanation, splitExplanation } from "../../lib/explanation.ts";
-import { parseMarkdown } from "../../lib/frontmatter.ts";
+import { splitExplanation } from "../../lib/explanation.ts";
 import { type ConceptEntry, scanRepo, str } from "../../lib/repo.ts";
+import { studyRoot } from "../../runner/src/paths.ts";
 import { contentVersion } from "./solutions.ts";
-import { conceptStatus } from "./targets.ts";
+import { conceptView, loadProgress } from "./targets.ts";
 import type { ConceptData } from "./types.ts";
 import { valid } from "./validate.ts";
 
@@ -14,20 +15,30 @@ export function findConcept(root: string, slug: string): ConceptEntry | null {
   return scanRepo(root).concepts.find((concept) => concept.slug === slug) ?? null;
 }
 
-const readRaw = (concept: ConceptEntry): string => (existsSync(concept.readme) ? readFileSync(concept.readme, "utf8") : "");
+/** .study/explanations/<slug>.md (spec §3): the user's "My explanation", kept out of the public README. */
+export function explanationFile(root: string, slug: string): string {
+  return path.join(studyRoot(root), "explanations", `${slug}.md`);
+}
 
-export function conceptData(concept: ConceptEntry): ConceptData {
+const readOrNull = (file: string): string | null => (existsSync(file) ? readFileSync(file, "utf8") : null);
+
+export function conceptData(root: string, concept: ConceptEntry): ConceptData {
+  const exercises = scanRepo(root).exercises.filter((exercise) => exercise.concept === concept.slug);
+  const stored = readOrNull(explanationFile(root, concept.slug));
   const base = {
     slug: concept.slug,
     title: str(concept.data.title, concept.slug),
-    status: conceptStatus(concept.data.status),
+    status: conceptView(concept, exercises, loadProgress(root)),
     readme: concept.rel,
-    version: contentVersion(readRaw(concept)),
+    // The README and the explanation together: a change to either since the page loaded is a conflict.
+    version: contentVersion(`${readOrNull(concept.readme) ?? ""}\u0000${stored ?? ""}`),
   };
   if (concept.error) return { ...base, readmeError: concept.error, before: "", explanation: null, after: "" };
   const split = splitExplanation(concept.body);
-  if (!split) return { ...base, readmeError: null, before: concept.body, explanation: null, after: "" };
-  return { ...base, readmeError: null, before: split.before, explanation: split.text, after: split.after };
+  // LEGACY: until `pnpm study migrate` moves it, the text may still sit in the README's section.
+  const explanation = stored !== null ? stored.trim() : (split?.text ?? "");
+  if (!split) return { ...base, readmeError: null, before: concept.body, explanation, after: "" };
+  return { ...base, readmeError: null, before: split.before, explanation, after: split.after };
 }
 
 const unknownConcept = (slug: string) => ({ error: `There is no concept "${slug}".` });
@@ -38,7 +49,7 @@ export function conceptRoutes(root: string) {
       const { slug } = c.req.valid("query");
       const concept = findConcept(root, slug);
       if (!concept) return c.json(unknownConcept(slug), 404);
-      return c.json(conceptData(concept), 200);
+      return c.json(conceptData(root, concept), 200);
     })
     .put(
       "/concept/explanation",
@@ -47,17 +58,14 @@ export function conceptRoutes(root: string) {
         const request = c.req.valid("json");
         const concept = findConcept(root, request.slug);
         if (!concept) return c.json(unknownConcept(request.slug), 404);
-        const raw = readRaw(concept);
-        if (contentVersion(raw) !== request.baseVersion) return c.json(conceptData(concept), 409);
+        const current = conceptData(root, concept);
+        if (current.version !== request.baseVersion) return c.json(current, 409);
         if (concept.error) return c.json({ error: `${concept.rel}: ${concept.error}` }, 422);
-        const { head, body } = parseMarkdown(raw);
-        const split = splitExplanation(body);
-        if (!split) return c.json({ error: `${concept.rel} has no "## My explanation" section. Run pnpm check.` }, 422);
-        const issues = explanationIssues(split, request.text);
-        if (issues.length > 0) return c.json({ error: issues.join(" "), issues }, 422);
-        const next = head + joinExplanation(split, request.text);
-        writeFileSync(concept.readme, next);
-        return c.json({ version: contentVersion(next) }, 200);
+        const file = explanationFile(root, concept.slug);
+        mkdirSync(path.dirname(file), { recursive: true });
+        const text = request.text.trim();
+        writeFileSync(file, text ? `${text}\n` : "");
+        return c.json({ version: conceptData(root, concept).version }, 200);
       },
     );
 }

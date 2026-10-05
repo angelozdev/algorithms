@@ -83,11 +83,11 @@ export interface ConceptData {
   readme: string;
   /** README body up to the "## My explanation" heading (the whole body when the section is missing). */
   before: string;
-  /** The user's text without the section's leading HTML comments; null when the section is missing. */
+  /** The user's text: .study/explanations/<slug>.md, or (until pnpm study migrate) the README section's text; "" when there is none; null only when the README is broken. */
   explanation: string | null;
   /** From the next heading to the end ("" when the section is last or missing). */
   after: string;
-  /** Version of the whole README file. */
+  /** Version of the README and of .study/explanations/<slug>.md together. */
   version: string;
   readmeError: string | null;
 }

@@ -1,12 +1,15 @@
 import { existsSync } from "node:fs";
 import { Hono } from "hono";
 import { z } from "zod";
-import { isInProgress, scanRepo, str, strList } from "../../lib/repo.ts";
+import { isInProgress, scanRepo, str, strList, type ConceptEntry, type ExerciseEntry, type ProblemEntry } from "../../lib/repo.ts";
 import { listTargets } from "../../runner/src/resolver.ts";
 import { assertHiddenFilled, CaseFileError, loadCaseFile } from "../../runner/src/schema.ts";
 import { solutionPath } from "../../runner/src/stubs.ts";
 import type { Target } from "../../runner/src/types.ts";
 import { problemGroups } from "../../scripts/lib/render.ts";
+import type { ItemStatusValue } from "../../study/schema.ts";
+import { allItemProgress, conceptProgress, emptyProgress, type ItemProgress } from "../../study/status.ts";
+import { cachedStudy, type Study } from "../../study/store.ts";
 import type { ConceptStatus, HomeData, ItemStatus, TargetData } from "./types.ts";
 import { valid } from "./validate.ts";
 
@@ -26,36 +29,76 @@ export function findTarget(root: string, id: string): Target | null {
   return listTargets(root).find((target) => target.id === id) ?? null;
 }
 
+/** The web's status words, kept to limit churn (spec §10), now derived from the study store's item_status view. */
+const WEB_STATUS: Record<ItemStatusValue, ItemStatus> = { todo: "todo", in_progress: "solving", solved: "solved", revealed: "revealed" };
+
+/** Recorded progress, or null before `pnpm study init` / `migrate`: until then the old frontmatter fields still speak. */
+export interface Progress {
+  study: Study;
+  items: Map<string, ItemProgress>;
+}
+
+export function loadProgress(root: string): Progress | null {
+  const study = cachedStudy(root);
+  return study ? { study, items: allItemProgress(study) } : null;
+}
+
+export interface ItemView {
+  status: ItemStatus;
+  inProgress: boolean;
+  hints: number;
+}
+
+export function itemView(entry: ProblemEntry | ExerciseEntry, progress: Progress | null): ItemView {
+  if (!progress) {
+    // LEGACY: README frontmatter, until `pnpm study migrate` strips it.
+    return { status: itemStatus(entry.data.status), inProgress: isInProgress(entry), hints: typeof entry.data.hints === "number" ? entry.data.hints : 0 };
+  }
+  const item = progress.items.get(entry.folderId) ?? emptyProgress(entry.folderId);
+  const status = WEB_STATUS[item.status];
+  return { status, inProgress: status === "solving", hints: item.hints };
+}
+
+/** mastered once learned; learning once the explanation is accepted or an exercise attempted; new otherwise. */
+export function conceptView(concept: ConceptEntry, exercises: readonly ExerciseEntry[], progress: Progress | null): ConceptStatus {
+  if (!progress) return conceptStatus(concept.data.status); // LEGACY
+  const state = conceptProgress(progress.study, concept.slug, exercises.map((exercise) => exercise.folderId), progress.items);
+  if (state.learned) return "mastered";
+  return state.accepted || state.exercises.some((exercise) => exercise.status !== "todo") ? "learning" : "new";
+}
+
 export function homeData(root: string): HomeData {
   const repo = scanRepo(root);
+  const progress = loadProgress(root);
   return {
-    problems: repo.problems.map((p) => ({
-      id: p.folderId,
-      title: str(p.data.title, p.folder),
-      difficulty: str(p.data.difficulty) || null,
-      patterns: strList(p.data.patterns),
-      concepts: strList(p.data.concepts),
-      lists: strList(p.data.lists),
-      status: itemStatus(p.data.status),
-      inProgress: isInProgress(p),
-      error: p.error,
-    })),
+    problems: repo.problems.map((p) => {
+      const view = itemView(p, progress);
+      return {
+        id: p.folderId,
+        title: str(p.data.title, p.folder),
+        difficulty: str(p.data.difficulty) || null,
+        patterns: strList(p.data.patterns),
+        concepts: strList(p.data.concepts),
+        lists: strList(p.data.lists),
+        status: view.status,
+        inProgress: view.inProgress,
+        error: p.error,
+      };
+    }),
     groups: problemGroups(repo).map((group) => ({ pattern: group.pattern, ids: group.problems.map((p) => p.folderId) })),
-    concepts: repo.concepts.map((c) => ({
-      slug: c.slug,
-      title: str(c.data.title, c.slug),
-      status: conceptStatus(c.data.status),
-      error: c.error,
-      exercises: repo.exercises
-        .filter((e) => e.concept === c.slug)
-        .map((e) => ({
-          id: e.folderId,
-          title: str(e.data.title, e.folder),
-          status: itemStatus(e.data.status),
-          inProgress: isInProgress(e),
-          error: e.error,
-        })),
-    })),
+    concepts: repo.concepts.map((c) => {
+      const exercises = repo.exercises.filter((e) => e.concept === c.slug);
+      return {
+        slug: c.slug,
+        title: str(c.data.title, c.slug),
+        status: conceptView(c, exercises, progress),
+        error: c.error,
+        exercises: exercises.map((e) => {
+          const view = itemView(e, progress);
+          return { id: e.folderId, title: str(e.data.title, e.folder), status: view.status, inProgress: view.inProgress, error: e.error };
+        }),
+      };
+    }),
   };
 }
 
@@ -63,6 +106,7 @@ export function targetData(root: string, target: Target): TargetData {
   const repo = scanRepo(root);
   const entry = [...repo.problems, ...repo.exercises].find((e) => e.dir === target.dir);
   const data = entry?.data ?? {};
+  const view: ItemView = entry ? itemView(entry, loadProgress(root)) : { status: "todo", inProgress: false, hints: 0 };
   let signature: TargetData["signature"] = null;
   let exampleInput: unknown = null;
   let caseError: string | null = null;
@@ -84,8 +128,8 @@ export function targetData(root: string, target: Target): TargetData {
     readmeError: entry ? entry.error : "README.md is missing",
     difficulty: str(data.difficulty) || null,
     url: str(data.url) || null,
-    status: itemStatus(data.status),
-    hints: typeof data.hints === "number" ? data.hints : 0,
+    status: view.status,
+    hints: view.hints,
     signature,
     exampleInput,
     caseError,

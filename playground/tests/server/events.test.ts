@@ -76,6 +76,13 @@ describe("classify", () => {
     expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/state.json")).toBe(false);
     expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/.state.json.123.tmp")).toBe(true);
   });
+
+  it("turns a change to .study/explanations/<slug>.md into that concept's readme event", () => {
+    expect(classify(root, "/repo/.study/explanations/hash-map.md")).toEqual({ kind: "readme", concept: "hash-map" });
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations/hash-map.md")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations/history/hash-map-2026-10-04T10-00-00-000Z-legacy.md")).toBe(true);
+  });
 });
 
 describe("ignoredPath", () => {

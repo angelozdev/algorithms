@@ -138,6 +138,7 @@ export function resetRepo(): void {
     rmSync(repoFile(`problems/lc-0001-two-sum/solution.${lang}`), { force: true });
     rmSync(repoFile(`.study/solutions/problems/lc-0001/solution.${lang}`), { force: true });
   }
+  rmSync(repoFile(".study/explanations/hash-map.md"), { force: true });
   for (const [rel, content] of Object.entries(FILES)) {
     mkdirSync(path.dirname(repoFile(rel)), { recursive: true });
     writeFileSync(repoFile(rel), content);

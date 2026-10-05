@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { expect, type Route, test } from "@playwright/test";
-import { EXPLANATION_NOTE, repoFile, resetRepo, SOLUTION_PY, TWO_SUM_PY } from "./fixture.ts";
+import { repoFile, resetRepo, SOLUTION_PY, TWO_SUM_PY } from "./fixture.ts";
 import { replaceCode } from "./helpers.ts";
 
 const SOLUTION = SOLUTION_PY;
@@ -68,8 +68,8 @@ test("a concept link opens next to the editor, and Back returns to the statement
   await expect(page.getByRole("heading", { name: "1. Two Sum" })).toBeVisible();
 });
 
-test("My explanation is saved into the README and nothing else changes", async ({ page }) => {
-  const before = readFileSync(repoFile("concepts/hash-map/README.md"), "utf8");
+test("My explanation is saved in .study/explanations and the README stays as it is", async ({ page }) => {
+  const readme = readFileSync(repoFile("concepts/hash-map/README.md"), "utf8");
   const text = "Un mapa hash convierte la clave en una posición. 🎟️";
   await page.goto("/c/hash-map");
   await page.getByRole("button", { name: "Edit" }).click();
@@ -78,9 +78,8 @@ test("My explanation is saved into the README and nothing else changes", async (
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(page.getByRole("button", { name: "Edit" })).toBeVisible();
   await expect(page.getByText(text)).toBeVisible();
-  expect(readFileSync(repoFile("concepts/hash-map/README.md"), "utf8")).toBe(
-    before.replace(`${EXPLANATION_NOTE}\n\n## Problems`, `${EXPLANATION_NOTE}\n\n${text}\n\n## Problems`),
-  );
+  expect(readFileSync(repoFile(".study/explanations/hash-map.md"), "utf8")).toBe(`${text}\n`);
+  expect(readFileSync(repoFile("concepts/hash-map/README.md"), "utf8")).toBe(readme);
 });
 
 test("leaving with an edit the server could not save asks first, and the edit is saved on the way out", async ({ page }) => {
