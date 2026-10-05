@@ -13,6 +13,8 @@ process.env.CHOKIDAR_INTERVAL = "50";
 
 afterEach(removeRepos);
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /** Reads Server-Sent Events from a response body, skipping comments. */
 async function openEvents(app: App) {
   const res = await call(app, "/api/events");
@@ -158,6 +160,10 @@ describe("GET /api/events", () => {
       // Phases a fresh or seeded store never has, so both writes are real changes.
       const first = writeStateFile(path.join(root, ".study"), { phase: "expand", inProgress: [], today: null }).state;
       expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: first.version });
+      // chokidar drops every further "change" of a path for 50ms after reporting one (its _throttle), and never
+      // reports it later: a second write that a 50ms poll catches inside that window would be lost for good. The
+      // window's timer started before the first event reached us, so it has always expired when this sleep ends.
+      await sleep(120);
       const second = writeStateFile(path.join(root, ".study"), { phase: "pro", inProgress: [], today: null }).state;
       expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: second.version });
     } finally {
