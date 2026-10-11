@@ -67,17 +67,11 @@ function archive(file: string, dest: string): void {
 }
 
 /**
- * `POST /api/study/start/<id>` and the user's `pnpm study start <id>` (spec §7, "Start review, from scratch"):
- * 1. archives each current solution to history/<timestamp>.<lang> (a solution equal to the stub is just replaced);
- * 2. writes a fresh stub, in every language that had a solution (or `lang`, or the profile's language);
- * 3. opens the attempt, joining the open exam when the gate says so.
- * Items that were never tried are refused. Claude never runs this: the hook denies `study start` and the route.
+ * Archives each current solution to history/<timestamp>.<lang> (a solution equal to the stub is just removed), then
+ * writes a fresh stub in every language that had a solution (or `lang`, or the profile's language). Never overwrites
+ * history: a clash throws EEXIST before anything is deleted. Start review and the item reset share it.
  */
-export function startAttempt(study: Study, root: string, target: Target, now: Date, options: { lang?: Lang } = {}): StartResult {
-  const progress = itemProgress(study, target.id);
-  if (progress.open) return { started: false, reason: "open" };
-  const gate = startGate(study, root, target.id, now);
-  if (!gate && progress.status === "todo") return { started: false, reason: "new" };
+export function freshStubs(study: Study, target: Target, now: Date, options: { lang?: Lang } = {}): { archived: string[]; solutions: string[] } {
   const caseFile = loadCaseFile(target.dir);
   const archived: string[] = [];
   const langs = new Set<Lang>(options.lang ? [options.lang] : []);
@@ -100,6 +94,21 @@ export function startAttempt(study: Study, root: string, target: Target, now: Da
     writeFileSync(file, renderStub(caseFile, lang));
     return file;
   });
+  return { archived, solutions };
+}
+
+/**
+ * `POST /api/study/start/<id>` and the user's `pnpm study start <id>` (spec §7, "Start review, from scratch"):
+ * 1–2. `freshStubs`.
+ * 3. opens the attempt, joining the open exam when the gate says so.
+ * Items that were never tried are refused. Claude never runs this: the hook denies `study start` and the route.
+ */
+export function startAttempt(study: Study, root: string, target: Target, now: Date, options: { lang?: Lang } = {}): StartResult {
+  const progress = itemProgress(study, target.id);
+  if (progress.open) return { started: false, reason: "open" };
+  const gate = startGate(study, root, target.id, now);
+  if (!gate && progress.status === "todo") return { started: false, reason: "new" };
+  const { archived, solutions } = freshStubs(study, target, now, options);
   try {
     const attemptId = inTransaction(study, (tx) => openAttempt(tx, target.id, now, { examId: gate?.examId ?? undefined }));
     refreshState(study);

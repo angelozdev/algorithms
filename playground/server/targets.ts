@@ -134,6 +134,7 @@ export function targetData(root: string, target: Target): TargetData {
     difficulty: str(data.difficulty) || null,
     url: str(data.url) || null,
     status: view.status,
+    inProgress: view.inProgress,
     hints: view.hints,
     signature,
     exampleInput,

@@ -29,6 +29,7 @@ const target = (extra: Partial<TargetData>): TargetData => ({
   difficulty: "easy",
   url: null,
   status: "solved",
+  inProgress: false,
   hints: 0,
   signature: null,
   exampleInput: null,

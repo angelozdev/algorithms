@@ -185,3 +185,53 @@ describe("pnpm study status --json", () => {
     expect((await r.cli("status", "--json")).json().coach).toEqual({ started: true, preset: "demo-list", phase: "bases", paused: true, expansionList: null });
   });
 });
+
+describe("pnpm study reset (item reset spec §5.1)", () => {
+  it("needs exactly one action", async () => {
+    const r = repo();
+    expect(await r.cli("reset", "lc-9101")).toMatchObject({ code: 1, err: expect.stringContaining("Pass exactly one of --code, --attempt or --all") });
+    expect(await r.cli("reset", "lc-9101", "--code", "--all")).toMatchObject({ code: 1 });
+  });
+
+  it("refuses with exit 1 when there is no study database yet (spec §5.1: no database is a refusal)", async () => {
+    const r = repo({ init: false });
+    expect(await r.cli("reset", "lc-9101", "--code")).toMatchObject({ code: 1, err: expect.stringContaining("there is no study database yet") });
+  });
+
+  it("cleans the code: the old solution goes to history/", async () => {
+    const r = repo();
+    await r.cli("curriculum", "set", "demo-list");
+    put(r.root, ".study/solutions/problems/lc-9101/solution.py", "# my earlier work\n");
+    expect(await r.cli("reset", "lc-9101", "--code")).toMatchObject({
+      code: 0,
+      out: "Cleaned the code of lc-9101.\nArchived: .study/solutions/problems/lc-9101/history/2026-10-05T14-00-00-000Z.py.\nFresh stub: .study/solutions/problems/lc-9101/solution.py.\n",
+    });
+  });
+
+  it("discards the open attempt, and says so when there is none", async () => {
+    const r = repo();
+    await r.cli("curriculum", "set", "demo-list");
+    expect(await r.cli("reset", "lc-9101", "--attempt")).toMatchObject({ code: 1, err: "lc-9101 has no open attempt to discard.\n" });
+    r.withStudy((study) => recordWork(study, "lc-9101", { type: "save", lang: "py", differsFromStub: true }, "playground"));
+    expect(await r.cli("reset", "lc-9101", "--attempt")).toMatchObject({
+      code: 0,
+      out: "Discarded the open attempt of lc-9101 (0 hints, 0 min).\nFresh stub: .study/solutions/problems/lc-9101/solution.py.\n",
+    });
+  });
+
+  it("erases only with --yes, after saying what goes", async () => {
+    const r = repo();
+    await r.cli("curriculum", "set", "demo-list");
+    r.withStudy((study) => recordWork(study, "lc-9101", { type: "run", lang: "py", green: true }, "cli"));
+    expect(await r.cli("reset", "lc-9101", "--all")).toMatchObject({
+      code: 1,
+      err: "This erases lc-9101 for good: 1 attempt, 0 hints, its review schedule and 0 saved versions.\nRun it again with --yes to erase it.\n",
+    });
+    expect((await r.cli("status", "lc-9101", "--json")).json()).toMatchObject({ status: "solved" });
+    expect(await r.cli("reset", "lc-9101", "--all", "--yes")).toMatchObject({
+      code: 0,
+      out: "Erased lc-9101: 1 attempt, 0 hints, its review schedule and 0 saved versions.\n",
+    });
+    expect((await r.cli("status", "lc-9101", "--json")).json()).toMatchObject({ status: "todo" });
+  });
+});

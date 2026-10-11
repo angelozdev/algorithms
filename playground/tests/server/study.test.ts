@@ -3,11 +3,14 @@ import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { put } from "../../../scripts/tests/fixture.ts";
 import { fixedClock } from "../../../study/clock.ts";
+import { ensurePlan } from "../../../study/plan.ts";
 import { recordWork } from "../../../study/record.ts";
-import { openStudy } from "../../../study/store.ts";
-import { setCurriculum } from "../../../study/switch.ts";
+import { startAttempt } from "../../../study/start.ts";
+import { cachedStudy, openStudy } from "../../../study/store.ts";
+import { forcePhase, setCurriculum } from "../../../study/switch.ts";
 import { pendingAnnouncements } from "../../../study/today.ts";
 import { createApp } from "../../server/app.ts";
+import { findTarget } from "../../server/targets.ts";
 import { call, makeRepo, PY_SUM, removeRepos } from "./helpers.ts";
 
 afterEach(() => {
@@ -131,5 +134,47 @@ describe("POST /api/study/start/:id", () => {
     });
     expect((await call(app, "/api/study/start/lc-9999", { json: { lang: "py" } })).status).toBe(404);
     expect(existsSync(path.join(makeRepo({ study: false }), ".study"))).toBe(false);
+  });
+});
+
+describe("/api/study/reset/:id (item reset spec §5.2)", () => {
+  it("previews and runs the three resets", async () => {
+    const root = coachRepo(); // lc-0020 solved, its solution PY_SUM on disk
+    const app = createApp({ root });
+    const folder = path.join(root, ".study/solutions/problems/lc-0020");
+    expect((await json(await call(app, "/api/study/reset/lc-0020"))).body).toEqual({ open: null, attempts: 1, hints: 0, versions: 0, examLocked: false });
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "attempt" } }))).toEqual({
+      status: 409,
+      body: { error: "lc-0020 has no open attempt to discard." },
+    });
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "code" } }))).toEqual({ status: 200, body: { action: "code" } });
+    expect(readFileSync(path.join(folder, "solution.py"), "utf8")).not.toBe(PY_SUM);
+    expect(readdirSync(path.join(folder, "history"))).toHaveLength(1);
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "all" } }))).toEqual({ status: 200, body: { action: "all" } });
+    expect(existsSync(folder)).toBe(false);
+    expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "todo", inProgress: false });
+  });
+
+  it("takes exercise ids, and answers 404, 400 and 409 for an unknown id, a bad action and no database", async () => {
+    const app = createApp({ root: coachRepo() });
+    expect((await call(app, "/api/study/reset/hash-map/01", { method: "POST", json: { action: "all" } })).status).toBe(200);
+    expect((await call(app, "/api/study/reset/lc-9999")).status).toBe(404);
+    expect((await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "nuke" } })).status).toBe(400);
+    expect((await call(createApp({ root: makeRepo({ study: false }) }), "/api/study/reset/lc-0001")).status).toBe(409);
+  });
+
+  it("locks attempt and all for an item with an exam attempt, while code still cleans it (spec R6)", async () => {
+    const root = coachRepo();
+    const app = createApp({ root });
+    const study = cachedStudy(root)!;
+    const now = new Date(NOW);
+    forcePhase(study, "master", now);
+    const id = ensurePlan(study, root, now)!.items[0].itemId;
+    expect(startAttempt(study, root, findTarget(root, id)!, now)).toMatchObject({ started: true, kind: "exam" });
+    expect((await json(await call(app, `/api/study/reset/${id}`))).body).toMatchObject({ examLocked: true });
+    const locked = { error: `${id} has an exam attempt: only its code can be cleaned.` };
+    expect(await json(await call(app, `/api/study/reset/${id}`, { method: "POST", json: { action: "attempt" } }))).toEqual({ status: 409, body: locked });
+    expect(await json(await call(app, `/api/study/reset/${id}`, { method: "POST", json: { action: "all" } }))).toEqual({ status: 409, body: locked });
+    expect((await call(app, `/api/study/reset/${id}`, { method: "POST", json: { action: "code" } })).status).toBe(200);
   });
 });

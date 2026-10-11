@@ -157,7 +157,14 @@ describe("statuses from the study store (study coach spec §10)", () => {
       ["lc-0020", "solving", true],
     ]);
     expect(body.concepts[0]).toMatchObject({ status: "learning", exercises: [{ id: "hash-map/01", status: "revealed", inProgress: false }] });
-    expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "solving", hints: 1 });
+    expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "solving", inProgress: true, hints: 1 });
+  });
+
+  it("leave an item that was only opened out of progress, though opening wrote its stub", async () => {
+    const root = makeRepo();
+    const app = createApp({ root });
+    await call(app, "/api/solution?id=lc-0020&lang=ts");
+    expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "todo", inProgress: false, solutions: { py: false, ts: true } });
   });
 
   it("keep reading the old frontmatter for items and concepts while there is no study database", async () => {
@@ -179,5 +186,17 @@ describe("statuses from the study store (study coach spec §10)", () => {
     expect(body.problems[0]).toMatchObject({ id: "lc-0001", status: "solved" });
     expect(body.concepts[0]).toMatchObject({ slug: "hash-map", status: "learning" });
     expect((await json(await call(app, "/api/target?id=lc-0001"))).body).toMatchObject({ status: "solved", hints: 2 });
+  });
+
+  it("keep reading a todo item with a solution file as in progress while there is no study database", async () => {
+    const root = makeRepo({ study: false });
+    put(
+      root,
+      "problems/lc-0020-valid-parentheses/README.md",
+      "---\nid: lc-0020\ntitle: Valid Parentheses\ndifficulty: easy\npatterns: [stack]\nconcepts: []\nstatus: todo\n---\n# Valid Parentheses\n",
+    );
+    put(root, "problems/lc-0020-valid-parentheses/solution.py", PY_SUM);
+    const { body } = await json(await call(createApp({ root }), "/api/target?id=lc-0020"));
+    expect(body).toMatchObject({ status: "todo", inProgress: true });
   });
 });

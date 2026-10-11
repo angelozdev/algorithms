@@ -17,6 +17,7 @@ const target = (extra: Partial<TargetData> = {}): TargetData => ({
   difficulty: "medium",
   url: "https://leetcode.com/problems/merge-two-sorted-lists/",
   status: "solving",
+  inProgress: true,
   hints: 1,
   signature: null,
   exampleInput: null,
@@ -82,8 +83,14 @@ describe("WorkHeader", () => {
     expect(screen.getByRole("link", { name: "Open the original problem" })).toHaveAttribute("href", "https://leetcode.com/problems/merge-two-sorted-lists/");
   });
 
-  it("reads a todo problem with a solution file on disk as in progress, like the home page does", async () => {
-    await renderHeader(target({ status: "todo", solutions: { py: true, ts: false } }), HOME);
+  it("reads a todo problem that was only opened as to do, though opening wrote its solution file", async () => {
+    await renderHeader(target({ status: "todo", inProgress: false, solutions: { py: true, ts: false } }), HOME);
+    expect(screen.getByText("To do")).toBeInTheDocument();
+    expect(screen.queryByText("In progress")).not.toBeInTheDocument();
+  });
+
+  it("reads a todo problem the server marks in progress as in progress, like the home page does", async () => {
+    await renderHeader(target({ status: "todo", inProgress: true, solutions: { py: false, ts: false } }), HOME);
     expect(screen.getByText("In progress")).toBeInTheDocument();
     expect(screen.queryByText("To do")).not.toBeInTheDocument();
   });

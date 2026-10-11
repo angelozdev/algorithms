@@ -7,6 +7,7 @@ import { listPresets, PresetError } from "./curriculum.ts";
 import { backupStudy, exportStudy } from "./export.ts";
 import { rebuildAllCards, staleCards, storedCards } from "./fsrs.ts";
 import { pauseStudy, resumeStudy } from "./pause.ts";
+import { RESET_ACTIONS, type ResetPreview, resetItem, resetPreview } from "./reset.ts";
 import { type Phase, PHASES } from "./schema.ts";
 import { startAttempt } from "./start.ts";
 import { refreshState } from "./state.ts";
@@ -41,6 +42,7 @@ export const USAGE = `Usage:
   pnpm today [--json] [--refresh]
   pnpm study ack <announcement> [--surface chat|ui]
   pnpm study start <id> [--lang py|ts]                        (the user's: archives the solution, opens a review)
+  pnpm study reset <id> (--code | --attempt | --all [--yes])   (the user's: cleans the code, discards the open attempt, or erases the item)
   pnpm study pause | pnpm study resume                         (the user's)
   pnpm study phase [--json] | pnpm study phase set <phase>     (set: the user's)
   pnpm study curriculum [--json] | … set <preset> | … expand <list>   (set: only on the user's request)
@@ -122,8 +124,8 @@ function openOrNull(io: CliIo): Study | null {
   }
 }
 
-const NOT_INITIALIZED =
-  "Not recorded: there is no study database yet. The user runs `pnpm study init` (new repo) or `pnpm study migrate` (existing repo).\n";
+const NO_STUDY_GUIDANCE = "there is no study database yet. The user runs `pnpm study init` (new repo) or `pnpm study migrate` (existing repo).\n";
+const NOT_INITIALIZED = `Not recorded: ${NO_STUDY_GUIDANCE}`;
 
 /** Runs `fn` on the study; before init, prints NOT_INITIALIZED and succeeds (skills keep going, spec §13). */
 function withStudy(io: CliIo, fn: (study: Study) => number): number {
@@ -271,6 +273,8 @@ export async function runStudyCli(argv: string[], io: CliIo): Promise<number> {
         return ackCommand(rest, io);
       case "start":
         return startCommand(rest, io);
+      case "reset":
+        return resetCommand(rest, io);
       case "pause":
       case "resume":
         return pauseCommand(command, rest, io);
@@ -354,6 +358,71 @@ function startCommand(args: string[], io: CliIo): number {
     );
     return 0;
   });
+}
+
+const count = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
+const describeErase = (p: ResetPreview): string =>
+  `${count(p.attempts, "attempt")}, ${count(p.hints, "hint")}, its review schedule and ${count(p.versions, "saved version")}`;
+// Shared by the pre-check below (its own exit, for the --all summary) and resetCommand's `!result.reset` branch
+// (R6 inside resetItem itself), so the two cannot drift apart.
+const examLockedMessage = (id: string): string => `${id} has an exam attempt: only --code is allowed (exam results come from its attempts).\n`;
+
+/** `pnpm study reset <id> --code | --attempt | --all [--yes]` (the user's only, item reset spec §5.1). */
+function resetCommand(args: string[], io: CliIo): number {
+  const { values, positionals } = parsed(() =>
+    parseArgs({
+      args,
+      strict: true,
+      allowPositionals: true,
+      options: {
+        code: { type: "boolean", default: false },
+        attempt: { type: "boolean", default: false },
+        all: { type: "boolean", default: false },
+        yes: { type: "boolean", default: false },
+      },
+    }),
+  );
+  const actions = RESET_ACTIONS.filter((action) => values[action]);
+  if (actions.length !== 1) throw new UsageError(`Pass exactly one of --code, --attempt or --all.\n\n${USAGE}`);
+  const action = actions[0];
+  const target = exactTarget(io.root, positionals[0]);
+  // Not withStudy: item reset spec §5.1 refuses (exit 1) with no database, unlike the other commands that share
+  // withStudy and keep going (exit 0, spec §13) so skills are not blocked before `pnpm study init`/`migrate`.
+  const study = openOrNull(io);
+  if (!study) {
+    io.err(`Nothing was reset: ${NO_STUDY_GUIDANCE}`);
+    return 1;
+  }
+  try {
+    const preview = resetPreview(study, target);
+    if (action !== "code" && preview.examLocked) {
+      io.err(examLockedMessage(target.id));
+      return 1;
+    }
+    if (action === "all" && !values.yes) {
+      io.err(`This erases ${target.id} for good: ${describeErase(preview)}.\nRun it again with --yes to erase it.\n`);
+      return 1;
+    }
+    const result = resetItem(study, target, action, io.clock.now());
+    if (!result.reset) {
+      io.err(result.reason === "exam" ? examLockedMessage(target.id) : `${target.id} has no open attempt to discard.\n`);
+      return 1;
+    }
+    if (action === "all") {
+      io.out(`Erased ${target.id}: ${describeErase(result.before)}.\n`);
+      return 0;
+    }
+    const archived = result.archived.map((file) => displayPath(io.root, file));
+    const open = result.before.open;
+    io.out(
+      (action === "code" ? `Cleaned the code of ${target.id}.\n` : `Discarded the open attempt of ${target.id} (${count(open!.hints, "hint")}, ${open!.minutes} min).\n`) +
+        (archived.length ? `Archived: ${archived.join(", ")}.\n` : "") +
+        `Fresh stub: ${result.solutions.map((file) => displayPath(io.root, file)).join(", ")}.\n`,
+    );
+    return 0;
+  } finally {
+    study.close();
+  }
 }
 
 /** `pnpm study pause` / `pnpm study resume` (the user's only, spec §6.4). */

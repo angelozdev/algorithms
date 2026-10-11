@@ -60,6 +60,8 @@ export interface TargetData {
   difficulty: string | null;
   url: string | null;
   status: ItemStatus;
+  /** Same as the home page's: an open attempt, never just the stub that opening the item wrote. */
+  inProgress: boolean;
   hints: number;
   /** null when cases.json is invalid. */
   signature: Signature | null;
@@ -100,6 +102,7 @@ export interface ConceptData {
 }
 
 export type { AnnouncementJson, NotInitializedJson, TodayItem, TodayJson } from "../../study/today.ts";
+export type { ResetAction, ResetPreview } from "../../study/reset.ts";
 
 export type RepoEvent =
   | { kind: "solution"; target: string; lang: Lang; version: string }

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CaseFileError } from "../../runner/src/schema.ts";
 import { envClock } from "../../study/clock.ts";
 import { pauseStudy, resumeStudy } from "../../study/pause.ts";
+import { RESET_ACTIONS, resetItem, resetPreview } from "../../study/reset.ts";
 import { startAttempt } from "../../study/start.ts";
 import { cachedStudy } from "../../study/store.ts";
 import { ackAnnouncement, notInitialized, today } from "../../study/today.ts";
@@ -14,7 +15,7 @@ const NO_STUDY = { error: "There is no study database yet: run `pnpm study init`
 /**
  * The Today section's API (study coach spec §10). The time comes from envClock (ALGO_STUDY_NOW in tests), and
  * the database handle from cachedStudy (the Vite dev server re-evaluates this module).
- * Claude never calls start, pause or resume: the hook denies these routes (spec §10).
+ * Claude never calls start, pause, resume or reset: the hook denies these routes.
  */
 export function studyRoutes(root: string) {
   return new Hono()
@@ -32,6 +33,30 @@ export function studyRoutes(root: string) {
         const result = startAttempt(study, root, target, envClock().now(), { lang: c.req.valid("json").lang });
         if (result.started) return c.json({ kind: result.kind }, 200);
         const reason = result.reason === "open" ? `${id} already has an open attempt.` : `${id} was never tried: its first attempt starts with your first edit or run.`;
+        return c.json({ error: reason }, 409);
+      } catch (error) {
+        if (error instanceof CaseFileError) return c.json({ error: error.message }, 422);
+        throw error;
+      }
+    })
+    .get("/study/reset/:id{.+}", (c) => {
+      const id = c.req.param("id");
+      const target = findTarget(root, id);
+      if (!target) return c.json(unknownTarget(id), 404);
+      const study = cachedStudy(root);
+      if (!study) return c.json(NO_STUDY, 409);
+      return c.json(resetPreview(study, target), 200);
+    })
+    .post("/study/reset/:id{.+}", valid("json", z.object({ action: z.enum(RESET_ACTIONS) })), (c) => {
+      const id = c.req.param("id");
+      const target = findTarget(root, id);
+      if (!target) return c.json(unknownTarget(id), 404);
+      const study = cachedStudy(root);
+      if (!study) return c.json(NO_STUDY, 409);
+      try {
+        const result = resetItem(study, target, c.req.valid("json").action, envClock().now());
+        if (result.reset) return c.json({ action: result.action }, 200);
+        const reason = result.reason === "exam" ? `${id} has an exam attempt: only its code can be cleaned.` : `${id} has no open attempt to discard.`;
         return c.json({ error: reason }, 409);
       } catch (error) {
         if (error instanceof CaseFileError) return c.json({ error: error.message }, 422);
