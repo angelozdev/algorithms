@@ -1,0 +1,37 @@
+# Grind 169 (study coach spec §5). Not imported yet: `pnpm study curriculum set grind-169` refuses until its
+# problems carry `lists: [grind-169]` (an import like the Grind 75 one, spec §16).
+# Source of the list: Tech Interview Handbook's Grind tool, https://www.techinterviewhandbook.org/grind75 (not a
+# LeetCode list). Its page bundle (/grind75/_next/static/chunks/<hash>.js, the chunk that contains
+# "slug":"two-sum") embeds the 169 questions in recommended order, each with slug, id, difficulty, topic and
+# routines. On 2026-10-04: 41 easy, 102 medium, 26 hard, 12 premium.
+# Pattern order: the first appearance of each topic in that order (array → arrays-hashing, string → strings,
+# binary-tree and binary-search-tree → trees, graph → graphs, dynamic-programming → dp-1d then dp-2d,
+# trie → tries, recursion → backtracking, binary → bit-manipulation, math → math). Patterns the Grind data has
+# only as routines (interval, two-pointers, sliding-window, greedy) go where that routine first appears.
+id: grind-169
+phases:
+  bases: { concepts: [big-o, recursion, arrays-and-strings, maps-and-sets, sorting] }
+  learn: { list: grind-169, size: 169, block: 3, mix_after_block: 3 }
+  master: { list: grind-169, first_try_success: 0.8 }
+  expand: { choose_from: [neetcode-150], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }
+  pro: { tracks: [interview, competitive] }
+patterns:
+  - { pattern: arrays-hashing, concept: hash-map }
+  - { pattern: stack, concept: stack }
+  - { pattern: linked-list, concept: linked-list }
+  - { pattern: strings, concept: string-parsing }
+  - { pattern: trees, concept: binary-tree }
+  - { pattern: binary-search, concept: binary-search }
+  - { pattern: graphs, concept: graph-dfs }
+  - { pattern: dp-1d, concept: dynamic-programming }
+  - { pattern: dp-2d, concept: dynamic-programming }
+  - { pattern: intervals, concept: intervals }
+  - { pattern: heap, concept: heap }
+  - { pattern: two-pointers, concept: two-pointers }
+  - { pattern: sliding-window, concept: sliding-window }
+  - { pattern: tries, concept: trie }
+  - { pattern: backtracking, concept: backtracking }
+  - { pattern: bit-manipulation, concept: binary-representation }
+  - { pattern: greedy, concept: greedy }
+  - { pattern: math, concept: digit-manipulation }
+timebox_minutes: { easy: 15, medium: 35, hard: 50 }

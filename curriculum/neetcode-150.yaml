@@ -1,0 +1,34 @@
+# NeetCode 150 (study coach spec §5). Not imported yet: `pnpm study curriculum set neetcode-150` refuses until its
+# problems carry `lists: [neetcode-150]` (an import like the Grind 75 one, spec §16).
+# Source of the list: neetcode.io (https://neetcode.io/practice). The site's main bundle (main.<hash>.js) holds
+# every problem as {problem, pattern, link, difficulty, code, …}; the 150 members are the entries with
+# neetcode150:!0. On 2026-10-04 there were 150, in 18 categories.
+# Pattern order: the order of those categories (Arrays & Hashing, Two Pointers, Sliding Window, Stack, Binary
+# Search, Linked List, Trees, Heap / Priority Queue, Backtracking, Tries, Graphs and Advanced Graphs → graphs,
+# 1-D DP, 2-D DP, Greedy, Intervals, Math & Geometry → math, Bit Manipulation). NeetCode has no strings category.
+id: neetcode-150
+phases:
+  bases: { concepts: [big-o, recursion, arrays-and-strings, maps-and-sets, sorting] }
+  learn: { list: neetcode-150, size: 150, block: 3, mix_after_block: 3 }
+  master: { list: neetcode-150, first_try_success: 0.8 }
+  expand: { choose_from: [grind-169], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }
+  pro: { tracks: [interview, competitive] }
+patterns:
+  - { pattern: arrays-hashing, concept: hash-map }
+  - { pattern: two-pointers, concept: two-pointers }
+  - { pattern: sliding-window, concept: sliding-window }
+  - { pattern: stack, concept: stack }
+  - { pattern: binary-search, concept: binary-search }
+  - { pattern: linked-list, concept: linked-list }
+  - { pattern: trees, concept: binary-tree }
+  - { pattern: heap, concept: heap }
+  - { pattern: backtracking, concept: backtracking }
+  - { pattern: tries, concept: trie }
+  - { pattern: graphs, concept: graph-dfs }
+  - { pattern: dp-1d, concept: dynamic-programming }
+  - { pattern: dp-2d, concept: dynamic-programming }
+  - { pattern: greedy, concept: greedy }
+  - { pattern: intervals, concept: intervals }
+  - { pattern: math, concept: matrix-traversal }
+  - { pattern: bit-manipulation, concept: binary-representation }
+timebox_minutes: { easy: 15, medium: 35, hard: 50 }

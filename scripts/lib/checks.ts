@@ -11,6 +11,7 @@ import { dbPath } from "../../study/store.ts";
 import { StripError, stripReadme } from "../../study/strip.ts";
 import { replaceAuto } from "./auto.ts";
 import { missingConcepts } from "./render.ts";
+import { listPresets, loadPreset, PresetError } from "../../study/curriculum.ts";
 
 export interface Issue {
   file: string;
@@ -210,6 +211,28 @@ export async function checkRepo(root: string, options: CheckOptions = {}): Promi
       if (/^[a-z][a-z0-9+.-]*:/i.test(target) || target.startsWith("#")) continue;
       const clean = decodeURI(target.split("#")[0]);
       if (!existsSync(path.resolve(path.dirname(file), clean))) error(rel(file), `broken link: ${target}`);
+    }
+  }
+
+  // Curriculum presets (study coach spec §5, §10): each must be valid, and a pattern of its list's problems that
+  // it does not list goes after the listed ones, which deserves a warning.
+  for (const id of listPresets(root)) {
+    const file = `curriculum/${id}.yaml`;
+    try {
+      const preset = loadPreset(root, id);
+      const listed = new Set<string>(preset.patterns.map((entry) => entry.pattern));
+      const missing = new Map<string, string[]>();
+      for (const problem of repo.problems) {
+        const pattern = strList(problem.data.patterns)[0];
+        if (!pattern || listed.has(pattern) || !strList(problem.data.lists).includes(preset.phases.learn.list)) continue;
+        missing.set(pattern, [...(missing.get(pattern) ?? []), problem.folderId]);
+      }
+      for (const [pattern, ids] of missing) {
+        warnings.push({ file, message: `pattern "${pattern}" is not in patterns, so phase 1 serves it after the listed ones (${ids.join(", ")})` });
+      }
+    } catch (caught) {
+      if (!(caught instanceof PresetError)) throw caught;
+      for (const issue of caught.issues) error(file, issue);
     }
   }
 

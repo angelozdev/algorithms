@@ -142,6 +142,40 @@ describe("checkRepo", () => {
   });
 });
 
+describe("checkRepo: curriculum presets (study coach spec §5, §10)", () => {
+  afterEach(cleanupTempDirs);
+
+  const PRESET = [
+    "id: demo",
+    "phases:",
+    "  bases: { concepts: [arrays] }",
+    "  learn: { list: demo, size: 2, block: 3, mix_after_block: 3 }",
+    "  master: { list: demo, first_try_success: 0.8 }",
+    "  expand: { choose_from: [other], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }",
+    "  pro: { tracks: [interview] }",
+    "patterns:",
+    "  - { pattern: arrays-hashing, concept: hash-map }",
+    "timebox_minutes: { easy: 15, medium: 35, hard: 50 }",
+    "",
+  ].join("\n");
+
+  it("warns about a pattern of the preset's list that the preset does not list", async () => {
+    const root = makeStudyRepo();
+    put(root, "curriculum/demo.yaml", PRESET);
+    edit(root, "problems/lc-0001-two-sum/README.md", "concepts: [hash-map]", "concepts: [hash-map]\nlists: [demo]");
+    edit(root, "problems/lc-0020-valid-parentheses/README.md", "concepts: [stack]", "concepts: [stack]\nlists: [demo]");
+    const report = await checkRepo(root);
+    expect(report.errors).toEqual([]);
+    expect(report.warnings).toContainEqual({ file: "curriculum/demo.yaml", message: 'pattern "stack" is not in patterns, so phase 1 serves it after the listed ones (lc-0020)' });
+  });
+
+  it("reports an invalid preset as errors with paths", async () => {
+    const root = makeStudyRepo();
+    put(root, "curriculum/demo.yaml", PRESET.replace("block: 3", "block: 0"));
+    expect((await checkRepo(root)).errors).toEqual([{ file: "curriculum/demo.yaml", message: "phases.learn.block: Too small: expected number to be >0" }]);
+  });
+});
+
 describe("sectionText", () => {
   it("returns a section's text without HTML comments", () => {
     const body = "## A\n\n<!-- hint -->\nhello\n\n## B\nbye\n";
