@@ -193,6 +193,11 @@ describe("pnpm study reset (item reset spec §5.1)", () => {
     expect(await r.cli("reset", "lc-9101", "--code", "--all")).toMatchObject({ code: 1 });
   });
 
+  it("refuses with exit 1 when there is no study database yet (spec §5.1: no database is a refusal)", async () => {
+    const r = repo({ init: false });
+    expect(await r.cli("reset", "lc-9101", "--code")).toMatchObject({ code: 1, err: expect.stringContaining("there is no study database yet") });
+  });
+
   it("cleans the code: the old solution goes to history/", async () => {
     const r = repo();
     await r.cli("curriculum", "set", "demo-list");

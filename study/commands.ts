@@ -383,7 +383,14 @@ function resetCommand(args: string[], io: CliIo): number {
   if (actions.length !== 1) throw new UsageError(`Pass exactly one of --code, --attempt or --all.\n\n${USAGE}`);
   const action = actions[0];
   const target = exactTarget(io.root, positionals[0]);
-  return withStudy(io, (study) => {
+  // Not withStudy: item reset spec §5.1 refuses (exit 1) with no database, unlike the other commands that share
+  // withStudy and keep going (exit 0, spec §13) so skills are not blocked before `pnpm study init`/`migrate`.
+  const study = openOrNull(io);
+  if (!study) {
+    io.err(NOT_INITIALIZED);
+    return 1;
+  }
+  try {
     const preview = resetPreview(study, target);
     if (action !== "code" && preview.examLocked) {
       io.err(`${target.id} has an exam attempt: only --code is allowed (exam results come from its attempts).\n`);
@@ -410,7 +417,9 @@ function resetCommand(args: string[], io: CliIo): number {
         `Fresh stub: ${result.solutions.map((file) => displayPath(io.root, file)).join(", ")}.\n`,
     );
     return 0;
-  });
+  } finally {
+    study.close();
+  }
 }
 
 /** `pnpm study pause` / `pnpm study resume` (the user's only, spec §6.4). */
