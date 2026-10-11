@@ -1,14 +1,14 @@
 import type { KeyBinding } from "@codemirror/view";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
-import { ArrowLeft, CircleX, TriangleAlert } from "lucide-react";
+import { ArrowLeft, CircleX, RotateCcw, TriangleAlert } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { Group, Panel, Separator, useDefaultLayout } from "react-resizable-panels";
 import { toast } from "sonner";
 import type { Lang, RunResult } from "../../../runner/src/types.ts";
 import type { TargetData } from "../../server/types.ts";
-import { ApiError, conceptQuery, getSolution, keys, putSolution, runCustomInput, runTests, targetQuery } from "../api.ts";
+import { ApiError, conceptQuery, getSolution, keys, putSolution, runCustomInput, runTests, startReview, targetQuery } from "../api.ts";
 import { CodeEditor } from "../components/CodeEditor.tsx";
 import { ConceptView } from "../components/ConceptView.tsx";
 import { ConsolePanel } from "../components/ConsolePanel.tsx";
@@ -77,6 +77,9 @@ function LoadError({ message }: { message: string }) {
 function WorkPage({ id }: { id: string }) {
   const target = useQuery(targetQuery(id));
   const [chosen, setChosen] = useState<Lang | null>(null);
+  // Once the editor has opened on this page, a gate that appears later (a card falling due at midnight) waits for
+  // the next visit: it must never close an editor with text in it.
+  const [opened, setOpened] = useState(false);
   if (target.isPending) return <WorkSkeleton />;
   // A failed refresh (a live event refetches the target) keeps the last data: unmounting the workspace for it
   // would throw away the editor and any text it has not saved yet.
@@ -93,7 +96,77 @@ function WorkPage({ id }: { id: string }) {
     rememberLang(next);
     setChosen(next);
   };
+  if (target.data.gate && !opened) {
+    return <GatedWorkspace target={target.data} gate={target.data.gate} lang={lang} onLang={choose} onStarted={() => setOpened(true)} />;
+  }
+  if (!opened) setOpened(true);
   return <Workspace key={lang} target={target.data} lang={lang} onLang={choose} />;
+}
+
+const GATE_TEXT: Record<NonNullable<TargetData["gate"]>["kind"], { title: string; button: string; body: string }> = {
+  review: {
+    title: "Time to review",
+    button: "Start review",
+    body: "Solve it again from scratch. Your previous solution goes to the history and the editor starts with a fresh stub.",
+  },
+  exam: {
+    title: "Exam",
+    button: "Start exam",
+    body: "Solve it from scratch, alone, within the time-box: no hints in an exam. Your previous solution goes to the history.",
+  },
+  retry: {
+    title: "Try it again",
+    button: "Start again",
+    body: "Solve it from scratch this time. Your previous attempt goes to the history and the editor starts with a fresh stub.",
+  },
+};
+
+/**
+ * "Start review" (study coach spec §7): the statement, and instead of the editor a button that asks the server to
+ * archive the old solution, write a fresh stub and open the attempt. The old code is never loaded here, so the
+ * editor that opens afterwards starts with the stub and an empty undo history.
+ */
+function GatedWorkspace({ target, gate, lang, onLang, onStarted }: { target: TargetData; gate: NonNullable<TargetData["gate"]>; lang: Lang; onLang(lang: Lang): void; onStarted(): void }) {
+  const queryClient = useQueryClient();
+  const [trail, setTrail] = useState<string[]>([]);
+  const text = GATE_TEXT[gate.kind];
+  const start = useMutation({
+    mutationFn: () => startReview(target.id, lang),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: keys.target(target.id) });
+      void queryClient.invalidateQueries({ queryKey: keys.today });
+      onStarted();
+    },
+    onError: (error) => toast.error(error.message),
+  });
+  return (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <WorkHeader target={target} lang={lang} onLang={onLang} running={false} elapsedMs={0} canRun={false} onRun={() => {}} langLock={null} />
+      <div className="flex min-h-0 flex-1">
+        <div className="w-2/5 overflow-y-auto border-r bg-card p-4">
+          <StatementPane
+            target={target}
+            trail={trail}
+            onConcept={(slug) => setTrail((current) => (current.at(-1) === slug ? current : [...current, slug]))}
+            onBack={() => setTrail((current) => current.slice(0, -1))}
+          />
+        </div>
+        <section aria-labelledby="gate-title" className="flex flex-1 items-center justify-center p-6">
+          <div className="max-w-sm space-y-3 text-center">
+            <RotateCcw aria-hidden className="mx-auto size-6 text-primary" />
+            <h2 id="gate-title" className="text-base font-semibold">
+              {text.title}
+            </h2>
+            <p className="text-muted-foreground">{text.body}</p>
+            <p className="font-mono text-xs text-muted-foreground">About {gate.minutes} min</p>
+            <Button onClick={() => start.mutate()} disabled={start.isPending}>
+              {text.button}
+            </Button>
+          </div>
+        </section>
+      </div>
+    </div>
+  );
 }
 
 function useElapsed(active: boolean): number {
@@ -110,7 +183,7 @@ function useElapsed(active: boolean): number {
 
 const LANG_NAME: Record<Lang, string> = { py: "Python", ts: "TypeScript" };
 
-function ConflictAlert({ file, onDisk, onMine }: { file: string; onDisk(): void; onMine(): void }) {
+function ConflictAlert({ file, onDisk, onMine }: { file: string; onDisk(): void; onMine: (() => void) | null }) {
   return (
     <Alert variant="warning" className="rounded-none border-x-0 border-t-0">
       <TriangleAlert aria-hidden />
@@ -120,9 +193,11 @@ function ConflictAlert({ file, onDisk, onMine }: { file: string; onDisk(): void;
         <Button size="sm" variant="outline" onClick={onDisk}>
           Use disk version
         </Button>
-        <Button size="sm" variant="outline" onClick={onMine}>
-          Keep mine
-        </Button>
+        {onMine && (
+          <Button size="sm" variant="outline" onClick={onMine}>
+            Keep mine
+          </Button>
+        )}
       </AlertDescription>
     </Alert>
   );
@@ -279,7 +354,10 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         onRun={actions.run}
         langLock={langLock}
       />
-      {sync.conflict && <ConflictAlert file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={() => void sync.keepMine()} />}
+      {sync.conflict && (
+        // An attempt started from scratch (spec §7): keeping this tab's text would bring the archived code back.
+        <ConflictAlert file={`solution.${lang}`} onDisk={sync.takeDisk} onMine={target.freshStart ? null : () => void sync.keepMine()} />
+      )}
       {sync.state === "error" && sync.error && (
         <Alert variant="destructive" className="rounded-none border-x-0 border-t-0">
           <CircleX aria-hidden />
