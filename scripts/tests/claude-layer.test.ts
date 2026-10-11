@@ -82,3 +82,13 @@ describe("content-only templates and docs (study coach spec §3, §10)", () => {
     for (const command of ["pnpm study init", "pnpm study migrate", "pnpm study status", "--no-record"]) expect(readme).toContain(command);
   });
 });
+
+describe("the study coach's commands (study coach spec §11)", () => {
+  it("README.md lists them and CLAUDE.md says how Claude reads today's plan", () => {
+    const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+    for (const command of ["pnpm today", "pnpm study start", "pnpm study pause", "pnpm study curriculum", "pnpm study rebuild"]) expect(readme).toContain(command);
+    const claude = readFileSync(path.join(REPO_ROOT, "CLAUDE.md"), "utf8");
+    expect(claude).toContain("pnpm -s today --json");
+    expect(claude).toContain("pnpm -s study ack <id>");
+  });
+});

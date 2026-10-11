@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, isNull } from "drizzle-orm";
 import { scanRepo } from "../lib/repo.ts";
 import type { Target } from "../runner/src/types.ts";
 import {
@@ -7,9 +7,14 @@ import {
   attemptStats,
   cards,
   conceptAcceptances,
+  curriculumLog,
   type ItemStatusValue,
   itemStatusView,
   type Outcome,
+  pauses,
+  type Phase,
+  phaseLog,
+  profile,
 } from "./schema.ts";
 import type { InProgressItem } from "./state-file.ts";
 import { openAttemptList } from "./open-attempts.ts";
@@ -157,6 +162,29 @@ export interface SummaryJson {
   revealed: string[];
   /** Ids with progress whose content no longer exists (spec §13). */
   orphans: string[];
+  /** The scheduler's state (Plan B): read by the coach skill to know whether to onboard. */
+  coach: CoachSummary;
+}
+
+/** `study status --json`'s `coach`: the preset in force, the phase, an open pause and the expansion list. */
+export interface CoachSummary {
+  /** A preset was set (`pnpm study curriculum set`): false means the coach still has to onboard the user. */
+  started: boolean;
+  preset: string | null;
+  phase: Phase | null;
+  paused: boolean;
+  expansionList: string | null;
+}
+
+const NO_COACH: CoachSummary = { started: false, preset: null, phase: null, paused: false, expansionList: null };
+
+/** Read straight from the tables (phase.ts imports this module, so it cannot be imported here). */
+export function coachSummary(study: Study): CoachSummary {
+  const preset = study.db.select({ preset: curriculumLog.preset }).from(curriculumLog).orderBy(desc(curriculumLog.id)).limit(1).get()?.preset ?? null;
+  const phase = study.db.select({ phase: phaseLog.phase }).from(phaseLog).orderBy(desc(phaseLog.id)).limit(1).get()?.phase ?? null;
+  const paused = study.db.select({ id: pauses.id }).from(pauses).where(isNull(pauses.endedAt)).get() !== undefined;
+  const expansionList = study.db.select({ list: profile.expansionList }).from(profile).get()?.list ?? null;
+  return { started: preset !== null && phase !== null, preset, phase, paused, expansionList };
 }
 
 const exercisesOf = (root: string, slug: string): string[] =>
@@ -199,7 +227,7 @@ export function conceptStatusJson(study: Study | null, root: string, slug: strin
 }
 
 export function summaryJson(study: Study | null, root: string): SummaryJson {
-  if (!study) return { initialized: false, inProgress: [], solved: [], revealed: [], orphans: [] };
+  if (!study) return { initialized: false, inProgress: [], solved: [], revealed: [], orphans: [], coach: NO_COACH };
   const progress = [...allItemProgress(study).values()];
   const repo = scanRepo(root);
   const known = new Set([...repo.problems.map((p) => p.folderId), ...repo.exercises.map((e) => e.folderId), ...repo.concepts.map((c) => c.slug)]);
@@ -210,6 +238,7 @@ export function summaryJson(study: Study | null, root: string): SummaryJson {
     solved: progress.filter((item) => item.everGreen).map((item) => item.itemId).sort(),
     revealed: progress.filter((item) => item.revealed).map((item) => item.itemId).sort(),
     orphans: [...new Set(ids)].filter((id) => !known.has(id)).sort(),
+    coach: coachSummary(study),
   };
 }
 

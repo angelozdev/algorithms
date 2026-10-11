@@ -99,7 +99,7 @@ describe("pnpm study init", () => {
     expect(init.status).toBe(0);
     expect(existsSync(path.join(root, ".study", "study.db"))).toBe(true);
     const today = spawnSync(TSX_BIN, ["study/cli.ts", "today"], { cwd: REPO_ROOT, env, encoding: "utf8" });
-    expect(today.status).toBe(2);
-    expect(today.stderr).toContain("arrives with the scheduler");
+    expect(today.status).toBe(0);
+    expect(today.stdout).toContain("The coach has not started yet");
   });
 });

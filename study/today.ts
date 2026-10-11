@@ -3,15 +3,15 @@ import path from "node:path";
 import { and, asc, eq, isNull, lt, max } from "drizzle-orm";
 import { LEGACY_PERSONAL_FIELDS } from "../lib/schemas.ts";
 import { scanRepo } from "../lib/repo.ts";
-import { itemTitle, listMembers } from "./catalog.ts";
-import { type ListImport, listImport, timeboxMinutes } from "./curriculum.ts";
+import { itemTitle, listMembers, loadCatalog } from "./catalog.ts";
+import { type ListImport, listImport, listPresets, loadPreset, timeboxMinutes } from "./curriculum.ts";
 import { daysBetween, localDate, localDay } from "./days.ts";
 import { examResult, examsOf, openExam } from "./exam.ts";
 import { openPause } from "./pause.ts";
-import { type CoachContext, conceptLearned, currentCurriculum, currentPhase, expansionWindow, learnedProblems, loadContext, syncPhase } from "./phase.ts";
+import { type CoachContext, conceptLearned, currentCurriculum, currentPhase, exitMet, expansionWindow, learnedProblems, loadContext, syncPhase } from "./phase.ts";
 import { CONCEPT_MINUTES, dueCards, ensurePlan, loadFacts, problemMinutes, REVIEW_FACTOR } from "./plan.ts";
 import { itemsDone, readProfile, type StoredItem, type StoredPlan } from "./plan-store.ts";
-import { announcementAcks, announcements, attemptEvents, curriculumLog, type Phase, phaseLog, type SURFACES } from "./schema.ts";
+import { announcementAcks, announcements, attemptEvents, curriculumLog, type Phase, phaseLog, profile, type SURFACES } from "./schema.ts";
 import { storedCards } from "./fsrs.ts";
 import { refreshState } from "./state.ts";
 import type { Study, StudyQueries } from "./store.ts";
@@ -264,4 +264,56 @@ export function describeToday(json: TodayJson): string {
   if (json.items.length === 0) lines.push("Nothing planned today.");
   if (json.backlog.waiting > 0) lines.push(`Backlog: ${PLURAL(json.backlog.waiting, "review")} waiting (about ${PLURAL(json.backlog.days, "day")}).`);
   return lines.join("\n");
+}
+
+/** `pnpm study phase --json`. */
+export interface PhaseStatusJson {
+  started: boolean;
+  phase: Phase | null;
+  since: string | null;
+  reason: "criteria" | "forced" | "switch" | null;
+  preset: string | null;
+  progress: { done: number; total: number };
+  /** The phase's exit criteria hold now (the phase moves on at the next recorded attempt or `today`). */
+  exitMet: boolean;
+}
+
+export function phaseStatus(study: Study, root: string): PhaseStatusJson {
+  const curriculum = currentCurriculum(study.db);
+  const row = currentPhase(study.db);
+  if (!curriculum || !row) return { started: false, phase: null, since: null, reason: null, preset: null, progress: { done: 0, total: 0 }, exitMet: false };
+  const ctx = loadContext(study, root, curriculum.preset);
+  return {
+    started: true,
+    phase: row.phase,
+    since: row.at.toISOString(),
+    reason: row.reason,
+    preset: curriculum.preset,
+    progress: phaseProgress(study, ctx, row.phase),
+    exitMet: exitMet(study, ctx, row.phase),
+  };
+}
+
+/** `pnpm study curriculum --json`. */
+export interface CurriculumStatusJson {
+  preset: string | null;
+  since: string | null;
+  presets: { id: string; list: string; imported: number; size: number | null }[];
+  expansion: { list: string | null; choices: string[] };
+}
+
+export function curriculumStatus(study: Study, root: string): CurriculumStatusJson {
+  const curriculum = currentCurriculum(study.db);
+  const catalog = loadCatalog(root);
+  const presets = listPresets(root).map((id) => {
+    const preset = loadPreset(root, id);
+    return { id, list: preset.phases.learn.list, imported: listMembers(catalog, preset.phases.learn.list).length, size: preset.phases.learn.size };
+  });
+  const expansionList = study.db.select({ list: profile.expansionList }).from(profile).get()?.list ?? null;
+  return {
+    preset: curriculum?.preset ?? null,
+    since: curriculum?.at.toISOString() ?? null,
+    presets,
+    expansion: { list: expansionList, choices: curriculum ? loadPreset(root, curriculum.preset).phases.expand.choose_from : [] },
+  };
 }

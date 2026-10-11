@@ -174,3 +174,11 @@ export function toFsrsCard(values: CardValues): Card {
 export function retrievability(values: CardValues, now: Date): number {
   return scheduler.get_retrievability(toFsrsCard(values), now, false);
 }
+
+/** Items whose cached card differs from a replay (`pnpm study rebuild --check`); empty when the cache is right. */
+export function staleCards(db: StudyQueries): string[] {
+  const stored = storedCards(db);
+  const replayed = replayAllCards(db);
+  const ids = new Set([...stored.keys(), ...replayed.keys()]);
+  return [...ids].filter((id) => JSON.stringify(stored.get(id) ?? null) !== JSON.stringify(replayed.get(id) ?? null)).sort();
+}

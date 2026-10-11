@@ -40,6 +40,12 @@ uv python install 3.13   # only if `uv python find` finds nothing
 | `pnpm study init [--minutes <n>] [--lang py\|ts] [--timezone <zone>]` | Starts `.study/` (your progress) in a fresh clone |
 | `pnpm study migrate [--dry-run]` | Once, in a repo with progress in its READMEs: archives the solutions and strips the READMEs |
 | `pnpm study status [<id>] [--json]` | Your progress on a problem, an exercise, a concept, or everything |
+| `pnpm today [--json] [--refresh]` | What the coach planned for today: reviews, the next new item, announcements (`--refresh` makes a new plan) |
+| `pnpm study start <id>` | Starts a due review from scratch: archives your solution to `history/` and writes a fresh stub |
+| `pnpm study pause` / `pnpm study resume` | Pauses the coach (due dates wait for you) and resumes it |
+| `pnpm study phase [set <phase>]` | Your phase and its progress; `set` forces one |
+| `pnpm study curriculum [set <preset>]` | The presets (`grind-75`, `grind-169`, `neetcode-150`) and how much of each is imported; `set` switches |
+| `pnpm study export` / `pnpm study backup` / `pnpm study rebuild [--check]` | A JSON export and a database copy under `.study/exports`; rebuilds the review cache from your attempts |
 | `pnpm leetcode <slug\|url>` | Prints a LeetCode problem as a JSON draft |
 | `pnpm leetcode --list <slug\|url>` | Prints a LeetCode problem list (for example Grind 75) as JSON |
 | `pnpm leetcode --check-paraphrase <README>` | Flags runs of 10+ words a problem README copies from LeetCode's statement |

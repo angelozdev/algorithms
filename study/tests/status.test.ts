@@ -123,6 +123,7 @@ describe("pnpm study status <concept> --json and the summary", () => {
       solved: ["lc-0001"],
       revealed: [],
       orphans: ["lc-9999"],
+      coach: { started: false, preset: null, phase: null, paused: false, expansionList: null },
     });
     expect((await cli(repo.root, "status")).out).toBe("In progress: lc-0020 (new, 1 hint), lc-9999 (new, 0 hints). Orphans: lc-9999.\n");
   });
@@ -132,7 +133,14 @@ describe("before the study database exists", () => {
   it("status says initialized: false, and record says nothing was recorded, with exit 0", async () => {
     const root = makeStudyRepo();
     expect((await cli(root, "status", "lc-0001", "--json")).json()).toMatchObject({ initialized: false, status: "todo", everGreen: false, revealed: false });
-    expect((await cli(root, "status", "--json")).json()).toEqual({ initialized: false, inProgress: [], solved: [], revealed: [], orphans: [] });
+    expect((await cli(root, "status", "--json")).json()).toEqual({
+      initialized: false,
+      inProgress: [],
+      solved: [],
+      revealed: [],
+      orphans: [],
+      coach: { started: false, preset: null, phase: null, paused: false, expansionList: null },
+    });
     expect(await cli(root, "record", "hint", "lc-0001")).toMatchObject({ code: 0, err: expect.stringContaining("Not recorded: there is no study database yet") });
   });
 
