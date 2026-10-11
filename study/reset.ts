@@ -4,6 +4,7 @@ import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { studySolutionDir } from "../runner/src/paths.ts";
 import type { Target } from "../runner/src/types.ts";
 import { rebuildCard } from "./fsrs.ts";
+import { openAttemptOf } from "./record.ts";
 import { attemptEvents, attempts, attemptStats, complexityNotes } from "./schema.ts";
 import { freshStubs } from "./start.ts";
 import { refreshState } from "./state.ts";
@@ -87,8 +88,16 @@ export function resetItem(study: Study, target: Target, action: ResetAction, now
   }
   const { archived, solutions } = freshStubs(study, target, now);
   if (action === "attempt") {
-    const open = itemProgress(study, target.id).open!;
-    inTransaction(study, (tx) => deleteAttempts(tx, [open.attemptId]));
+    // Re-checked inside the transaction (not the `before` read above, done before `freshStubs`'s file work): another
+    // process (e.g. `pnpm watch`) could have closed and rated the attempt in between. The code `freshStubs` already
+    // archived stays in history/ either way.
+    const discarded = inTransaction(study, (tx) => {
+      const open = openAttemptOf(tx, target.id);
+      if (!open) return false;
+      deleteAttempts(tx, [open.id]);
+      return true;
+    });
+    if (!discarded) return { reset: false, reason: "no-open-attempt" };
   }
   refreshState(study);
   return { reset: true, action, archived, solutions, before };
