@@ -1,0 +1,27 @@
+{
+  "mode": "function",
+  "entry": "shiftLetters",
+  "params": [
+    {"name":"text","type":"string"},
+    {"name":"k","type":"int"}
+  ],
+  "returns": "string",
+  "compare": "exact",
+  "examples": [
+    {"input":["abc xyz",1],"expected":"bcd yza"},
+    {"input":["Hello, World!",3],"expected":"Khoor, Zruog!"},
+    {"input":["Zz9",27],"expected":"Aa9"}
+  ],
+  "hidden": [
+    {"input":["",5],"expected":""},
+    {"input":["a",0],"expected":"a"},
+    {"input":["a",26],"expected":"a"},
+    {"input":["The quick brown fox",13],"expected":"Gur dhvpx oebja sbk"},
+    {"input":["12345 !?",7],"expected":"12345 !?"},
+    {"input":["AZaz",25],"expected":"ZYzy"},
+    {"input":["mIxEd CaSe",52],"expected":"mIxEd CaSe"},
+    {"input":["@[`{~",3],"expected":"@[`{~"},
+    {"input":["zzz",100],"expected":"vvv"},
+    {"input":["Bye",78],"expected":"Bye"}
+  ]
+}
