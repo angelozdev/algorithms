@@ -172,10 +172,14 @@ describe("the coach skill (study coach spec §11)", () => {
 
   it("refreshes the stored day plan right after a change of list or phase (ruling a)", () => {
     for (const prefix of ["3. ", "7. ", "9. "]) expect(section(SKILL, prefix), prefix).toContain("`pnpm -s today --json --refresh`");
+    // §6's staleness sentence, not just anywhere in §6: `phase-set`/`curriculum-switched` are also the pre-existing
+    // table's own `key` column, so a bare "appears somewhere in §6" check would pass even without this sentence.
     const announcements = section(SKILL, "6. ");
-    expect(announcements).toContain("`pnpm -s today --json --refresh`");
-    expect(announcements).toContain("`phase-set`");
-    expect(announcements).toContain("`curriculum-switched`");
+    const staleness = announcements.match(/^.*the stored plan may predate that change.*$/m)?.[0];
+    expect(staleness, announcements).toBeTruthy();
+    expect(staleness).toContain("`pnpm -s today --json --refresh`");
+    expect(staleness).toContain("`phase-set`");
+    expect(staleness).toContain("`curriculum-switched`");
   });
 
   it("stops cleanly when a study command exits non-zero with no JSON (ruling b)", async () => {

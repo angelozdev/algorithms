@@ -15,8 +15,8 @@ Run `pnpm -s today --json` and branch on what it returns:
 
 | It returns | Go to |
 |---|---|
-| `"initialized": false` | §2, no study database |
 | it exits non-zero with no JSON | say in one line what its error says (for `curriculum/<preset>.yaml is not a valid preset:`, the active list's preset file is broken; the user can see every issue with pnpm -s check), then stop: run nothing else, never switch lists and never edit `curriculum/` to get around it |
+| `"initialized": false` | §2, no study database |
 | `"started": false` | §3, onboarding |
 | `"paused"` is not `null` | §4, paused |
 | otherwise | §5, render the plan |
