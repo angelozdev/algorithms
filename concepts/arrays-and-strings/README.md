@@ -93,8 +93,8 @@ doubled = []                        # build a new list
 for x in nums:
     doubled.append(x * 2)
 
-words = "  turn   up   music ".split()        # ["turn", "up", "music"]: split() with no argument skips runs of spaces
-sizes = "-".join(str(len(w)) for w in words) # "4-2-5": each word's length, joined
+words = "  i   am   new ".split()      # ["i", "am", "new"]: split() with no argument skips runs of spaces
+sizes = "-".join(str(len(w)) for w in words) # "1-2-3"
 
 rows, cols = 2, 3
 grid = [[0] * cols for _ in range(rows)]    # each row is its own list
@@ -114,8 +114,8 @@ nums.forEach((x, i) => console.log(i, x)); // index and value together
 const doubled: number[] = []; // build a new array
 for (const x of nums) doubled.push(x * 2);
 
-const words = "  turn   up   music ".trim().split(/\s+/); // ["turn", "up", "music"]
-const sizes = words.map((w) => String(w.length)).join("-"); // "4-2-5": each word's length, joined
+const words = "  i   am   new ".trim().split(/\s+/); // ["i", "am", "new"]
+const sizes = words.map((w) => String(w.length)).join("-"); // "1-2-3"
 
 const rows = 2;
 const cols = 3;
