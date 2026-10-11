@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import type { HomeData, HomeProblem } from "../../server/types.ts";
 import {
   conceptRows,
-  continueItems,
   facetOptions,
   filterProblems,
   groupProblems,
@@ -130,15 +129,6 @@ describe("home list model", () => {
       ["Two pointers", 3],
     ]);
     expect(list.matching).toBe(3);
-  });
-
-  it("lists the work in progress to continue, problems first, with where each one belongs", () => {
-    expect(continueItems(DATA, "").map((item) => [item.id, item.context])).toEqual([
-      ["lc-2181", "Linked list"],
-      ["lc-0035", "Binary search"],
-      ["hash-map/02", "Hash map"],
-    ]);
-    expect(continueItems(DATA, "most").map((item) => item.id)).toEqual(["hash-map/02"]);
   });
 
   it("shows a concept when its name or one of its exercises matches the search", () => {

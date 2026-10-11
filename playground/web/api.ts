@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { hc } from "hono/client";
 import type { CustomResult, Lang, RunResult } from "../../runner/src/types.ts";
 import type { AppType } from "../server/app.ts";
-import type { ConceptData, HomeData, SolutionData, TargetData } from "../server/types.ts";
+import type { ConceptData, HomeData, NotInitializedJson, SolutionData, TargetData, TodayJson } from "../server/types.ts";
 
 export const client = hc<AppType>("/");
 
@@ -78,6 +78,37 @@ export async function putExplanation(slug: string, text: string, baseVersion: st
   return { ok: true, version: (await res.json()).version };
 }
 
+/** The Today section's data: the plan, or what to run before the study database exists. */
+export type TodayData = TodayJson | NotInitializedJson;
+
+export async function getToday(): Promise<TodayData> {
+  const res = await client.api.study.today.$get();
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
+/** "Start review" (study coach spec §7): the server archives the solution, writes a fresh stub and opens the attempt. */
+export async function startReview(id: string, lang: Lang): Promise<{ kind: string }> {
+  const res = await client.api.study.start[":id{.+}"].$post({ param: { id }, json: { lang } });
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
+export async function ackAnnouncement(id: number): Promise<void> {
+  const res = await client.api.study.ack[":id{[0-9]+}"].$post({ param: { id: String(id) } });
+  if (!res.ok) return fail(res);
+}
+
+export async function pauseStudy(): Promise<void> {
+  const res = await client.api.study.pause.$post();
+  if (!res.ok) return fail(res);
+}
+
+export async function resumeStudy(): Promise<void> {
+  const res = await client.api.study.resume.$post();
+  if (!res.ok) return fail(res);
+}
+
 export const keys = {
   home: ["home"] as const,
   target: (id: string) => ["target", id] as const,
@@ -86,8 +117,10 @@ export const keys = {
   targets: ["target"] as const,
   /** Every concept query (prefix). */
   concepts: ["concept"] as const,
+  today: ["today"] as const,
 };
 
 export const homeQuery = () => queryOptions({ queryKey: keys.home, queryFn: getHome });
 export const targetQuery = (id: string) => queryOptions({ queryKey: keys.target(id), queryFn: () => getTarget(id) });
 export const conceptQuery = (slug: string) => queryOptions({ queryKey: keys.concept(slug), queryFn: () => getConcept(slug) });
+export const todayQuery = () => queryOptions({ queryKey: keys.today, queryFn: getToday });

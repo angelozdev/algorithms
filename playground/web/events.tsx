@@ -73,6 +73,7 @@ export function EventsProvider({ children }: { children: ReactNode }) {
           void queryClient.invalidateQueries({ queryKey: keys.home });
           void queryClient.invalidateQueries({ queryKey: keys.targets });
           void queryClient.invalidateQueries({ queryKey: keys.concepts });
+          void queryClient.invalidateQueries({ queryKey: keys.today });
         }
         for (const listener of listeners.current) listener(event);
       };

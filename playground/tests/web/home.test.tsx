@@ -44,11 +44,9 @@ const groupNames = () => within(problemsRegion()).getAllByRole("button", { expan
 const rowTitles = () => within(problemsRegion()).getAllByRole("row").flatMap((row) => within(row).queryAllByRole("link").map((l) => l.textContent));
 
 describe("HomeView", () => {
-  it("shows the work in progress as cards, the overall progress, the problems by pattern, and the concepts", async () => {
+  it("shows the overall progress, the problems by pattern, and the concepts, and no Continue cards (Today replaces them)", async () => {
     await renderWithRouter(<Harness />);
-    const progress = screen.getByRole("region", { name: "Continue" });
-    expect(within(progress).getByRole("link", { name: "lc-0026 Remove Duplicates" })).toHaveAttribute("href", "/p/lc-0026");
-    expect(within(progress).getByRole("link", { name: "hash-map/02 Most frequent" })).toHaveAttribute("href", "/e/hash-map/02");
+    expect(screen.queryByRole("region", { name: "Continue" })).not.toBeInTheDocument();
     expect(screen.getByText("1/3 solved")).toBeInTheDocument();
     expect(screen.getByRole("progressbar", { name: "Problems solved" })).toBeInTheDocument();
 
@@ -92,7 +90,6 @@ describe("HomeView", () => {
     await userEvent.type(screen.getByRole("searchbox", { name: "Search" }), "two");
     expect(screen.getByRole("link", { name: "Two Sum" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Remove Duplicates" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("region", { name: "Continue" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Hash map" })).not.toBeInTheDocument();
 
     await userEvent.clear(screen.getByRole("searchbox", { name: "Search" }));
