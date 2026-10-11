@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { parseMarkdown } from "../../lib/frontmatter.ts";
 import { REPO_ROOT } from "../../runner/src/paths.ts";
 
-const SKILLS = ["problem", "concept", "hint", "review", "give-up"];
+const SKILLS = ["problem", "concept", "hint", "review", "give-up", "coach"];
 const skill = (name: string) => parseMarkdown(readFileSync(path.join(REPO_ROOT, ".claude", "skills", name, "SKILL.md"), "utf8"));
 
 describe("project skills", () => {
@@ -98,5 +98,21 @@ describe("the playground's Today section (study coach spec §11)", () => {
     const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
     expect(readme).toContain("today's plan from the study coach");
     expect(readme).toContain("**Start review:**");
+  });
+});
+
+describe("the coach skill and the docs that point to it (study coach spec §11, §15)", () => {
+  it("triggers on the questions the spec names", () => {
+    const description = skill("coach").data.description as string;
+    for (const phrase of ["¿qué me toca hoy?", "¿qué sigue?", "¿en qué fase voy?"]) expect(description).toContain(phrase);
+  });
+
+  it("CLAUDE.md lists the coach and the presets, and README.md starts the daily flow with it", () => {
+    const claude = readFileSync(path.join(REPO_ROOT, "CLAUDE.md"), "utf8");
+    expect(claude).toMatch(/^\| `coach` \| /m);
+    expect(claude).toContain("`curriculum/<preset>.yaml`");
+    const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+    expect(readme).toContain('**"¿qué me toca hoy?"**');
+    expect(readme).toContain("(docs/superpowers/specs/2026-10-04-study-coach-design.md)");
   });
 });

@@ -22,6 +22,8 @@ uv python install 3.13   # only if `uv python find` finds nothing
 
 ## Daily flow
 
+Start every session by asking Claude **"¿qué me toca hoy?"** (or open the playground's home page). The study coach answers with today's plan: the reviews that are due (solved again from scratch), the next new item, and a note whenever you change phase. The first time, it asks how many minutes a day you want to study, Python or TypeScript, and which list (Grind 75 by default). Phase 0 is five short base concepts, one a day (Big-O, recursion, arrays and strings, maps and sets, sorting), each with three exercises. The steps below are what each item asks of you.
+
 1. Paste a problem statement or a LeetCode link into Claude Code. You get back only the concepts you need.
 2. A concept is missing? Say "creemos el concepto". Claude writes the note and the exercises; you write "My explanation" (it is saved in .study/explanations, not in the README).
 3. `pnpm play <problem>` opens the web playground: statement and concept notes on the left, the editor on the right, ▶ Run (⌘↵) for the tests. Prefer the terminal? `pnpm watch <problem> --open` reruns the tests on every save in VS Code.
@@ -77,3 +79,4 @@ Browser tests: `pnpm e2e` (first time, install its browser once with `pnpm exec 
 - [Rules for Claude](CLAUDE.md)
 - [Design spec](docs/superpowers/specs/2026-09-27-algorithms-study-system-design.md)
 - [Web playground spec](docs/superpowers/specs/2026-09-28-web-playground-design.md)
+- [Study coach spec](docs/superpowers/specs/2026-10-04-study-coach-design.md)
