@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Database from "better-sqlite3";
 import { type BetterSQLite3Database, drizzle } from "drizzle-orm/better-sqlite3";
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { studyRoot } from "../runner/src/paths.ts";
@@ -16,6 +17,8 @@ export const BUSY_TIMEOUT_MS = 5000;
 
 export type StudyDb = BetterSQLite3Database<typeof schema>;
 export type StudyTx = Parameters<Parameters<StudyDb["transaction"]>[0]>[0];
+/** What both `study.db` and a transaction offer: engine code that only runs statements takes this. */
+export type StudyQueries = BaseSQLiteDatabase<"sync", Database.RunResult, typeof schema>;
 
 export interface Study {
   /** Content root (problems/, concepts/); null for an in-memory study opened without one. */

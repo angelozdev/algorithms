@@ -56,7 +56,7 @@ describe("recordWork: the attempt lifecycle (spec §7)", () => {
     expect(eventRows(study)).toEqual([{ type: "save", lang: "py", runGreen: null, source: "playground" }]);
   });
 
-  it("opens an attempt on any run, appends every later event to it, and closes it at the first green run with no rating", () => {
+  it("opens an attempt on any run, appends every later event to it, and closes it at the first green run, rated by the close seam", () => {
     const { study, clock } = setup();
     expect(recordWork(study, "lc-0001", { type: "run", lang: "py", green: false }, "cli")).toMatchObject({ opened: true, closed: false });
     clock.advance(60_000);
@@ -68,7 +68,8 @@ describe("recordWork: the attempt lifecycle (spec §7)", () => {
       opened: false,
       closed: true,
     });
-    expect(attemptRows(study)).toMatchObject([{ endedAt: new Date(Date.parse(T0) + 120_000), outcome: "green", rating: null }]);
+    // 2 measured minutes, well under half of the default medium time-box (35): Easy (Plan B's close seam, spec §6.3).
+    expect(attemptRows(study)).toMatchObject([{ endedAt: new Date(Date.parse(T0) + 120_000), outcome: "green", rating: "easy" }]);
     expect(eventRows(study).map((event) => event.type)).toEqual(["run", "edit", "run"]);
     expect(statusOf(study, "lc-0001")).toBe("solved");
   });

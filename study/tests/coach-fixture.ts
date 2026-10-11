@@ -1,7 +1,9 @@
 // A synthetic repo for the scheduler's tests: placeholder problems (no real statements, no solutions) tagged with
 // made-up lists, synthetic concepts, and presets named after their lists.
+import { expect } from "vitest";
 import { CASES_JSON, conceptReadme, exerciseReadme, makeTempDir, put } from "../../scripts/tests/fixture.ts";
 import { type FixedClock, fixedClock } from "../clock.ts";
+import { replayAllCards, storedCards } from "../fsrs.ts";
 import { acceptExplanation, giveUp, openAttempt, recordHint, recordWork } from "../record.ts";
 import { announcements, curriculumLog, phaseLog, profile } from "../schema.ts";
 import { inTransaction, openMemoryStudy, type Study } from "../store.ts";
@@ -176,6 +178,11 @@ export function review(c: Coach, itemId: string, rating: "good" | "easy" | "hard
   inTransaction(c.study, (tx) => openAttempt(tx, itemId, c.clock.now(), options));
   if (rating === "hard") recordHint(c.study, itemId);
   recordWork(c.study, itemId, { type: "run", lang: "py", green: true }, "cli");
+}
+
+/** Spec §4: the cards cache must equal a replay from scratch after every scenario. */
+export function expectCacheEqualsReplay(study: Study): void {
+  expect(storedCards(study.db)).toEqual(replayAllCards(study.db));
 }
 
 /** The phase_log rows, oldest first, as [phase, reason]. */
