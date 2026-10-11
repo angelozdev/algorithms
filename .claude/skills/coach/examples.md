@@ -77,8 +77,8 @@ Each example is a real shape of `pnpm -s today --json` (a test checks them again
 ```
 
 - "Fase 1 · Aprender la lista — 9/75 (Grind 75)".
-- "▶️ Sigue · Valid Parentheses (lc-0020) · en curso".
-- "🔁 Repaso · Two Sum (lc-0001) · tocaba hace 2 días ✅".
+- "▶️ Sigue · Valid Parentheses (lc-0020) · 15 min · en curso".
+- "🔁 Repaso · Two Sum (lc-0001) · 9 min · tocaba hace 2 días ✅".
 - "✨ Nuevo · Implement Queue using Stacks (lc-0232) · 15 min · bloque 2 de 3 · Stack": a block item names its pattern.
 - "Hoy: 39 de 45 minutos", and the first action: `pnpm play lc-0020`.
 

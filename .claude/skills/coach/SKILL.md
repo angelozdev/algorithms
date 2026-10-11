@@ -75,7 +75,7 @@ In this order, skipping what is empty:
 | `continue` | ▶️ Sigue | goes on with the attempt already open: `pnpm play <id>` |
 | `review` | 🔁 Repaso | solves it again **from scratch**: the playground shows **Start review**; from a terminal the user runs `pnpm study start <id>` |
 | `exam` | 📝 Examen | the same with **Start exam**; exams take no hints |
-| `new` | ✨ Nuevo | a first attempt: `pnpm play <id>` (or `pnpm watch <id> --open`); it starts with their first edit or run |
+| `new` | ✨ Nuevo | a first attempt: `pnpm play <id>` (or `pnpm watch <id> --open`, adding `--lang ts` for TypeScript); it starts with their first edit or run |
 | `concept` | 📚 Concepto | reads `concepts/<id>/README.md` (or its page in the playground), does its exercises (`pnpm play <id>/01`, …), writes "My explanation", then asks you to review it ("revisa mi explicación", the `concept` skill). With `missing: true` the note does not exist yet: offer to create it with the `concept` skill. An exercise they gave up on counts again only once it is solved again: the playground shows **Start again** |
 
 **Reasons** (`items[].reason`):
@@ -109,14 +109,14 @@ Render each one from its `key` and `payload`, then acknowledge it (§5 step 1):
 | `curriculum-switched` | `{ from: { preset, phase }, to: { preset, phase } }` | The list changed from one to the other and the phase was recalculated against the new list. Every solved problem still counts. If the new phase is lower, say so kindly: it is the new list's measure, not a step back in what they know |
 | `welcome-back` | `{ date, daysAway }` | A warm welcome back after `daysAway` days, with no guilt 💛. Today opens with quick wins, and time away never lowers the phase |
 
-If a plain `pnpm -s today --json` (without `--refresh`) returns a `phase-set` or `curriculum-switched` announcement, the stored plan may predate that change (the user ran `pnpm study phase set` or switched lists from a terminal): run `pnpm -s today --json --refresh` once and render that output instead.
+If a plain `pnpm -s today --json` (without `--refresh`) returns a `phase-set` or `curriculum-switched` announcement whose `at` falls on today's `date` or the day before (`at` is a UTC timestamp, `date` is the local day; the one-day slack covers the gap), the stored plan may predate that change (the user ran `pnpm study phase set` or switched lists from a terminal): run `pnpm -s today --json --refresh` once and render that output instead.
 
 ## 7. Phase 3: which list to expand with
 
 When `phase.id` is `"expand"` and `phase.expansion.list` is `null`, ask: "¿ampliamos con Grind 169 o NeetCode 150?" (the choices are `phase.expansion.choices`). Add one line on how they differ: Grind 169 is the long version of the Grind list (most of Grind 75 plus more, harder problems); NeetCode 150 is a different selection, grouped by pattern, that shares about 58 problems with Grind 75.
 
 When the user answers, run `pnpm -s study curriculum expand <list> --json`:
-- `"status": "set"`: done. Then run `pnpm -s today --json --refresh` and render it (§5). If `imported` is 0 (or below `size`), the list is not fully in the repo: follow §8. Until it is, `today` serves reviews only.
+- `"status": "set"`: done. Then run `pnpm -s today --json --refresh` and render it (§5). If `imported` is 0, the list has no problem in the repo yet: follow §8; until it is, `today` serves reviews only. If `imported` is below `size`, the list is only partly in the repo: follow §8, and say today's plan already draws new items from the part that is imported.
 - `"status": "refused"`: that list is not one of `choices`. Say which ones are, and ask again.
 
 ## 8. A list that is not imported
