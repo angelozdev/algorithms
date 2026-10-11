@@ -82,16 +82,16 @@ export function ResetMenu({ target, prepare, onReset }: { target: TargetData; pr
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
-          <DropdownMenuItem onSelect={() => reset.mutate("code")}>
+          <DropdownMenuItem disabled={reset.isPending} onSelect={() => reset.mutate("code")}>
             <Eraser aria-hidden />
             <ItemText text="Clean code" off={null} />
           </DropdownMenuItem>
-          <DropdownMenuItem disabled={discardOff !== null} onSelect={() => setConfirm("attempt")}>
+          <DropdownMenuItem disabled={discardOff !== null || reset.isPending} onSelect={() => setConfirm("attempt")}>
             <Undo2 aria-hidden />
             <ItemText text="Discard attempt" off={discardOff} />
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive" disabled={eraseOff !== null} onSelect={() => setConfirm("all")}>
+          <DropdownMenuItem variant="destructive" disabled={eraseOff !== null || reset.isPending} onSelect={() => setConfirm("all")}>
             <Trash2 aria-hidden />
             <ItemText text="Erase everything" off={eraseOff} />
           </DropdownMenuItem>
@@ -107,7 +107,9 @@ export function ResetMenu({ target, prepare, onReset }: { target: TargetData; pr
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => reset.mutate("attempt")}>Discard</AlertDialogAction>
+            <AlertDialogAction disabled={reset.isPending} onClick={() => reset.mutate("attempt")}>
+              Discard
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -127,7 +129,7 @@ export function ResetMenu({ target, prepare, onReset }: { target: TargetData; pr
           </label>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" disabled={typed !== target.id} onClick={() => reset.mutate("all")}>
+            <AlertDialogAction variant="destructive" disabled={typed !== target.id || reset.isPending} onClick={() => reset.mutate("all")}>
               Erase
             </AlertDialogAction>
           </AlertDialogFooter>

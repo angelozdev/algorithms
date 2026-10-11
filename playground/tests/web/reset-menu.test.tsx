@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResetPreview, TargetData } from "../../server/types.ts";
 import { ResetMenu } from "../../web/work/ResetMenu.tsx";
@@ -102,6 +103,18 @@ describe("ResetMenu (item reset spec §5.2)", () => {
     expect(erase).toBeEnabled();
     await userEvent.click(erase);
     await waitFor(() => expect(posts).toEqual([{ action: "all" }]));
+  });
+
+  it("posts nothing and never calls onReset when prepare (saving the editor's text) fails", async () => {
+    prepare.mockRejectedValueOnce(new Error("Your code is not saved yet."));
+    const toastError = vi.spyOn(toast, "error");
+    const { onReset } = renderMenu();
+    await openMenu();
+    await userEvent.click(await enabledItem(/^Clean code/));
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Your code is not saved yet."));
+    expect(posts).toEqual([]);
+    expect(onReset).not.toHaveBeenCalled();
+    toastError.mockRestore();
   });
 
   it("locks Discard and Erase for an item with an exam attempt, and keeps Clean code", async () => {
