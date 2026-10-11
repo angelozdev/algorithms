@@ -56,8 +56,11 @@ export function ResetMenu({ target, prepare, onReset }: { target: TargetData; pr
       await prepare();
       return postReset(target.id, action);
     },
-    onSuccess: ({ action }) => {
-      for (const queryKey of [keys.targets, keys.home, keys.today, keys.concepts, keys.reset(target.id)]) void queryClient.invalidateQueries({ queryKey });
+    onSuccess: async ({ action }) => {
+      // Awaited: onReset (WorkPage) decides whether to show the gate again from target.data, which must already
+      // carry the fresh one (a discarded review/retry attempt brings the gate back, final review finding 1).
+      await queryClient.invalidateQueries({ queryKey: keys.targets });
+      for (const queryKey of [keys.home, keys.today, keys.concepts, keys.reset(target.id)]) void queryClient.invalidateQueries({ queryKey });
       toast(DONE[action]);
       onReset();
     },

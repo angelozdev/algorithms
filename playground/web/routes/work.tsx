@@ -80,7 +80,9 @@ function WorkPage({ id }: { id: string }) {
   const target = useQuery(targetQuery(id));
   const [chosen, setChosen] = useState<Lang | null>(null);
   // Once the editor has opened on this page, a gate that appears later (a card falling due at midnight) waits for
-  // the next visit: it must never close an editor with text in it.
+  // the next visit: it must never close an editor with text in it. A reset is the one exception: the editor
+  // remounts on a fresh stub anyway (the generation key below), so there is no text left to lose, and discarding
+  // a review/retry attempt must bring its gate straight back (final review finding 1).
   const [opened, setOpened] = useState(false);
   const [generation, setGeneration] = useState(0);
   if (target.isPending) return <WorkSkeleton />;
@@ -104,7 +106,13 @@ function WorkPage({ id }: { id: string }) {
   }
   if (!opened) setOpened(true);
   // A reset rewrites the solution on disk: a fresh Workspace loads it with an empty undo history (item reset spec §5.2).
-  return <Workspace key={`${lang}:${generation}`} target={target.data} lang={lang} onLang={choose} onReset={() => setGeneration((n) => n + 1)} />;
+  // Back to "not opened" too: by the time this runs, target.data already carries any gate the reset brought back
+  // (ResetMenu awaits the target invalidation first), so the gate shows at once instead of waiting for a revisit.
+  const onReset = () => {
+    setOpened(false);
+    setGeneration((n) => n + 1);
+  };
+  return <Workspace key={`${lang}:${generation}`} target={target.data} lang={lang} onLang={choose} onReset={onReset} />;
 }
 
 const GATE_TEXT: Record<NonNullable<TargetData["gate"]>["kind"], { title: string; button: string; body: string }> = {
