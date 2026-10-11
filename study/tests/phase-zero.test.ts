@@ -23,7 +23,7 @@ const BASES: [slug: string, title: string][] = [
   ["sorting", "Sorting"],
 ];
 /** The base notes written so far (study coach Plan C adds one per task). */
-const WRITTEN = ["big-o", "recursion", "arrays-and-strings", "maps-and-sets"];
+const WRITTEN = ["big-o", "recursion", "arrays-and-strings", "maps-and-sets", "sorting"];
 const TZ = "America/Bogota";
 const MONDAY = "2026-10-05T14:00:00.000Z"; // 09:00 in Bogotá
 const DAY = 86_400_000;
@@ -137,5 +137,22 @@ describe("phase 0 over the days (study coach spec §6.1, §6.4)", () => {
     expect(plan).toMatchObject({ mode: "return", phase: { id: "bases", progress: { done: 1, total: 5 } } });
     expect(plan.announcements).toEqual([expect.objectContaining({ key: "welcome-back", payload: expect.objectContaining({ daysAway: 9 }) })]);
     expect(plan.items).toEqual([expect.objectContaining({ kind: "concept", id: "recursion", missing: false })]);
+  });
+});
+
+describe("the end of phase 0 (study coach spec §6.1)", () => {
+  it("ends phase 0 after the fifth base concept and opens phase 1 with the hash-map concept", async () => {
+    const c = copy();
+    await startCoach(c);
+    for (const [slug] of BASES) {
+      await c.json("today", "--json");
+      await learn(c, slug);
+      c.clock.advance(DAY);
+    }
+    const plan = await c.json("today", "--json");
+    expect(plan.phase).toMatchObject({ id: "learn", preset: "grind-75", list: { list: "grind-75" } });
+    expect(plan.announcements).toContainEqual(expect.objectContaining({ key: "phase-advanced", payload: { from: "bases", to: "learn" } }));
+    // hash-map opens arrays-hashing in curriculum/grind-75.yaml; the copy leaves the user's own notes out.
+    expect(plan.items[0]).toMatchObject({ kind: "concept", id: "hash-map", reason: "opens arrays-hashing" });
   });
 });

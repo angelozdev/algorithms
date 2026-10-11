@@ -1,0 +1,25 @@
+{
+  "mode": "function",
+  "entry": "leaderboard",
+  "params": [
+    {"name":"names","type":"string[]"},
+    {"name":"scores","type":"int[]"}
+  ],
+  "returns": "string[]",
+  "compare": "exact",
+  "examples": [
+    {"input":[["ana","bo","cy"],[3,7,3]],"expected":["bo","ana","cy"]},
+    {"input":[["zed","amy"],[5,5]],"expected":["amy","zed"]},
+    {"input":[["solo"],[0]],"expected":["solo"]}
+  ],
+  "hidden": [
+    {"input":[["a","b","c"],[1,2,3]],"expected":["c","b","a"]},
+    {"input":[["c","b","a"],[0,0,0]],"expected":["a","b","c"]},
+    {"input":[["x","y"],[-5,-1]],"expected":["y","x"]},
+    {"input":[["mia","li","al","bea"],[10,20,10,20]],"expected":["bea","li","al","mia"]},
+    {"input":[["one"],[-1000000000]],"expected":["one"]},
+    {"input":[["dd","d","ddd"],[1,1,1]],"expected":["d","dd","ddd"]},
+    {"input":[["b","a"],[1000000000,-1000000000]],"expected":["b","a"]},
+    {"input":[["kai","ana","zoe","ben"],[3,1,2,4]],"expected":["ben","kai","zoe","ana"]}
+  ]
+}
