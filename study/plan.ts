@@ -2,7 +2,7 @@ import { and, asc, eq, max } from "drizzle-orm";
 import { listMembers } from "./catalog.ts";
 import { conceptOf, patternOrder, timeboxMinutes } from "./curriculum.ts";
 import { addDays, DAY_MS, type LocalDay, localDay } from "./days.ts";
-import { createExam, examResult, openExam, rateReached } from "./exam.ts";
+import { createExam, type ExamResult, examResult, openExam, rateReached } from "./exam.ts";
 import { type CardValues, pauseSpans, retrievability, storedCards } from "./fsrs.ts";
 import { openPause } from "./pause.ts";
 import { type CoachContext, conceptLearned, currentCurriculum, currentPhase, loadContext } from "./phase.ts";
@@ -106,8 +106,8 @@ export interface NewSlot {
   introduces: string | null;
 }
 
-/** New items for `phase`, in order; the caller takes as many as the budget allows (spec §6.2). */
-export function* newSlots(study: Study, db: StudyQueries, ctx: CoachContext, phase: Phase, facts: Facts, day: LocalDay, now: Date): Generator<NewSlot> {
+/** New items for `phase`, in order; the caller takes as many as the budget allows (spec §6.2). `exam` is phase 2's open exam, precomputed by the caller so it is opened at most once. */
+export function* newSlots(study: Study, db: StudyQueries, ctx: CoachContext, phase: Phase, facts: Facts, day: LocalDay, now: Date, exam: ExamResult | null): Generator<NewSlot> {
   const unattempted = (ids: string[]) => ids.filter((id) => !facts.attempted.has(id));
   const seeded = (ids: string[]) => shuffled([...ids].sort(), seedFrom(day.date));
   switch (phase) {
@@ -138,10 +138,6 @@ export function* newSlots(study: Study, db: StudyQueries, ctx: CoachContext, pha
       return;
     }
     case "master": {
-      const { list, first_try_success } = ctx.preset.phases.master;
-      const members = listMembers(ctx.catalog, list).map((problem) => problem.id);
-      let exam = openExam(db, list, members);
-      if (!exam && !rateReached(db, list, members, first_try_success)) exam = examResult(db, createExam(db, list, now, day.date), members);
       const open = new Set(facts.open.map((attempt) => attempt.itemId));
       for (const itemId of exam?.remaining ?? []) {
         if (!open.has(itemId)) yield { itemId, slot: "new", pattern: null, blockIndex: null, minutes: problemMinutes(ctx, itemId), introduces: null };
@@ -170,6 +166,15 @@ interface PlannedRow {
   blockIndex: number | null;
 }
 
+/** Phase 2's exam in progress, opening a new one when the rate is not yet reached (spec §6.1); null once passed. */
+function masterExam(db: StudyQueries, ctx: CoachContext, now: Date, day: LocalDay): ExamResult | null {
+  const { list, first_try_success } = ctx.preset.phases.master;
+  const members = listMembers(ctx.catalog, list).map((problem) => problem.id);
+  let exam = openExam(db, list, members);
+  if (!exam && !rateReached(db, list, members, first_try_success)) exam = examResult(db, createExam(db, list, now, day.date), members);
+  return exam;
+}
+
 /** Builds and stores today's plan (spec §6.2, §6.4) in the caller's transaction. */
 function buildPlan(study: Study, db: StudyQueries, ctx: CoachContext, phase: Phase, profile: ProfileSettings, day: LocalDay, now: Date): void {
   const facts = loadFacts(db);
@@ -183,9 +188,14 @@ function buildPlan(study: Study, db: StudyQueries, ctx: CoachContext, phase: Pha
     used += continueMinutes(ctx, open);
   }
 
+  // Phase 2's open exam serves its remaining items; they are excluded below so they are never also planned as
+  // reviews (ruling I1).
+  const exam = phase === "master" ? masterExam(db, ctx, now, day) : null;
+  const examRemaining = new Set(exam?.remaining ?? []);
+
   // 2. Reviews: due cards until about 60% of the budget, at least one when any is due.
   let mode: PlanMode = facts.lastActivity && idleMs(db, facts.lastActivity, now) >= RETURN_AFTER_DAYS * DAY_MS ? "return" : "normal";
-  const due = dueCards(db, ctx, facts, day.end);
+  const due = dueCards(db, ctx, facts, day.end).filter(({ itemId }) => !examRemaining.has(itemId));
   let reviewMinutes = 0;
   const reviews: string[] = [];
   for (const { itemId } of reviewOrder(due, mode, now)) {
@@ -203,8 +213,9 @@ function buildPlan(study: Study, db: StudyQueries, ctx: CoachContext, phase: Pha
   const yesterday = storedPlan(db, addDays(day.date, -1));
   const newToday = mode !== "catch_up" || !yesterday?.items.some((item) => item.slot === "new" || item.slot === "concept");
   if (newToday) {
-    for (const next of newSlots(study, db, ctx, phase, facts, day, now)) {
+    for (const next of newSlots(study, db, ctx, phase, facts, day, now, exam)) {
       const first = !rows.some((row) => row.slot === "new" || row.slot === "concept");
+      if (mode === "catch_up" && !first) break; // spec §6.4: a catch-up day's allowed day caps new items at one.
       if (!first && used + next.minutes > budget) break;
       rows.push({ itemId: next.itemId, slot: next.slot, pattern: next.pattern, blockIndex: next.blockIndex });
       used += next.minutes;

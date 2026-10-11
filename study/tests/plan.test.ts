@@ -109,6 +109,21 @@ describe("the daily plan (spec §6.2)", () => {
     expect(first.map((item) => [item.slot, item.itemId])).toEqual([["new", order[0]]]);
   });
 
+  it("in phase 2, never plans an open exam's remaining items as reviews too (I1)", () => {
+    const c = started({ minutes: 400 });
+    for (const id of DEMO_LIST) solve(c, id);
+    c.clock.advance(30 * DAY);
+    forcePhase(c.study, "master", c.clock.now());
+    const items = plan(c)!.items;
+    const ids = items.map((item) => item.itemId);
+    expect(new Set(ids).size).toBe(ids.length); // no item id appears twice
+    const exam = examsOf(c.study.db, "demo-list").at(-1)!;
+    const remaining = examResult(c.study.db, exam, DEMO_LIST).remaining;
+    expect(remaining.length).toBeGreaterThan(0);
+    for (const itemId of remaining) expect(items.find((item) => item.itemId === itemId)).toMatchObject({ slot: "new" });
+    expect(items.some((item) => item.slot === "review")).toBe(false);
+  });
+
   it("serves only reviews in phase 3 until the expansion list is chosen", () => {
     const c = started();
     solve(c, "lc-9101");
@@ -193,6 +208,22 @@ describe("returns, backlog and catch-up days (spec §6.4)", () => {
     expect(plan(c)!.items.map((item) => item.slot)).toEqual(["review"]);
     c.clock.advance(DAY);
     expect(plan(c)!.items.map((item) => item.slot)).toEqual(["review", "new"]);
+  });
+
+  it("caps a catch-up day's new items at one even when the budget would fit more (I2)", () => {
+    const c = coach({ minutes: 120 });
+    setCurriculum(c.study, c.root, "wide-list", c.clock.now());
+    learn(c, "basics-a");
+    learn(c, "basics-b");
+    learn(c, "map-intro");
+    for (const id of ["lc-9102", "lc-9103", "lc-9104", "lc-9105", "lc-9107", "lc-9108", "lc-9111", "lc-9112", "lc-9113", "lc-9114"]) solve(c, id);
+    c.clock.advance(80 * DAY);
+    review(c, "map-intro/01"); // some activity: not a return
+    const monday = plan(c)!;
+    expect(monday.mode).toBe("catch_up");
+    expect(monday.items.filter((item) => item.slot === "new" || item.slot === "concept")).toHaveLength(1);
+    c.clock.advance(DAY);
+    expect(plan(c)!.items.some((item) => item.slot === "new" || item.slot === "concept")).toBe(false); // every other day
   });
 
   it("never lowers the phase after a long absence: the plan only welcomes the user back", () => {
