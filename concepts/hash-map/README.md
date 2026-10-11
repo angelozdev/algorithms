@@ -90,8 +90,8 @@ seen.has("do"); // true, O(1) on average
 ## Exercises
 
 <!-- auto:exercises -->
-- ○ [01 · First repeat](exercises/01-first-repeat/README.md)
-- ○ [02 · Most frequent](exercises/02-most-frequent/README.md)
+- ✓ [01 · First repeat](exercises/01-first-repeat/README.md)
+- ✓ [02 · Most frequent](exercises/02-most-frequent/README.md)
 - ○ [03 · Same letters](exercises/03-same-letters/README.md)
 <!-- /auto -->
 
