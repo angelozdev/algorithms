@@ -60,6 +60,8 @@ export interface TargetData {
   difficulty: string | null;
   url: string | null;
   status: ItemStatus;
+  /** Same as the home page's: an open attempt, never just the stub that opening the item wrote. */
+  inProgress: boolean;
   hints: number;
   /** null when cases.json is invalid. */
   signature: Signature | null;
