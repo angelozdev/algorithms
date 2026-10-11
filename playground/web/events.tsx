@@ -62,6 +62,8 @@ export function EventsProvider({ children }: { children: ReactNode }) {
           void queryClient.invalidateQueries({ queryKey: keys.home });
           if (event.target) void queryClient.invalidateQueries({ queryKey: keys.target(event.target) });
           if (event.concept) void queryClient.invalidateQueries({ queryKey: keys.concept(event.concept) });
+          // A README the coach was waiting on (a missing concept note, say) may now exist: Today can show it live.
+          void queryClient.invalidateQueries({ queryKey: keys.today });
         } else if (event.kind === "cases") {
           void queryClient.invalidateQueries({ queryKey: keys.target(event.target) });
         } else if (event.kind === "solution") {
