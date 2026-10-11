@@ -4,7 +4,7 @@ import { and, asc, eq, isNull, lt, max } from "drizzle-orm";
 import { LEGACY_PERSONAL_FIELDS } from "../lib/schemas.ts";
 import { scanRepo } from "../lib/repo.ts";
 import { itemTitle, listMembers, loadCatalog } from "./catalog.ts";
-import { type ListImport, listImport, listPresets, loadPreset, timeboxMinutes } from "./curriculum.ts";
+import { type ListImport, listImport, listPresets, loadPreset, PresetError, timeboxMinutes } from "./curriculum.ts";
 import { daysBetween, localDate, localDay } from "./days.ts";
 import { examResult, examsOf, openExam } from "./exam.ts";
 import { openPause } from "./pause.ts";
@@ -241,7 +241,15 @@ export function today(study: Study, root: string, options: { surface: Surface; n
   json.items = plan.items.map((item, i) => itemJson(study, ctx, phase, item, done[i], day.date));
   json.budget.planned = json.items.reduce((sum, item) => sum + item.minutes, 0);
   const planned = new Set(plan.items.map((item) => item.itemId));
-  const waiting = dueCards(study.db, ctx, loadFacts(study.db), day.end).filter(({ itemId }) => !planned.has(itemId)).length;
+  // The open exam's remaining items are served only as exam items (ruling I1): not counted as a waiting review either.
+  let waitingDue = dueCards(study.db, ctx, loadFacts(study.db), day.end);
+  if (phase === "master") {
+    const list = ctx.preset.phases.master.list;
+    const members = listMembers(ctx.catalog, list).map((p) => p.id);
+    const exam = openExam(study.db, list, members);
+    if (exam) waitingDue = waitingDue.filter(({ itemId }) => !exam.remaining.includes(itemId));
+  }
+  const waiting = waitingDue.filter(({ itemId }) => !planned.has(itemId)).length;
   const capacity = Math.max(1, plan.items.filter((item) => item.slot === "review").length);
   json.backlog = { waiting, days: Math.ceil(waiting / capacity) };
   return json;
@@ -305,9 +313,15 @@ export interface CurriculumStatusJson {
 export function curriculumStatus(study: Study, root: string): CurriculumStatusJson {
   const curriculum = currentCurriculum(study.db);
   const catalog = loadCatalog(root);
-  const presets = listPresets(root).map((id) => {
-    const preset = loadPreset(root, id);
-    return { id, list: preset.phases.learn.list, imported: listMembers(catalog, preset.phases.learn.list).length, size: preset.phases.learn.size };
+  // A preset that fails validation is skipped, not fatal to the whole listing (spec §13); any other error propagates.
+  const presets = listPresets(root).flatMap((id) => {
+    try {
+      const preset = loadPreset(root, id);
+      return [{ id, list: preset.phases.learn.list, imported: listMembers(catalog, preset.phases.learn.list).length, size: preset.phases.learn.size }];
+    } catch (error) {
+      if (error instanceof PresetError) return [];
+      throw error;
+    }
   });
   const expansionList = study.db.select({ list: profile.expansionList }).from(profile).get()?.list ?? null;
   return {

@@ -5,12 +5,13 @@ import { cleanupTempDirs, put } from "../../scripts/tests/fixture.ts";
 import { fixedClock } from "../clock.ts";
 import { initStudy } from "../init.ts";
 import { pauseStudy } from "../pause.ts";
+import { openAttempt } from "../record.ts";
 import { patternIntros } from "../schema.ts";
 import { readState } from "../state-file.ts";
-import { openStudy } from "../store.ts";
-import { setCurriculum } from "../switch.ts";
-import { ackAnnouncement, describeToday, notInitialized, today } from "../today.ts";
-import { type Coach, coach, DAY, learn, makeCoachRepo, MONDAY, solve, TZ } from "./coach-fixture.ts";
+import { inTransaction, openStudy } from "../store.ts";
+import { forcePhase, setCurriculum } from "../switch.ts";
+import { ackAnnouncement, curriculumStatus, describeToday, notInitialized, today } from "../today.ts";
+import { type Coach, coach, DAY, DEMO_LIST, learn, makeCoachRepo, MONDAY, solve, TZ } from "./coach-fixture.ts";
 
 afterEach(cleanupTempDirs);
 
@@ -100,6 +101,31 @@ describe("today (spec §11)", () => {
     expect(ui(c)).toMatchObject({ paused: { since: MONDAY }, items: [] });
     expect(describeToday(ui(c))).toContain("Paused since 2026-10-05");
   });
+
+  it("renders a phase-2 exam's items as kind exam, in the exam's order (I1)", () => {
+    const c = coach({ minutes: 400 });
+    start(c);
+    for (const id of DEMO_LIST) solve(c, id);
+    c.clock.advance(30 * DAY);
+    forcePhase(c.study, "master", c.clock.now());
+    const items = ui(c).items;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.every((item) => item.kind === "exam")).toBe(true);
+    expect(items.map((item) => item.reason)).toEqual(items.map((_, i) => `exam ${i + 1}/${items.length}`));
+  });
+
+  it("renders a continued review with its pattern and the problem's time-box (M11)", () => {
+    const c = coach({ minutes: 60 });
+    start(c);
+    learn(c, "basics-a");
+    learn(c, "basics-b");
+    learn(c, "map-intro");
+    solve(c, "lc-9104"); // two-pointers, easy
+    c.clock.advance(30 * DAY);
+    inTransaction(c.study, (tx) => openAttempt(tx, "lc-9104", c.clock.now()));
+    const item = ui(c).items.find((item) => item.id === "lc-9104")!;
+    expect(item).toMatchObject({ kind: "continue", reason: "in progress · two-pointers", minutes: 15 });
+  });
 });
 
 describe("today with content that changed", () => {
@@ -156,6 +182,14 @@ describe("announcements (spec §6.1)", () => {
       ["welcome-back", { date: "2026-10-15", daysAway: 10 }],
     ]);
   });
+
+  it("announces a forced phase change as phase-set, with the phase it moved from and to (M11)", () => {
+    const c = coach();
+    start(c);
+    forcePhase(c.study, "master", c.clock.now());
+    const announcement = ui(c).announcements.find((a) => a.key === "phase-set");
+    expect(announcement?.payload).toEqual({ from: "bases", to: "master" });
+  });
 });
 
 describe("state.json and the first run", () => {
@@ -178,5 +212,18 @@ describe("state.json and the first run", () => {
     expect(notInitialized(root)).toEqual({ initialized: false, next: "init" });
     put(root, "problems/lc-9101-sample/solution.py", "# placeholder\n");
     expect(notInitialized(root)).toEqual({ initialized: false, next: "migrate" });
+  });
+});
+
+describe("curriculumStatus (spec §13)", () => {
+  it("skips a preset that fails validation instead of failing the whole listing (M9)", () => {
+    const root = makeCoachRepo();
+    put(root, "curriculum/broken.yaml", "id: broken\n"); // missing phases, patterns, timebox_minutes: PresetError
+    const clock = fixedClock(MONDAY);
+    initStudy(root, { clock, timezone: TZ });
+    const study = openStudy(root, { clock });
+    const status = curriculumStatus(study, root);
+    expect(status.presets.map((p) => p.id)).toEqual(["demo-list", "ghost-list", "wide-list"]);
+    study.close();
   });
 });
