@@ -92,3 +92,11 @@ describe("the study coach's commands (study coach spec §11)", () => {
     expect(claude).toContain("pnpm -s study ack <id>");
   });
 });
+
+describe("the playground's Today section (study coach spec §11)", () => {
+  it("README.md explains Today and Start review", () => {
+    const readme = readFileSync(path.join(REPO_ROOT, "README.md"), "utf8");
+    expect(readme).toContain("today's plan from the study coach");
+    expect(readme).toContain("**Start review:**");
+  });
+});
