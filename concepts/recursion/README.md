@@ -50,7 +50,7 @@ call stack at the deepest point (top = newest):
 ## When it fails
 
 - **No base case, or one you never reach** 🔁💥: `RecursionError: maximum recursion depth exceeded` in Python, `RangeError: Maximum call stack size exceeded` in TypeScript.
-- **Too deep for the stack:** Python allows about 1,000 nested calls by default, Node about 10,000. One call per element of a 100,000-element list crashes; a loop does not. Use recursion when the depth stays small (a few hundred), or when it is about log n.
+- **Too deep for the stack:** Python allows about 1,000 nested calls by default, Node about 10,000. One call per element of a 100,000-element list crashes; a loop does not. This repo's runner raises both limits, so that may pass in `pnpm play`/`pnpm test`; plain `python`/`node` scripts and many judges keep the defaults. Use recursion when the depth stays small (a few hundred), or when it is about log n.
 - **Exponential blow-up:** a function that calls itself twice on n - 1 makes about 2ⁿ calls. At n = 40 that is a trillion calls, even if each one is tiny. Count the calls (see the table) before you trust a branching recursion.
 - **Hidden copies:** `total(nums[1:])` copies the rest of the list at every call, so a "linear" recursion becomes O(n²). Pass an index instead, as in the template.
 
@@ -107,7 +107,7 @@ function total(nums: number[], i = 0): number {
 
 1. What happens if a recursive function has no base case? What error do you see in Python, and in TypeScript?
 2. In the diagram, which runs first: the `4 +` of the first call, or the `0` of the base case? Why?
-3. Why can a recursive sum over a 100,000-element list crash Python when a `for` loop does not?
+3. Why can a recursive sum over a 100,000-element list crash a plain Python script when a `for` loop does not?
 4. A function calls itself twice, each time with n - 1. About how many calls does it make for n = 20?
 
 ## My explanation

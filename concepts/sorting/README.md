@@ -60,7 +60,7 @@ stable sort by the number:        (bo, 1)  (di, 1)  (ana, 3)  (cy, 3)
 - **A comparator returns a number, not a boolean:** negative means "a first", positive means "b first", 0 means a tie. `(a, b) => a > b` is a bug.
 - **In place or a copy?** Python's `list.sort()` sorts in place and returns `None` (`x = x.sort()` loses your list); `sorted(x)` returns a new list. TypeScript's `arr.sort()` sorts in place *and* returns the same array; `arr.toSorted()` returns a copy.
 - **Sorting loses positions:** once sorted, you no longer know where each item came from. Sort the indexes (or `(value, index)` pairs) when you need them.
-- **O(n log n) is not always the best:** finding only the smallest item is one O(n) pass, and values from a tiny range (ages 0 to 120) can be counted instead of compared.
+- **O(n log n) is not always the best:** finding only the smallest item is one O(n) pass.
 
 ## Typical complexity
 
