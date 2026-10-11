@@ -1,10 +1,13 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { toast } from "sonner";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TodayJson } from "../../server/types.ts";
 import { announcementText, reasonText, TodaySection, TodayView } from "../../web/home/TodaySection.tsx";
 import { renderWithRouter } from "./render.tsx";
+
+vi.mock("sonner", () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const PLAN: TodayJson = {
   initialized: true,
@@ -127,5 +130,21 @@ describe("TodaySection", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Got it" }));
     await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
     expect(calls).toEqual(["GET /api/study/today", "POST /api/study/ack/3", "GET /api/study/today"]);
+  });
+
+  it("toasts the server's error when Pause fails, instead of leaving the user with no feedback", async () => {
+    vi.stubGlobal("fetch", async (input: RequestInfo | URL) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes("/api/study/pause")) return Response.json({ error: "Already paused." }, { status: 409 });
+      return Response.json(PLAN);
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await renderWithRouter(
+      <QueryClientProvider client={client}>
+        <TodaySection />
+      </QueryClientProvider>,
+    );
+    await userEvent.click(await screen.findByRole("button", { name: "Pause" }));
+    await waitFor(() => expect(toast.error).toHaveBeenCalledWith("Already paused."));
   });
 });

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { BookOpen, Circle, CircleCheck, Megaphone, Pause, Play, TriangleAlert } from "lucide-react";
+import { toast } from "sonner";
 import type { AnnouncementJson, TodayItem, TodayJson } from "../../server/types.ts";
 import { ackAnnouncement, keys, pauseStudy, resumeStudy, type TodayData, todayQuery } from "../api.ts";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
@@ -192,9 +193,9 @@ export function TodaySection() {
   const today = useQuery(todayQuery());
   const queryClient = useQueryClient();
   const refresh = () => void queryClient.invalidateQueries({ queryKey: keys.today });
-  const ack = useMutation({ mutationFn: ackAnnouncement, onSettled: refresh });
-  const pause = useMutation({ mutationFn: pauseStudy, onSettled: refresh });
-  const resume = useMutation({ mutationFn: resumeStudy, onSettled: refresh });
+  const ack = useMutation({ mutationFn: ackAnnouncement, onError: (error) => toast.error(error.message), onSettled: refresh });
+  const pause = useMutation({ mutationFn: pauseStudy, onError: (error) => toast.error(error.message), onSettled: refresh });
+  const resume = useMutation({ mutationFn: resumeStudy, onError: (error) => toast.error(error.message), onSettled: refresh });
   if (today.isPending) return <Skeleton aria-label="Loading today" className="mb-8 h-24" />;
   if (today.isError) {
     return (
