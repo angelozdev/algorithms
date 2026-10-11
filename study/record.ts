@@ -2,6 +2,7 @@ import { and, desc, eq, isNull } from "drizzle-orm";
 import type { Lang } from "../runner/src/types.ts";
 import { type ClosedAttempt, onAttemptClosed } from "./close-hook.ts";
 import { attemptEvents, attempts, attemptStats, complexityNotes, conceptAcceptances, type EventSource, type Outcome } from "./schema.ts";
+import { evaluatePhase } from "./phase.ts";
 import { refreshState } from "./state.ts";
 import { inTransaction, type Study, type StudyTx } from "./store.ts";
 
@@ -76,6 +77,7 @@ export function recordWork(study: Study, itemId: string, event: WorkEvent, sourc
     const closed = event.type === "run" && event.green && closeAttempt(tx, attemptId, "green", at, study) !== null;
     return { recorded: true, attemptId, opened: open === undefined, closed };
   });
+  if (result.recorded && result.closed) evaluatePhase(study); // spec §6.1: criteria after every recorded attempt
   if (result.recorded) refreshState(study);
   return result;
 }
@@ -106,6 +108,7 @@ export function giveUp(study: Study, itemId: string): GiveUpResult {
     closeAttempt(tx, attemptId, "gave_up", at, study);
     return { recorded: true, attemptId };
   });
+  if (result.recorded) evaluatePhase(study);
   if (result.recorded) refreshState(study);
   return result;
 }
@@ -129,9 +132,14 @@ export function recordComplexity(study: Study, itemId: string, note: { time: str
 /** `pnpm -s study record explanation <slug>` (the `concept` skill). The first acceptance is the one kept. */
 export function acceptExplanation(study: Study, slug: string): { acceptedAt: Date; already: boolean } {
   const at = study.clock.now();
-  return inTransaction(study, (tx) => {
+  const result = inTransaction(study, (tx) => {
     const inserted = tx.insert(conceptAcceptances).values({ concept: slug, acceptedAt: at }).onConflictDoNothing().returning().get();
     const row = tx.select().from(conceptAcceptances).where(eq(conceptAcceptances.concept, slug)).get()!;
     return { acceptedAt: row.acceptedAt, already: inserted === undefined };
   });
+  if (!result.already) {
+    evaluatePhase(study); // the last step of a base concept can end phase 0
+    refreshState(study);
+  }
+  return result;
 }
