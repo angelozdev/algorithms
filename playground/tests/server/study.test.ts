@@ -133,3 +133,30 @@ describe("POST /api/study/start/:id", () => {
     expect(existsSync(path.join(makeRepo({ study: false }), ".study"))).toBe(false);
   });
 });
+
+describe("/api/study/reset/:id (item reset spec §5.2)", () => {
+  it("previews and runs the three resets", async () => {
+    const root = coachRepo(); // lc-0020 solved, its solution PY_SUM on disk
+    const app = createApp({ root });
+    const folder = path.join(root, ".study/solutions/problems/lc-0020");
+    expect((await json(await call(app, "/api/study/reset/lc-0020"))).body).toEqual({ open: null, attempts: 1, hints: 0, versions: 0, examLocked: false });
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "attempt" } }))).toEqual({
+      status: 409,
+      body: { error: "lc-0020 has no open attempt to discard." },
+    });
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "code" } }))).toEqual({ status: 200, body: { action: "code" } });
+    expect(readFileSync(path.join(folder, "solution.py"), "utf8")).not.toBe(PY_SUM);
+    expect(readdirSync(path.join(folder, "history"))).toHaveLength(1);
+    expect(await json(await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "all" } }))).toEqual({ status: 200, body: { action: "all" } });
+    expect(existsSync(folder)).toBe(false);
+    expect((await json(await call(app, "/api/target?id=lc-0020"))).body).toMatchObject({ status: "todo", inProgress: false });
+  });
+
+  it("takes exercise ids, and answers 404, 400 and 409 for an unknown id, a bad action and no database", async () => {
+    const app = createApp({ root: coachRepo() });
+    expect((await call(app, "/api/study/reset/hash-map/01", { method: "POST", json: { action: "all" } })).status).toBe(200);
+    expect((await call(app, "/api/study/reset/lc-9999")).status).toBe(404);
+    expect((await call(app, "/api/study/reset/lc-0020", { method: "POST", json: { action: "nuke" } })).status).toBe(400);
+    expect((await call(createApp({ root: makeRepo({ study: false }) }), "/api/study/reset/lc-0001")).status).toBe(409);
+  });
+});

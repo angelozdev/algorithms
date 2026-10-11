@@ -102,6 +102,7 @@ export interface ConceptData {
 }
 
 export type { AnnouncementJson, NotInitializedJson, TodayItem, TodayJson } from "../../study/today.ts";
+export type { ResetAction, ResetPreview } from "../../study/reset.ts";
 
 export type RepoEvent =
   | { kind: "solution"; target: string; lang: Lang; version: string }
