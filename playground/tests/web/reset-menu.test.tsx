@@ -108,13 +108,17 @@ describe("ResetMenu (item reset spec §5.2)", () => {
   it("posts nothing and never calls onReset when prepare (saving the editor's text) fails", async () => {
     prepare.mockRejectedValueOnce(new Error("Your code is not saved yet."));
     const toastError = vi.spyOn(toast, "error");
-    const { onReset } = renderMenu();
-    await openMenu();
-    await userEvent.click(await enabledItem(/^Clean code/));
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith("Your code is not saved yet."));
-    expect(posts).toEqual([]);
-    expect(onReset).not.toHaveBeenCalled();
-    toastError.mockRestore();
+    try {
+      const { onReset } = renderMenu();
+      await openMenu();
+      await userEvent.click(await enabledItem(/^Clean code/));
+      await waitFor(() => expect(toastError).toHaveBeenCalledWith("Your code is not saved yet."));
+      expect(posts).toEqual([]);
+      expect(onReset).not.toHaveBeenCalled();
+    } finally {
+      // try/finally: a failed assertion above must not leak this spy into later tests (final review finding 3c).
+      toastError.mockRestore();
+    }
   });
 
   it("locks Discard and Erase for an item with an exam attempt, and keeps Clean code", async () => {
