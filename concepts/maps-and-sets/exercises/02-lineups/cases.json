@@ -1,0 +1,24 @@
+{
+  "mode": "function",
+  "entry": "lineups",
+  "params": [
+    {"name":"days","type":"string[][]"}
+  ],
+  "returns": "string[][]",
+  "compare": "exact",
+  "examples": [
+    {"input":[[["muse","blur"],["blur","oasis"],["blur","muse","muse"]]],"expected":[["blur"],["oasis"]]},
+    {"input":[[["a-ha"]]],"expected":[["a-ha"],["a-ha"]]},
+    {"input":[[["x","y"],[]]],"expected":[[],["x","y"]]}
+  ],
+  "hidden": [
+    {"input":[[[]]],"expected":[[],[]]},
+    {"input":[[["a","a"],["a"]]],"expected":[["a"],[]]},
+    {"input":[[["a"],["b"],["c"]]],"expected":[[],["a","b","c"]]},
+    {"input":[[["c","b","a"],["a","b","c"]]],"expected":[["a","b","c"],[]]},
+    {"input":[[["d","e"],["e","f"],["f","d"],["d","e","f"]]],"expected":[[],[]]},
+    {"input":[[["z-z","zz","z"],["z"],["zz","z","q"]]],"expected":[["z"],["q","z-z"]]},
+    {"input":[[[],[],["solo"]]],"expected":[[],["solo"]]},
+    {"input":[[["b-side","b"],["b"],["b","b-side","a"]]],"expected":[["b"],["a"]]}
+  ]
+}

@@ -23,7 +23,7 @@ const BASES: [slug: string, title: string][] = [
   ["sorting", "Sorting"],
 ];
 /** The base notes written so far (study coach Plan C adds one per task). */
-const WRITTEN = ["big-o", "recursion", "arrays-and-strings"];
+const WRITTEN = ["big-o", "recursion", "arrays-and-strings", "maps-and-sets"];
 const TZ = "America/Bogota";
 const MONDAY = "2026-10-05T14:00:00.000Z"; // 09:00 in Bogotá
 const DAY = 86_400_000;
