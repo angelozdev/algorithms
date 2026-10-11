@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [dp-1d]
 concepts: [dynamic-programming]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 416. Partition Equal Subset Sum
 
@@ -31,7 +26,3 @@ You're handed an integer array `nums`. Decide whether its values can be divided 
 <!-- auto:concepts -->
 - dynamic-programming (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/richest-customer-wealth/
 difficulty: easy
 patterns: [arrays-hashing]
 concepts: [matrix-traversal]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 1672. Richest Customer Wealth
 
@@ -31,8 +26,3 @@ complexity: null
 <!-- auto:concepts -->
 - matrix-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

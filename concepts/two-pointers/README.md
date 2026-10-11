@@ -1,7 +1,6 @@
 ---
 slug: two-pointers
 title: Two pointers
-status: learning
 requires: []
 related: [hash-map, sliding-window]
 ---
@@ -138,9 +137,9 @@ function commonElements(a: number[], b: number[]): number[] {
 ## Exercises
 
 <!-- auto:exercises -->
-- ✓ [01 · Pair sum](exercises/01-pair-sum/README.md)
-- ○ [02 · Hidden melody](exercises/02-hidden-melody/README.md)
-- ○ [03 · Sorted squares](exercises/03-sorted-squares/README.md)
+- [01 · Pair sum](exercises/01-pair-sum/README.md)
+- [02 · Hidden melody](exercises/02-hidden-melody/README.md)
+- [03 · Sorted squares](exercises/03-sorted-squares/README.md)
 <!-- /auto -->
 
 ## Quick checks
@@ -157,13 +156,13 @@ function commonElements(a: number[], b: number[]): number[] {
 ## Problems
 
 <!-- auto:problems -->
-- ○ [lc-0011 · Container With Most Water](../../problems/lc-0011-container-with-most-water/README.md)
-- ○ [lc-0015 · 3Sum](../../problems/lc-0015-3sum/README.md)
-- ✓ [lc-0021 · Merge Two Sorted Lists](../../problems/lc-0021-merge-two-sorted-lists/README.md)
-- … [lc-0026 · Remove Duplicates from Sorted Array](../../problems/lc-0026-remove-duplicates-from-sorted-array/README.md)
-- ✓ [lc-0027 · Remove Element](../../problems/lc-0027-remove-element/README.md)
-- ○ [lc-0042 · Trapping Rain Water](../../problems/lc-0042-trapping-rain-water/README.md)
-- ○ [lc-0075 · Sort Colors](../../problems/lc-0075-sort-colors/README.md)
-- ○ [lc-0125 · Valid Palindrome](../../problems/lc-0125-valid-palindrome/README.md)
-- … [lc-2181 · Merge Nodes in Between Zeros](../../problems/lc-2181-merge-nodes-in-between-zeros/README.md)
+- [lc-0011 · Container With Most Water](../../problems/lc-0011-container-with-most-water/README.md)
+- [lc-0015 · 3Sum](../../problems/lc-0015-3sum/README.md)
+- [lc-0021 · Merge Two Sorted Lists](../../problems/lc-0021-merge-two-sorted-lists/README.md)
+- [lc-0026 · Remove Duplicates from Sorted Array](../../problems/lc-0026-remove-duplicates-from-sorted-array/README.md)
+- [lc-0027 · Remove Element](../../problems/lc-0027-remove-element/README.md)
+- [lc-0042 · Trapping Rain Water](../../problems/lc-0042-trapping-rain-water/README.md)
+- [lc-0075 · Sort Colors](../../problems/lc-0075-sort-colors/README.md)
+- [lc-0125 · Valid Palindrome](../../problems/lc-0125-valid-palindrome/README.md)
+- [lc-2181 · Merge Nodes in Between Zeros](../../problems/lc-2181-merge-nodes-in-between-zeros/README.md)
 <!-- /auto -->

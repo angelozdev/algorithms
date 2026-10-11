@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [stack]
 concepts: [stack, queue, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 232. Implement Queue using Stacks
 
@@ -32,7 +27,3 @@ Build a first-in-first-out queue, called `MyQueue`, backed only by two stacks. I
 - queue (missing)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

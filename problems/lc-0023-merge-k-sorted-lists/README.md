@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [linked-list, heap]
 concepts: [linked-list, heap, divide-and-conquer]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 23. Merge k Sorted Lists
 
@@ -34,7 +29,3 @@ You are given an array of linked lists, where each list is already sorted in asc
 - heap (missing)
 - divide-and-conquer (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

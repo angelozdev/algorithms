@@ -2,10 +2,6 @@
 id: two-pointers/03
 title: Sorted squares
 concept: two-pointers
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
 ---
 # Sorted squares
 
@@ -22,7 +18,3 @@ solved_in: []
 **Constraints:** `1 <= nums.length <= 10^5` · `-10^4 <= nums[i] <= 10^4` · `nums` is sorted in non-decreasing order
 
 **Follow-up:** squaring and then sorting works. Can you build the answer in a single pass, without calling a sort?
-
-## Log
-
-- 2026-09-28 · created

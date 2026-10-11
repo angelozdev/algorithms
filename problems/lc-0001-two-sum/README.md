@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [arrays-hashing]
 concepts: [hash-map]
 lists: [grind-75]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [py, ts]
-complexity: null
 ---
 # 1. Two Sum
 
@@ -30,10 +25,5 @@ Given an integer array `nums` and an integer `target`, return the indices of the
 ## Concepts
 
 <!-- auto:concepts -->
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in py, ts

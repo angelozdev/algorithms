@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, binary-search-tree, tree-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 230. Kth Smallest Element in a BST
 
@@ -33,7 +28,3 @@ You're handed a binary search tree together with a number `k`. Line up every val
 - binary-search-tree (missing)
 - tree-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

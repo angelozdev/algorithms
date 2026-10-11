@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [linked-list, two-pointers]
 concepts: [linked-list, two-pointers, dummy-node]
 lists: [grind-75]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 21. Merge Two Sorted Lists
 
@@ -31,11 +26,6 @@ You get the heads of two linked lists, each sorted in non-decreasing order. Merg
 
 <!-- auto:concepts -->
 - linked-list (missing)
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 - dummy-node (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

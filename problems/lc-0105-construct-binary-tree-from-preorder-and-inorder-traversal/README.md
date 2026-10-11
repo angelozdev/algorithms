@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, divide-and-conquer, hash-map]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 105. Construct Binary Tree from Preorder and Inorder Traversal
 
@@ -31,9 +26,5 @@ You're given two integer arrays describing the same binary tree: one lists its n
 <!-- auto:concepts -->
 - binary-tree (missing)
 - divide-and-conquer (missing)
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

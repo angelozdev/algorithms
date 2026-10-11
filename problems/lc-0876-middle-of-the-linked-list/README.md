@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [linked-list]
 concepts: [linked-list, fast-slow-pointers]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 876. Middle of the Linked List
 
@@ -32,7 +27,3 @@ You are given the head of a singly linked list. Return its middle node. When the
 - linked-list (missing)
 - fast-slow-pointers (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

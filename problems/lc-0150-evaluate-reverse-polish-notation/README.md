@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [stack]
 concepts: [stack, string-parsing]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 150. Evaluate Reverse Polish Notation
 
@@ -33,7 +28,3 @@ You are given a list of tokens that together spell out an arithmetic expression 
 - stack (missing)
 - string-parsing (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

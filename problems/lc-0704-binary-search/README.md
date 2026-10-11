@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [binary-search]
 concepts: [binary-search]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 704. Binary Search
 
@@ -31,7 +26,3 @@ You get an array `nums` of distinct integers sorted in ascending order, and an i
 <!-- auto:concepts -->
 - binary-search (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

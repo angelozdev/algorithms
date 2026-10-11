@@ -1,7 +1,6 @@
 ---
 slug: hash-map
 title: Hash map
-status: learning
 requires: []
 related: []
 ---
@@ -90,9 +89,9 @@ seen.has("do"); // true, O(1) on average
 ## Exercises
 
 <!-- auto:exercises -->
-- ✓ [01 · First repeat](exercises/01-first-repeat/README.md)
-- ✓ [02 · Most frequent](exercises/02-most-frequent/README.md)
-- ○ [03 · Same letters](exercises/03-same-letters/README.md)
+- [01 · First repeat](exercises/01-first-repeat/README.md)
+- [02 · Most frequent](exercises/02-most-frequent/README.md)
+- [03 · Same letters](exercises/03-same-letters/README.md)
 <!-- /auto -->
 
 ## Quick checks
@@ -109,10 +108,10 @@ seen.has("do"); // true, O(1) on average
 ## Problems
 
 <!-- auto:problems -->
-- ✓ [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
-- ○ [lc-0105 · Construct Binary Tree from Preorder and Inorder Traversal](../../problems/lc-0105-construct-binary-tree-from-preorder-and-inorder-traversal/README.md)
-- ○ [lc-0133 · Clone Graph](../../problems/lc-0133-clone-graph/README.md)
-- ○ [lc-0146 · LRU Cache](../../problems/lc-0146-lru-cache/README.md)
-- ○ [lc-0721 · Accounts Merge](../../problems/lc-0721-accounts-merge/README.md)
-- ○ [lc-0981 · Time Based Key-Value Store](../../problems/lc-0981-time-based-key-value-store/README.md)
+- [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
+- [lc-0105 · Construct Binary Tree from Preorder and Inorder Traversal](../../problems/lc-0105-construct-binary-tree-from-preorder-and-inorder-traversal/README.md)
+- [lc-0133 · Clone Graph](../../problems/lc-0133-clone-graph/README.md)
+- [lc-0146 · LRU Cache](../../problems/lc-0146-lru-cache/README.md)
+- [lc-0721 · Accounts Merge](../../problems/lc-0721-accounts-merge/README.md)
+- [lc-0981 · Time Based Key-Value Store](../../problems/lc-0981-time-based-key-value-store/README.md)
 <!-- /auto -->

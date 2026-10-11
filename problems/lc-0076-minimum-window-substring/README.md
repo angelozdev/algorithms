@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [sliding-window]
 concepts: [sliding-window, frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 76. Minimum Window Substring
 
@@ -33,7 +28,3 @@ Given strings `s` and `t`, find the shortest contiguous substring of `s` that co
 - sliding-window (missing)
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

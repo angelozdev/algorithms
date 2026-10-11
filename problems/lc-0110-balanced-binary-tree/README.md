@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [trees]
 concepts: [binary-tree, tree-dfs, recursion]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 110. Balanced Binary Tree
 
@@ -32,9 +27,5 @@ You get a binary tree and must say whether it is height-balanced: at every singl
 <!-- auto:concepts -->
 - binary-tree (missing)
 - tree-dfs (missing)
-- recursion (missing)
+- [Recursion](../../concepts/recursion/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

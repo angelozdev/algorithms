@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [graph-dfs, topological-sort]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 207. Course Schedule
 
@@ -32,7 +27,3 @@ There are `numCourses` courses labeled `0` to `numCourses - 1`. Each pair `[a, b
 - graph-dfs (missing)
 - topological-sort (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

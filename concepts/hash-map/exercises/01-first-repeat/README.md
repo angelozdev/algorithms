@@ -2,10 +2,6 @@
 id: hash-map/01
 title: First repeat
 concept: hash-map
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
 ---
 # First repeat
 
@@ -20,8 +16,3 @@ Scan `nums` from left to right and return the first value that already appeared 
 - `nums = [7,7]` → `7`
 
 **Constraints:** `0 <= nums.length <= 10^5` · `0 <= nums[i] <= 10^9`
-
-## Log
-
-- 2026-09-27 · created
-- 2026-10-04 · green in ts, O(n) ✓ optimal

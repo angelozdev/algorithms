@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [arrays-hashing]
 concepts: [frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 242. Valid Anagram
 
@@ -33,7 +28,3 @@ Given two strings, decide whether the second one is an anagram of the first: the
 <!-- auto:concepts -->
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/insert-greatest-common-divisors-in-linked-lis
 difficulty: medium
 patterns: [linked-list, math]
 concepts: [linked-list, gcd]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 2807. Insert Greatest Common Divisors in Linked List
 
@@ -31,8 +26,3 @@ Between every pair of adjacent nodes in the linked list, insert a new node whose
 - linked-list (missing)
 - gcd (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

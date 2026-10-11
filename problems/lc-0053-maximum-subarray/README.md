@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [dp-1d]
 concepts: [dynamic-programming]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 53. Maximum Subarray
 
@@ -32,7 +27,3 @@ You're given an integer array `nums`. Find a contiguous, non-empty subarray with
 <!-- auto:concepts -->
 - dynamic-programming (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

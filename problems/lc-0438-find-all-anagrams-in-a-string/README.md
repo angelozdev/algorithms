@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [sliding-window]
 concepts: [sliding-window, frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 438. Find All Anagrams in a String
 
@@ -32,7 +27,3 @@ Given two strings `s` and `p`, return every start index in `s` where the substri
 - sliding-window (missing)
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

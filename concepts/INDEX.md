@@ -4,19 +4,13 @@
 
 ## Learning path
 
-1. [Hash map](hash-map/README.md) · learning
-2. [Two pointers](two-pointers/README.md) · learning
-
-## By status
-
-### mastered (0)
-
-### learning (2)
-
-- [Hash map](hash-map/README.md)
-- [Two pointers](two-pointers/README.md)
-
-### new (0)
+1. [Big-O](big-o/README.md)
+2. [Hash map](hash-map/README.md)
+3. [Two pointers](two-pointers/README.md)
+4. [Arrays and strings](arrays-and-strings/README.md) — requires: big-o
+5. [Recursion](recursion/README.md) — requires: big-o
+6. [Maps and sets](maps-and-sets/README.md) — requires: big-o, arrays-and-strings
+7. [Sorting](sorting/README.md) — requires: big-o, recursion, maps-and-sets
 
 ## Missing
 
@@ -48,9 +42,7 @@
 - monotonic-stack — referenced by lc-0084
 - prefix-sum — referenced by lc-0238
 - queue — referenced by lc-0102, lc-0232, lc-0542, lc-0994
-- recursion — referenced by lc-0017, lc-0039, lc-0046, lc-0070, lc-0078, lc-0104, lc-0110, lc-0226, lc-0543
 - sliding-window — referenced by lc-0003, lc-0076, lc-0121, lc-0438, two-pointers
-- sorting — referenced by lc-0056, lc-0721, lc-1235
 - stack — referenced by lc-0020, lc-0150, lc-0155, lc-0224, lc-0232
 - string-matching — referenced by lc-0028
 - string-parsing — referenced by lc-0008, lc-0150, lc-0224

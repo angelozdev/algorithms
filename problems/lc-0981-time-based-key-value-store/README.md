@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [binary-search]
 concepts: [hash-map, binary-search, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 981. Time Based Key-Value Store
 
@@ -28,11 +23,7 @@ Design a key-value store called `TimeMap` where each key can hold several values
 ## Concepts
 
 <!-- auto:concepts -->
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 - binary-search (missing)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

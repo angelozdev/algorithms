@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [two-pointers]
 concepts: [two-pointers, string-traversal]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 125. Valid Palindrome
 
@@ -30,10 +25,6 @@ Given a string, decide whether it reads the same forwards and backwards once you
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 - string-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

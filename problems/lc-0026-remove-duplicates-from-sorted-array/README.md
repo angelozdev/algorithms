@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/remove-duplicates-from-sorted-array/
 difficulty: easy
 patterns: [two-pointers]
 concepts: [two-pointers, in-place-array-modification]
-status: solving
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 26. Remove Duplicates from Sorted Array
 
@@ -28,11 +23,6 @@ complexity: null
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 - in-place-array-modification (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: py fails examples

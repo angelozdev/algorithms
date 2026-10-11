@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [matrix-traversal, graph-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 200. Number of Islands
 
@@ -32,7 +27,3 @@ You're given a 2D grid of `"1"`s (land) and `"0"`s (water). An island is a group
 - matrix-traversal (missing)
 - graph-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

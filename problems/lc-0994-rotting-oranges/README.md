@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [matrix-traversal, graph-bfs, queue]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 994. Rotting Oranges
 
@@ -34,7 +29,3 @@ You're given a grid where each cell holds an empty cell (`0`), a fresh orange (`
 - graph-bfs (missing)
 - queue (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

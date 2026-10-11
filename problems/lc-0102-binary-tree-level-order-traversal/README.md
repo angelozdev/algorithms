@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, tree-bfs, queue]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 102. Binary Tree Level Order Traversal
 
@@ -34,7 +29,3 @@ You get the root of a binary tree. Group its node values by depth, each group li
 - tree-bfs (missing)
 - queue (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

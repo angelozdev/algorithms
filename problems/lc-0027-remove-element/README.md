@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/remove-element/
 difficulty: easy
 patterns: [two-pointers]
 concepts: [two-pointers, in-place-array-modification]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [py]
-complexity: null
 ---
 # 27. Remove Element
 
@@ -28,11 +23,6 @@ Remove every occurrence of `val` from `nums` **in place** and return `k`, the nu
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 - in-place-array-modification (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in py

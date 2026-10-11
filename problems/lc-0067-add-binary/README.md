@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [math]
 concepts: [carry-propagation, binary-representation]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 67. Add Binary
 
@@ -32,7 +27,3 @@ You get two numbers written as binary strings. Add them together and return the 
 - carry-propagation (missing)
 - binary-representation (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

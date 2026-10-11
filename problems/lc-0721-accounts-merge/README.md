@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [union-find, hash-map, sorting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 721. Accounts Merge
 
@@ -30,10 +25,6 @@ You're given a list of accounts, where each account is a name followed by the em
 
 <!-- auto:concepts -->
 - union-find (missing)
-- [Hash map](../../concepts/hash-map/README.md) · learning
-- sorting (missing)
+- [Hash map](../../concepts/hash-map/README.md)
+- [Sorting](../../concepts/sorting/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

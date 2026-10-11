@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [backtracking]
 concepts: [backtracking, recursion]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 46. Permutations
 
@@ -31,9 +26,5 @@ You're given an array of distinct integers. Return every possible ordering of it
 
 <!-- auto:concepts -->
 - backtracking (missing)
-- recursion (missing)
+- [Recursion](../../concepts/recursion/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

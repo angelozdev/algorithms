@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [stack]
 concepts: [stack, string-parsing]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 224. Basic Calculator
 
@@ -33,7 +28,3 @@ You're given a string `s` that represents a valid arithmetic expression built fr
 - stack (missing)
 - string-parsing (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

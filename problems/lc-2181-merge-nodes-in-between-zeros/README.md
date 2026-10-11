@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/merge-nodes-in-between-zeros/
 difficulty: medium
 patterns: [linked-list]
 concepts: [linked-list, two-pointers]
-status: solving
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 2181. Merge Nodes in Between Zeros
 
@@ -29,10 +24,5 @@ A linked list starts and ends with a node of value `0`, and no two zeros are adj
 
 <!-- auto:concepts -->
 - linked-list (missing)
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: ts fails examples

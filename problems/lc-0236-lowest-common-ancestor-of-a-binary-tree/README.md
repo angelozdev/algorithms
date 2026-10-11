@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, tree-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 236. Lowest Common Ancestor of a Binary Tree
 
@@ -33,7 +28,3 @@ You're given a binary tree — not necessarily a search tree — and two of its 
 - binary-tree (missing)
 - tree-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

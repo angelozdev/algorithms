@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [sliding-window]
 concepts: [sliding-window, hash-set]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 3. Longest Substring Without Repeating Characters
 
@@ -33,7 +28,3 @@ Given a string `s`, return the length of its longest contiguous run of character
 - sliding-window (missing)
 - hash-set (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

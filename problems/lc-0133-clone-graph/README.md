@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [graph-dfs, hash-map]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 133. Clone Graph
 
@@ -31,9 +26,5 @@ You're given a reference to one node of a connected, undirected graph, where eve
 
 <!-- auto:concepts -->
 - graph-dfs (missing)
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

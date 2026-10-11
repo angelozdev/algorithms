@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/divisible-and-non-divisible-sums-difference/
 difficulty: easy
 patterns: [math]
 concepts: [arithmetic-series]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 2894. Divisible and Non-divisible Sums Difference
 
@@ -31,8 +26,3 @@ For positive integers `n` and `m`, let `num1` be the sum of the integers in `[1,
 <!-- auto:concepts -->
 - arithmetic-series (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

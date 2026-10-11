@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [stack]
 concepts: [stack, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 155. Min Stack
 
@@ -31,7 +26,3 @@ Design a stack, called `MinStack`, that supports pushing a value, popping the va
 - stack (missing)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/convert-date-to-binary/
 difficulty: easy
 patterns: [strings, bit-manipulation]
 concepts: [binary-representation]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 3280. Convert Date to Binary
 
@@ -30,8 +25,3 @@ complexity: null
 <!-- auto:concepts -->
 - binary-representation (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

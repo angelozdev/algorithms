@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/find-words-containing-character/
 difficulty: easy
 patterns: [strings]
 concepts: [string-traversal]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 2942. Find Words Containing Character
 
@@ -31,8 +26,3 @@ Given a list of `words` and a character `x`, return the indices of the words tha
 <!-- auto:concepts -->
 - string-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [linked-list]
 concepts: [linked-list, hash-map, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 146. LRU Cache
 
@@ -29,10 +24,6 @@ Design a cache, called `LRUCache`, that holds at most `capacity` key-value pairs
 
 <!-- auto:concepts -->
 - linked-list (missing)
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

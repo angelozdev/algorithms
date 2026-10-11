@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [backtracking]
 concepts: [backtracking, recursion]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 17. Letter Combinations of a Phone Number
 
@@ -30,9 +25,5 @@ You're given a string of digits, each one between `2` and `9`. On an old telepho
 
 <!-- auto:concepts -->
 - backtracking (missing)
-- recursion (missing)
+- [Recursion](../../concepts/recursion/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

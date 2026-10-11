@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [heap]
 concepts: [heap, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 295. Find Median from Data Stream
 
@@ -33,7 +28,3 @@ Design a `MedianFinder` class that tracks a running median as integers arrive on
 - heap (missing)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [binary-search]
 concepts: [binary-search]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 33. Search in Rotated Sorted Array
 
@@ -32,7 +27,3 @@ An array of distinct integers, sorted in ascending order, was rotated at some un
 <!-- auto:concepts -->
 - binary-search (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

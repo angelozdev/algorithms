@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [graphs]
 concepts: [graph-bfs, hash-set]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 127. Word Ladder
 
@@ -32,7 +27,3 @@ You're given `beginWord`, `endWord`, and a `wordList`. A transformation sequence
 - graph-bfs (missing)
 - hash-set (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

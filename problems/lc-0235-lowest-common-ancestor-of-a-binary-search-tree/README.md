@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-search-tree, tree-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 235. Lowest Common Ancestor of a Binary Search Tree
 
@@ -33,7 +28,3 @@ You're given a binary search tree and two of its existing nodes, `p` and `q`. Fi
 - binary-search-tree (missing)
 - tree-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

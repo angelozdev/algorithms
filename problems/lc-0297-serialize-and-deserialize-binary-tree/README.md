@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [trees]
 concepts: [binary-tree, tree-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 297. Serialize and Deserialize Binary Tree
 
@@ -32,7 +27,3 @@ Design a way to turn a binary tree into a single string and back again, so that 
 - binary-tree (missing)
 - tree-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

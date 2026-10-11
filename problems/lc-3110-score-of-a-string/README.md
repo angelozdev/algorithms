@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/score-of-a-string/
 difficulty: easy
 patterns: [strings]
 concepts: [string-traversal]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 3110. Score of a String
 
@@ -30,8 +25,3 @@ The score of a string is the sum of the absolute differences between the ASCII c
 <!-- auto:concepts -->
 - string-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

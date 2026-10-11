@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [dp-2d]
 concepts: [dynamic-programming]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 5. Longest Palindromic Substring
 
@@ -31,7 +26,3 @@ Given a string `s`, return the longest contiguous substring of `s` that reads th
 <!-- auto:concepts -->
 - dynamic-programming (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

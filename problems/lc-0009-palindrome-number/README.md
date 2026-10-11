@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/palindrome-number/
 difficulty: easy
 patterns: [math]
 concepts: [digit-manipulation]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [py, ts]
-complexity: null
 ---
 # 9. Palindrome Number
 
@@ -33,8 +28,3 @@ Given an integer `x`, return `true` if it reads the same from left to right as f
 <!-- auto:concepts -->
 - digit-manipulation (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in py, ts

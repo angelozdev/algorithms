@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [dp-1d]
 concepts: [dynamic-programming, binary-search, sorting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 1235. Maximum Profit in Job Scheduling
 
@@ -32,9 +27,5 @@ You're given `n` jobs as three parallel arrays `startTime`, `endTime` and `profi
 <!-- auto:concepts -->
 - dynamic-programming (missing)
 - binary-search (missing)
-- sorting (missing)
+- [Sorting](../../concepts/sorting/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

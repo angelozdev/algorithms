@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [heap]
 concepts: [heap]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 973. K Closest Points to Origin
 
@@ -31,7 +26,3 @@ You're given a list of points on the 2D plane and an integer `k`. Return the `k`
 <!-- auto:concepts -->
 - heap (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/build-array-from-permutation/
 difficulty: easy
 patterns: [arrays-hashing]
 concepts: [in-place-array-modification, modular-arithmetic]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [ts]
-complexity: null
 ---
 # 1920. Build Array from Permutation
 
@@ -31,8 +26,3 @@ complexity: null
 - in-place-array-modification (missing)
 - modular-arithmetic (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: green in ts

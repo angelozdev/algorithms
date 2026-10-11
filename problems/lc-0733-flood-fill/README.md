@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [graphs]
 concepts: [matrix-traversal, graph-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 733. Flood Fill
 
@@ -32,7 +27,3 @@ You're given a grid of pixel colors `image`, a starting cell `(sr, sc)`, and a n
 - matrix-traversal (missing)
 - graph-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

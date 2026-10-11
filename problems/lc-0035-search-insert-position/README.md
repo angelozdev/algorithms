@@ -6,11 +6,6 @@ url: https://leetcode.com/problems/search-insert-position/
 difficulty: easy
 patterns: [binary-search]
 concepts: [binary-search]
-status: solving
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 35. Search Insert Position
 
@@ -31,8 +26,3 @@ complexity: null
 <!-- auto:concepts -->
 - binary-search (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-27 · migrated from the legacy repo
-- 2026-09-27 · migration check: py fails examples

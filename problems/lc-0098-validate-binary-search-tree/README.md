@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, binary-search-tree, tree-dfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 98. Validate Binary Search Tree
 
@@ -33,7 +28,3 @@ You get the root of a binary tree and must say whether it is a valid binary sear
 - binary-search-tree (missing)
 - tree-dfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

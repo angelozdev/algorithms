@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [strings]
 concepts: [frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 409. Longest Palindrome
 
@@ -31,7 +26,3 @@ Given a string of lowercase and/or uppercase letters, find the length of the lon
 <!-- auto:concepts -->
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

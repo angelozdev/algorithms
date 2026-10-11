@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [two-pointers]
 concepts: [two-pointers, in-place-array-modification]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 75. Sort Colors
 
@@ -29,10 +24,6 @@ You get an array `nums` holding only the values `0`, `1` and `2`, standing for t
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 - in-place-array-modification (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

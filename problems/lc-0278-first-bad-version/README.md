@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [binary-search]
 concepts: [binary-search]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 278. First Bad Version
 
@@ -31,7 +26,3 @@ Versions of a product are numbered `1` through `n`, and once a version is bad, e
 <!-- auto:concepts -->
 - binary-search (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

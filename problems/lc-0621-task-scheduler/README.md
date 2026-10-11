@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [greedy]
 concepts: [greedy, frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 621. Task Scheduler
 
@@ -33,7 +28,3 @@ You're given a list of CPU tasks, each identified by an uppercase letter, and a 
 - greedy (missing)
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

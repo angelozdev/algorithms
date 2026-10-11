@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [strings]
 concepts: [string-parsing]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 8. String to Integer (atoi)
 
@@ -34,7 +29,3 @@ Implement a function that turns a string into a 32-bit signed integer, the way a
 <!-- auto:concepts -->
 - string-parsing (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

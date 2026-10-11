@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [two-pointers]
 concepts: [two-pointers]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 15. 3Sum
 
@@ -30,9 +25,5 @@ Given an integer array `nums`, return every triplet of values from `nums` (picke
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [stack]
 concepts: [monotonic-stack]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 84. Largest Rectangle in Histogram
 
@@ -31,7 +26,3 @@ You're given an array `heights` describing a histogram, where each bar is one un
 <!-- auto:concepts -->
 - monotonic-stack (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

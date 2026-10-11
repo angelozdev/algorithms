@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [tries]
 concepts: [trie, class-design]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 208. Implement Trie (Prefix Tree)
 
@@ -31,7 +26,3 @@ Build a `Trie` class that stores a growing set of words, letter by letter. `inse
 - trie (missing)
 - class-design (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

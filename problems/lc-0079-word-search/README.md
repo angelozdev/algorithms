@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [backtracking]
 concepts: [backtracking, matrix-traversal]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 79. Word Search
 
@@ -33,7 +28,3 @@ You're given an `m x n` grid of single letters and a target word. Starting from 
 - backtracking (missing)
 - matrix-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

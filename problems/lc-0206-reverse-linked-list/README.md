@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [linked-list]
 concepts: [linked-list]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 206. Reverse Linked List
 
@@ -32,7 +27,3 @@ You are given the head of a singly linked list. Flip the order of its nodes so t
 <!-- auto:concepts -->
 - linked-list (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

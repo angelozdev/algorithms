@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [intervals]
 concepts: [intervals, sorting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 56. Merge Intervals
 
@@ -31,9 +26,5 @@ You're given a list of intervals, each written as `[start, end]`. Whenever two o
 
 <!-- auto:concepts -->
 - intervals (missing)
-- sorting (missing)
+- [Sorting](../../concepts/sorting/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

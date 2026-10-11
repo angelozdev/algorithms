@@ -7,11 +7,6 @@ difficulty: hard
 patterns: [two-pointers]
 concepts: [two-pointers]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 42. Trapping Rain Water
 
@@ -29,9 +24,5 @@ You're given a row of bars with non-negative heights, each one unit wide, descri
 ## Concepts
 
 <!-- auto:concepts -->
-- [Two pointers](../../concepts/two-pointers/README.md) · learning
+- [Two pointers](../../concepts/two-pointers/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

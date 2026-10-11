@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [graphs]
 concepts: [graph-bfs, topological-sort]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 310. Minimum Height Trees
 
@@ -32,7 +27,3 @@ You're given a tree of `n` nodes labeled `0` to `n - 1`, described by its `n - 1
 - graph-bfs (missing)
 - topological-sort (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

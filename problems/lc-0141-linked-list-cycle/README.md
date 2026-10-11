@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [linked-list]
 concepts: [linked-list, fast-slow-pointers]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 141. Linked List Cycle
 
@@ -33,7 +28,3 @@ Given the head of a singly linked list, decide whether the list loops back on it
 - linked-list (missing)
 - fast-slow-pointers (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

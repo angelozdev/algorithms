@@ -7,11 +7,6 @@ difficulty: easy
 patterns: [arrays-hashing]
 concepts: [frequency-counting]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 383. Ransom Note
 
@@ -32,7 +27,3 @@ You want to build the word `ransomNote` by cutting individual letters out of `ma
 <!-- auto:concepts -->
 - frequency-counting (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

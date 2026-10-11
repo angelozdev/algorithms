@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [arrays-hashing]
 concepts: [matrix-traversal]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 54. Spiral Matrix
 
@@ -31,7 +26,3 @@ You're given an `m x n` matrix of integers. Starting at the top-left cell, walk 
 <!-- auto:concepts -->
 - matrix-traversal (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)

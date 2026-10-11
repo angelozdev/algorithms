@@ -7,11 +7,6 @@ difficulty: medium
 patterns: [trees]
 concepts: [binary-tree, tree-bfs]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 199. Binary Tree Right Side View
 
@@ -34,7 +29,3 @@ You get the root of a binary tree. Picture yourself standing to its right: at ev
 - binary-tree (missing)
 - tree-bfs (missing)
 <!-- /auto -->
-
-## Log
-
-- 2026-10-04 · registered (Grind 75)
