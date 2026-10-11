@@ -1,0 +1,26 @@
+{
+  "mode": "function",
+  "entry": "collatzSteps",
+  "params": [
+    {"name":"n","type":"int"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[1],"expected":0},
+    {"input":[6],"expected":8},
+    {"input":[7],"expected":16}
+  ],
+  "hidden": [
+    {"input":[2],"expected":1},
+    {"input":[3],"expected":7},
+    {"input":[27],"expected":111},
+    {"input":[97],"expected":118},
+    {"input":[871],"expected":178},
+    {"input":[1024],"expected":10},
+    {"input":[77031],"expected":350},
+    {"input":[524288],"expected":19},
+    {"input":[837799],"expected":524},
+    {"input":[999999],"expected":258}
+  ]
+}
