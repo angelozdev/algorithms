@@ -4,14 +4,41 @@ import { type FSWatcher, watch } from "chokidar";
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
 import { exerciseIdFromFolder, problemIdFromFolder } from "../../lib/repo.ts";
+import { studyRoot } from "../../runner/src/paths.ts";
+import { readState, STATE_FILE } from "../../study/state-file.ts";
 import { contentVersion } from "./solutions.ts";
 import type { RepoEvent } from "./types.ts";
 
 export const HEARTBEAT_MS = 25_000;
 const IGNORED_PART = /(^|[/\\])(__pycache__|node_modules|\.[^/\\]+)([/\\]|$)/;
 
+/** `file`'s path segments under `dir` ([] for `dir` itself), or null when it is not inside `dir`. */
+function segmentsUnder(dir: string, file: string): string[] | null {
+  const rel = path.relative(dir, file);
+  if (rel.startsWith("..") || path.isAbsolute(rel)) return null;
+  return rel === "" ? [] : rel.split(path.sep);
+}
+
+function solutionEvent(target: string, name: string, file: string): RepoEvent | null {
+  const lang = /^solution\.(py|ts)$/.exec(name)?.[1];
+  if (lang !== "py" && lang !== "ts") return null;
+  return { kind: "solution", target, lang, version: contentVersion(existsSync(file) ? readFileSync(file, "utf8") : "") };
+}
+
+/** Under the study root: state.json, solutions/problems/<id>/solution.<lang> and solutions/exercises/<concept>/<NN>/solution.<lang>. */
+function classifyStudy(study: string, parts: string[], file: string): RepoEvent | null {
+  if (parts.length === 1 && parts[0] === STATE_FILE) return { kind: "progress", version: readState(study)?.version ?? "missing" };
+  if (parts[0] === "explanations" && parts.length === 2 && parts[1].endsWith(".md")) return { kind: "readme", concept: parts[1].slice(0, -3) };
+  if (parts[0] !== "solutions") return null;
+  if (parts[1] === "problems" && parts.length === 4) return solutionEvent(parts[2], parts[3], file);
+  if (parts[1] === "exercises" && parts.length === 5) return solutionEvent(`${parts[2]}/${parts[3]}`, parts[4], file);
+  return null;
+}
+
 /** What a changed file means for the app, or null when the app does not show it. */
-export function classify(root: string, file: string): RepoEvent | null {
+export function classify(root: string, file: string, study: string = studyRoot(root)): RepoEvent | null {
+  const inStudy = segmentsUnder(study, file);
+  if (inStudy !== null) return classifyStudy(study, inStudy, file);
   const parts = path.relative(root, file).split(path.sep);
   let target: string | undefined;
   let concept: string | undefined;
@@ -32,9 +59,26 @@ export function classify(root: string, file: string): RepoEvent | null {
   if (!target) return null;
   if (name === "cases.json") return { kind: "cases", target };
   if (name === "stress.ts") return { kind: "stress", target };
-  const lang = /^solution\.(py|ts)$/.exec(name)?.[1];
-  if (lang !== "py" && lang !== "ts") return null;
-  return { kind: "solution", target, lang, version: contentVersion(existsSync(file) ? readFileSync(file, "utf8") : "") };
+  return solutionEvent(target, name, file); // LEGACY: solution.<lang> still in the content folder
+}
+
+/** Study-root paths the app shows, or must walk into to reach them: solutions/, without history/. */
+function keptInStudy(parts: string[]): boolean {
+  if (parts.length === 0) return true;
+  if (parts.length === 1 && parts[0] === STATE_FILE) return true;
+  if (parts[0] === "explanations") return parts.length === 1 || (parts.length === 2 && parts[1].endsWith(".md"));
+  if (parts[0] !== "solutions") return false;
+  return !parts.some((part) => part === "history" || IGNORED_PART.test(part));
+}
+
+/** chokidar's filter: problems/ and concepts/ under the content root, and what keptInStudy keeps under the study root. */
+export function ignoredPath(root: string, study: string, file: string): boolean {
+  const inStudy = segmentsUnder(study, file);
+  if (inStudy !== null) return !keptInStudy(inStudy);
+  const rel = path.relative(root, file);
+  if (rel === "") return false;
+  const top = rel.split(path.sep)[0];
+  return (top !== "problems" && top !== "concepts") || IGNORED_PART.test(rel);
 }
 
 type Listener = (event: RepoEvent) => void;
@@ -46,6 +90,8 @@ export class EventHub {
   private ready: Promise<void> = Promise.resolve();
   /** Last seen version per file: macOS reports one save twice. */
   private readonly seen = new Map<string, string>();
+  /** Last progress version sent: a state.json rewrite with the same snapshot is not news. */
+  private lastProgress: string | null = null;
 
   constructor(private readonly root: string) {}
 
@@ -69,38 +115,44 @@ export class EventHub {
     // does not depend on that stream being live: it just re-stats on a timer, so it cannot miss a write this
     // way. The interval is 300ms in production (cost scales with the number of files under problems/ and
     // concepts/, so this stays cheap); CHOKIDAR_INTERVAL lets tests run it faster (see events.test.ts).
-    const watcher = watch(this.root, {
+    // The study root is usually <root>/.study and is watched with the root. An ALGO_STUDY elsewhere is watched on
+    // its own when it exists: chokidar 5 never reports a watched path created later, so restart pnpm play after
+    // `pnpm study init` in that case.
+    const study = studyRoot(this.root);
+    const paths = segmentsUnder(this.root, study) === null && existsSync(study) ? [this.root, study] : [this.root];
+    const watcher = watch(paths, {
       ignoreInitial: true,
       alwaysStat: true,
       usePolling: true,
       interval: 300,
-      ignored: (file) => {
-        const rel = path.relative(this.root, file);
-        if (rel === "") return false;
-        const top = rel.split(path.sep)[0];
-        return (top !== "problems" && top !== "concepts") || IGNORED_PART.test(rel);
-      },
+      ignored: (file) => ignoredPath(this.root, study, file),
     });
     this.watcher = watcher;
     // chokidar only emits "ready" once every discovered path's poll timer is already registered, so the
     // extra loop turns below are not load-bearing; they are a small inherited margin, kept for parity
     // with the non-polling form of this wait.
     this.ready = new Promise((resolve) => watcher.once("ready", () => setImmediate(() => setImmediate(resolve))));
-    watcher.on("all", (kind, file, stats) => this.changed(kind, file, stats));
+    watcher.on("all", (kind, file, stats) => this.changed(kind, file, stats, study));
   }
 
   private stop(): void {
     void this.watcher?.close();
     this.watcher = null;
     this.seen.clear();
+    this.lastProgress = null;
   }
 
-  private changed(kind: string, file: string, stats: Stats | undefined): void {
+  private changed(kind: string, file: string, stats: Stats | undefined, study: string): void {
     const version = kind === "unlink" ? "missing" : stats ? `${stats.size}:${stats.mtimeMs}` : `${Date.now()}`;
     if (this.seen.get(file) === version) return;
     this.seen.set(file, version);
-    const event = classify(this.root, file);
-    if (event) for (const listener of this.listeners) listener(event);
+    const event = classify(this.root, file, study);
+    if (!event) return;
+    if (event.kind === "progress") {
+      if (event.version === this.lastProgress) return; // a rewrite with the same snapshot is not news
+      this.lastProgress = event.version;
+    }
+    for (const listener of this.listeners) listener(event);
   }
 }
 

@@ -1,0 +1,21 @@
+{
+  "mode": "function",
+  "entry": "hanoi",
+  "params": [
+    {"name":"n","type":"int"}
+  ],
+  "returns": "string[]",
+  "compare": "exact",
+  "examples": [
+    {"input":[1],"expected":["A->C"]},
+    {"input":[2],"expected":["A->B","A->C","B->C"]},
+    {"input":[3],"expected":["A->C","A->B","C->B","A->C","B->A","B->C","A->C"]}
+  ],
+  "hidden": [
+    {"input":[4],"expected":["A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C"]},
+    {"input":[5],"expected":["A->C","A->B","C->B","A->C","B->A","B->C","A->C","A->B","C->B","C->A","B->A","C->B","A->C","A->B","C->B","A->C","B->A","B->C","A->C","B->A","C->B","C->A","B->A","B->C","A->C","A->B","C->B","A->C","B->A","B->C","A->C"]},
+    {"input":[6],"expected":["A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C"]},
+    {"input":[7],"expected":["A->C","A->B","C->B","A->C","B->A","B->C","A->C","A->B","C->B","C->A","B->A","C->B","A->C","A->B","C->B","A->C","B->A","B->C","A->C","B->A","C->B","C->A","B->A","B->C","A->C","A->B","C->B","A->C","B->A","B->C","A->C","A->B","C->B","C->A","B->A","C->B","A->C","A->B","C->B","C->A","B->A","B->C","A->C","B->A","C->B","C->A","B->A","C->B","A->C","A->B","C->B","A->C","B->A","B->C","A->C","A->B","C->B","C->A","B->A","C->B","A->C","A->B","C->B","A->C","B->A","B->C","A->C","B->A","C->B","C->A","B->A","B->C","A->C","A->B","C->B","A->C","B->A","B->C","A->C","B->A","C->B","C->A","B->A","C->B","A->C","A->B","C->B","C->A","B->A","B->C","A->C","B->A","C->B","C->A","B->A","B->C","A->C","A->B","C->B","A->C","B->A","B->C","A->C","A->B","C->B","C->A","B->A","C->B","A->C","A->B","C->B","A->C","B->A","B->C","A->C","B->A","C->B","C->A","B->A","B->C","A->C","A->B","C->B","A->C","B->A","B->C","A->C"]},
+    {"input":[8],"expected":["A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","C->A","B->C","B->A","C->A","C->B","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C","B->A","C->A","C->B","A->B","C->A","B->C","B->A","C->A","B->C","A->B","A->C","B->C","A->B","C->A","C->B","A->B","A->C","B->C","B->A","C->A","B->C","A->B","A->C","B->C"]}
+  ]
+}

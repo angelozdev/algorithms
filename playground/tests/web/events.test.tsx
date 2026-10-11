@@ -56,6 +56,7 @@ class FakeEventSource {
 }
 
 let fetches = 0;
+let todayFetches = 0;
 const heard: RepoEvent[] = [];
 
 /** A page that shows server data (refetched by the provider) and listens to file changes. */
@@ -65,6 +66,13 @@ function Page() {
     queryFn: async () => {
       fetches += 1;
       return fetches;
+    },
+  });
+  useQuery({
+    queryKey: ["today"],
+    queryFn: async () => {
+      todayFetches += 1;
+      return todayFetches;
     },
   });
   useRepoEvents((event) => heard.push(event));
@@ -101,6 +109,7 @@ beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   FakeEventSource.all = [];
   fetches = 0;
+  todayFetches = 0;
   heard.length = 0;
 });
 
@@ -194,5 +203,31 @@ describe("EventsProvider", () => {
     view.unmount();
     await advance(RECONNECT_MS.max);
     expect(FakeEventSource.all).toHaveLength(1);
+  });
+
+  it("refetches what the page shows when recorded progress changes", async () => {
+    renderApp();
+    await settle();
+    act(() => FakeEventSource.latest.ready());
+    await settle();
+    const before = fetches;
+    const event: RepoEvent = { kind: "progress", version: "v2" };
+    act(() => FakeEventSource.latest.send(event));
+    await settle();
+    expect(fetches).toBe(before + 1);
+    expect(heard).toEqual([event]);
+  });
+
+  it("refetches Today when a README changes, so content it was waiting on shows up live (M1)", async () => {
+    renderApp();
+    await settle();
+    act(() => FakeEventSource.latest.ready());
+    await settle();
+    const before = todayFetches;
+    const event: RepoEvent = { kind: "readme", target: "lc-0001" };
+    act(() => FakeEventSource.latest.send(event));
+    await settle();
+    expect(todayFetches).toBe(before + 1);
+    expect(heard).toEqual([event]);
   });
 });

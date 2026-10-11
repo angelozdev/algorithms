@@ -5,7 +5,9 @@
       "Bash(pnpm -s sync)",
       "Bash(pnpm -s check)",
       "Bash(pnpm -s leetcode:*)",
-      "Bash(pnpm -s fill-expected:*)"
+      "Bash(pnpm -s fill-expected:*)",
+      "Bash(pnpm -s study:*)",
+      "Bash(pnpm -s today:*)"
     ]
   },
   "hooks": {

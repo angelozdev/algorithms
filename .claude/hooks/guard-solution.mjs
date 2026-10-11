@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-// PreToolUse guard: Claude must never write to the user's solution files (CLAUDE.md rule 2).
+// PreToolUse guard: Claude must never write to the user's solution files or their study folder (CLAUDE.md rule 2).
 // The Bash checks are best effort: they catch accidents, not a determined bypass, and try to keep false denies rare.
 import { readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
 const SOLUTION_PATH = /^(problems|concepts)\/.+\/solution\.(py|ts)$/;
+/** The user's study folder (study coach spec §3): solutions, their history, the progress database and its snapshot. */
+const STUDY_PATH = /^\.study(?:\/|$)/;
 const SOLUTION_NAMES = ["solution.py", "solution.ts"];
 /** Where solution files live, as path segments under the project. ANY is one folder name. */
 const ANY = Symbol("any");
@@ -16,16 +18,23 @@ const LOCATIONS = [
 ];
 
 const NAME = String.raw`\S*solution\.(?:py|ts)\b`;
-const BASH_WRITES = [
-  new RegExp(String.raw`>>?\|?\s*${NAME}`), // redirection into the file
-  new RegExp(String.raw`\btee\b[^|;&]*${NAME}`),
-  new RegExp(String.raw`\b(?:sed|perl)\b[^|;&]*\s-[a-zA-Z]*i[a-zA-Z.]*\b[^|;&]*${NAME}`), // in-place edit
-  new RegExp(String.raw`\b(?:truncate|unlink|mv)\b[^|;&]*${NAME}`), // empty, delete or move away (rm: see deletesSolutions)
-  new RegExp(String.raw`\b(?:cp|install|ln)\b[^|;&]*\s${NAME}\s*$`), // copy onto it
-  new RegExp(String.raw`\bdd\b[^|;&]*\bof=${NAME}`),
+/** A path into the study folder (.study, ./.study/x, /abs/.study/x), not a name that merely contains ".study". */
+const STUDY = String.raw`(?:\S*\/)?\.study(?=\/|\s|$)(?:\/\S*)?`;
+/** Shell shapes that write to, empty, move or delete a file whose path matches `name`. */
+const writesTo = (name) => [
+  new RegExp(String.raw`>>?\|?\s*${name}`), // redirection into the file
+  new RegExp(String.raw`\btee\b[^|;&]*${name}`),
+  new RegExp(String.raw`\b(?:sed|perl)\b[^|;&]*\s-[a-zA-Z]*i[a-zA-Z.]*\b[^|;&]*${name}`), // in-place edit
+  new RegExp(String.raw`\b(?:truncate|unlink|mv)\b[^|;&]*${name}`), // empty, delete or move away (rm: see deletesSolutions)
+  new RegExp(String.raw`\b(?:cp|install|ln)\b[^|;&]*\s${name}\s*$`), // copy onto it
+  new RegExp(String.raw`\bdd\b[^|;&]*\bof=${name}`),
 ];
+const BASH_WRITES = writesTo(NAME);
+const STUDY_WRITES = writesTo(STUDY);
 /** Any mention of a solution file, including globs such as solution.* or solution.{py,ts} */
 const MENTIONS_SOLUTION = /solution\.(?:py|ts|\*|\{)/;
+/** Inline code that names something in the study folder or its database. */
+const MENTIONS_STUDY = /(?:^|[^\w.-])\.study\/|study\.db/;
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
 const INTERPRETER = /^(?:python[\d.]*|node|tsx|bun|ruby|perl)$/;
 /** Flags whose next word is code: python -c, node -e/-p/--eval, ruby/perl -e (also -ne, -pe…). */
@@ -47,8 +56,21 @@ const DISCARD_REASON =
 const PLAYGROUND_REASON =
   "Blocked by the study rules (CLAUDE.md rule 2): the playground API (pnpm play) reads and writes the user's solution files " +
   'and their "My explanation". Do not call /api/solution or /api/concept/explanation. If the user asked for help, follow the hint skill.';
-/** Playground routes that touch the user's files (reading a solution creates its stub). */
-const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation)\b/;
+const STUDY_REASON =
+  "Blocked by the study rules (CLAUDE.md rule 2): .study/ holds the user's solutions, their history and the progress database. " +
+  "Do not write, move or delete anything there. Record progress only with pnpm -s study record ….";
+const STUDY_COMMAND_REASON =
+  "Blocked by the study rules: this study command is for the user only (migrate, start, pause, resume, phase set), " +
+  "whether run through the CLI or the playground's /api/study/start|pause|resume routes. Ask the user to run it.";
+const SQLITE_REASON =
+  "Blocked by the study rules: never open the progress database directly. Read it with pnpm -s study status … --json " +
+  "and write it with pnpm -s study record ….";
+/** Playground routes that touch the user's files or study time (reading a solution creates its stub). */
+const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation|study\/(?:start|pause|resume))\b/;
+/** The playground routes that start, pause or resume study time: same user-only rule as the CLI verbs. */
+const PLAYGROUND_STUDY = /\/api\/study\/(?:start|pause|resume)\b/;
+/** Study subcommands only the user runs; phase only with `set`. `curriculum set` stays allowed (spec §6.5). */
+const USER_ONLY_STUDY = new Set(["migrate", "start", "pause", "resume"]);
 const HTTP_CLIENTS = new Set(["curl", "wget", "http", "https", "xh", "xhs"]);
 
 function deny(reason) {
@@ -328,6 +350,19 @@ function reachesSolutions(word, where, recursive) {
   );
 }
 
+/** Does `word` name the study folder or anything in it (globs count), or anything under ALGO_STUDY? */
+function reachesStudy(word, where) {
+  const target = resolveWord(word, where);
+  if (!target) return false;
+  const parts = target.split(path.sep).filter(Boolean);
+  const project = where.projectDir.split(path.sep).filter(Boolean);
+  const inside = project.every((part, i) => i < parts.length && segmentMatches(parts[i], part));
+  if (inside && parts.length > project.length && segmentMatches(parts[project.length], ".study")) return true;
+  if (!process.env.ALGO_STUDY) return false;
+  const rel = path.relative(path.resolve(process.env.ALGO_STUDY), target);
+  return !rel.startsWith("..") && !path.isAbsolute(rel);
+}
+
 /** Is `dir` the project or inside it? An unknown dir (null) counts as inside. */
 function inProject(dir, where) {
   if (dir === null) return true;
@@ -369,7 +404,11 @@ const operands = (args) => {
 const hasFlag = (args, long, letters) =>
   args.some((arg) => arg === long || new RegExp(`^-[a-zA-Z]*[${letters}]`).test(arg));
 
-/** True when `git <args>` can discard or remove solution work in this project's working tree. */
+/**
+ * Whether `git <args>` can discard or remove solution work or the study folder in this project's working
+ * tree: "study", "solution", or null when it does neither. Kept apart so the caller can pick the reason
+ * that actually matches what was reached, instead of always blaming the solution files.
+ */
 function gitDiscards(args, where) {
   let cwd = where.cwd;
   let i = 0;
@@ -381,35 +420,38 @@ function gitDiscards(args, where) {
     } else i += ["-c", "--git-dir", "--work-tree", "--namespace"].includes(args[i]) ? 2 : 1;
   }
   const here = { ...where, cwd };
-  if (!inProject(cwd, where)) return false; // another repository
+  if (!inProject(cwd, where)) return null; // another repository
   const [sub, ...rest] = args.slice(i);
-  const covers = (spec) =>
+  const coversSolution = (spec) =>
     spec.startsWith(":/") ||
     reachesSolutions(spec, here, true) ||
     (/[*?[{]/.test(spec) && !spec.includes("/") && couldBeSolution(spec)); // a pathspec glob matches at any depth
+  /** "study" when any spec reaches .study, else "solution" when any spec covers a solution file, else null. */
+  const reasonFor = (specs) =>
+    specs.some((spec) => reachesStudy(spec, here)) ? "study" : specs.some(coversSolution) ? "solution" : null;
   switch (sub) {
     case "checkout":
-      return hasFlag(rest, "--force", "f") || operands(rest).some(covers);
+      return hasFlag(rest, "--force", "f") ? "solution" : reasonFor(operands(rest));
     case "switch":
-      return rest.includes("--discard-changes") || hasFlag(rest, "--force", "f");
+      return rest.includes("--discard-changes") || hasFlag(rest, "--force", "f") ? "solution" : null;
     case "restore": {
       const staged = hasFlag(rest, "--staged", "S");
-      if (staged && !hasFlag(rest, "--worktree", "W")) return false; // only unstages
-      return operands(rest).some(covers);
+      if (staged && !hasFlag(rest, "--worktree", "W")) return null; // only unstages
+      return reasonFor(operands(rest));
     }
     case "rm":
-      return !rest.includes("--cached") && operands(rest).some(covers);
+      return rest.includes("--cached") ? null : reasonFor(operands(rest));
     case "reset":
-      return rest.includes("--hard");
+      return rest.includes("--hard") ? "solution" : null;
     case "clean": {
-      if (!hasFlag(rest, "--force", "f")) return false;
+      if (!hasFlag(rest, "--force", "f")) return null;
       const specs = operands(rest);
-      return specs.length === 0 ? reachesSolutions(".", here, true) : specs.some(covers);
+      return specs.length === 0 ? (reachesSolutions(".", here, true) ? "solution" : null) : reasonFor(specs);
     }
     case "stash":
-      return rest[0] !== "list" && rest[0] !== "show";
+      return rest[0] !== "list" && rest[0] !== "show" ? "solution" : null;
     default:
-      return false;
+      return null;
   }
 }
 
@@ -447,9 +489,43 @@ function deletesSolutions(command, segmentWords, where) {
   });
 }
 
-/** Does an interpreter in stage `index` run inline or stdin code that names a solution file or the playground API? */
-function inlineCodeWrites(segment, index, command, stage) {
-  if (!INTERPRETER.test(command.name)) return false;
+/** rm, find -delete / -exec rm, or xargs rm that can remove something under the study folder. */
+function deletesStudy(command, segmentWords, where) {
+  const { name, args, viaXargs } = command;
+  if (name === "rm") {
+    if (viaXargs && segmentWords.some((word) => MENTIONS_STUDY.test(word) || reachesStudy(word, where))) return true;
+    return operands(args).some((arg) => reachesStudy(arg, where));
+  }
+  if (name !== "find") return false;
+  const exec = args.findIndex((arg, i) => /^-(?:exec|execdir|ok|okdir)$/.test(arg) && path.basename(args[i + 1] ?? "") === "rm");
+  if (!args.includes("-delete") && exec < 0) return false;
+  return args.some((arg) => reachesStudy(arg, where) || /(?:^|[/*])\.study(?:\/|$)/.test(arg));
+}
+
+/** The words after `study` when this stage runs the study CLI (pnpm [-s] study …, pnpm run study …, tsx|node … study/cli.ts …). */
+function studyArgs(command) {
+  const words = (list) => list.filter((arg) => !arg.startsWith("-"));
+  if (command.name === "study") return words(command.args);
+  if (LAUNCHERS.has(command.name)) {
+    const rest = words(command.args);
+    return rest[0] === "study" ? rest.slice(1) : null;
+  }
+  if (command.name === "tsx" || command.name === "node") {
+    const at = command.args.findIndex((arg) => /(?:^|\/)study\/cli\.ts$/.test(arg));
+    return at >= 0 ? words(command.args.slice(at + 1)) : null;
+  }
+  return null;
+}
+
+function userOnlyStudy(command) {
+  const args = studyArgs(command);
+  if (!args) return false;
+  return USER_ONLY_STUDY.has(args[0]) || (args[0] === "phase" && args[1] === "set");
+}
+
+/** WRITE_REASON or STUDY_REASON when an interpreter in stage `index` runs inline or stdin code that names a solution file, the playground API or the study folder. */
+function inlineCodeReason(segment, index, command, stage) {
+  if (!INTERPRETER.test(command.name)) return null;
   const { args } = command;
   const code = [...stage.heredocs];
   args.forEach((arg, i) => {
@@ -462,7 +538,9 @@ function inlineCodeWrites(segment, index, command, stage) {
   const script = operands(args).filter((arg) => !code.includes(arg));
   const readsStdin = args.includes("-") || (index > 0 && code.length === 0 && script.length === 0);
   if (readsStdin) code.push(...segment.stages.slice(0, index).flatMap((previous) => previous.words));
-  return code.some((text) => MENTIONS_SOLUTION.test(text) || PLAYGROUND_FILES.test(text));
+  if (code.some((text) => MENTIONS_STUDY.test(text))) return STUDY_REASON;
+  if (code.some((text) => PLAYGROUND_STUDY.test(text))) return STUDY_COMMAND_REASON;
+  return code.some((text) => MENTIONS_SOLUTION.test(text) || PLAYGROUND_FILES.test(text)) ? WRITE_REASON : null;
 }
 
 /** The segment as text for BASH_WRITES: words with spaces inside (messages, code) become "_". */
@@ -504,13 +582,22 @@ function segmentReason(segment, where) {
       const reason = bashReason(command.args.join(" "), where);
       if (reason) return reason;
     }
-    if ((command.name === "git" && gitDiscards(command.args, where)) || deletesSolutions(command, segmentWords, where)) {
-      return DISCARD_REASON;
+    if (command.name === "git") {
+      const discards = gitDiscards(command.args, where);
+      if (discards) return discards === "study" ? STUDY_REASON : DISCARD_REASON;
     }
-    if (HTTP_CLIENTS.has(command.name) && command.args.some((arg) => PLAYGROUND_FILES.test(arg))) return PLAYGROUND_REASON;
-    if (inlineCodeWrites(segment, index, command, stage)) return WRITE_REASON;
+    if (deletesSolutions(command, segmentWords, where)) return DISCARD_REASON;
+    if (HTTP_CLIENTS.has(command.name) && command.args.some((arg) => PLAYGROUND_FILES.test(arg))) {
+      return command.args.some((arg) => PLAYGROUND_STUDY.test(arg)) ? STUDY_COMMAND_REASON : PLAYGROUND_REASON;
+    }
+    if (userOnlyStudy(command)) return STUDY_COMMAND_REASON;
+    if (command.name === "sqlite3" && command.args.some((arg) => /study\.db/.test(arg))) return SQLITE_REASON;
+    if (deletesStudy(command, segmentWords, where)) return STUDY_REASON;
+    const inline = inlineCodeReason(segment, index, command, stage);
+    if (inline) return inline;
   }
   const text = segmentText(segment);
+  if (STUDY_WRITES.some((re) => re.test(text))) return STUDY_REASON;
   return BASH_WRITES.some((re) => re.test(text)) ? WRITE_REASON : null;
 }
 
@@ -544,8 +631,12 @@ try {
   } else {
     const target = input.file_path ?? input.notebook_path;
     if (target) {
-      const relative = path.relative(projectDir, path.resolve(projectDir, String(target))).split(path.sep).join("/");
+      const absolute = path.resolve(projectDir, String(target));
+      const relative = path.relative(projectDir, absolute).split(path.sep).join("/");
+      const override = process.env.ALGO_STUDY ? path.relative(path.resolve(process.env.ALGO_STUDY), absolute) : null;
+      const underOverride = override !== null && !override.startsWith("..") && !path.isAbsolute(override);
       if (SOLUTION_PATH.test(relative)) deny(WRITE_REASON);
+      else if (STUDY_PATH.test(relative) || underOverride) deny(STUDY_REASON);
     }
   }
 } catch (error) {

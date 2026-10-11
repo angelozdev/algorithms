@@ -1,6 +1,11 @@
-import { mkdirSync, renameSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it, vi } from "vitest";
+import { fixedClock } from "../../study/clock.ts";
+import { initStudy } from "../../study/init.ts";
+import { attemptEvents, attempts } from "../../study/schema.ts";
+import { closeCachedStudies, openStudy } from "../../study/store.ts";
+import { studySolutionPath } from "../src/paths.ts";
 import { renderRun, watchFiles, watchTarget } from "../src/watcher.ts";
 import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
 
@@ -108,5 +113,132 @@ describe("watchTarget", () => {
     const screen = written.filter((chunk) => chunk.startsWith("\x1b[2J")).at(-1);
     expect(screen).toContain("example 1");
     expect(screen).toContain('(Ctrl+C to stop)\nwarning: "code" is not on your PATH');
+  });
+
+  it("reruns on a save of the solution under .study and on a change to cases.json: two folders, two watchers", async () => {
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(root, "lc-0005-two-folders", twice, {
+      "solution.py": "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n",
+    });
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root });
+      await watcher.ready;
+      expect(screens.at(-1)).toContain("watching .study/solutions/problems/lc-0005/solution.py");
+      writeFileSync(studySolutionPath(target, "py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(() => expect(screens.at(-1)).toContain("GREEN"), { timeout: 15_000, interval: 100 });
+      const seen = screens.length;
+      writeFileSync(path.join(target.dir, "cases.json"), JSON.stringify({ ...twice, examples: [{ input: [3], expected: 6 }] }, null, 2));
+      await vi.waitFor(() => expect(screens.length).toBeGreaterThan(seen), { timeout: 15_000, interval: 100 });
+      watcher.close();
+    } finally {
+      stdout.mockRestore();
+    }
+  });
+
+  it("keeps watching a solution that still sits in the content folder (before pnpm study migrate), never under .study", async () => {
+    const target = makeProblem(root, "lc-0006-legacy-watch", {
+      entry: "solve",
+      params: [{ name: "n", type: "int" }],
+      returns: "int",
+      examples: [{ input: [2], expected: 4 }],
+      hidden: [],
+    });
+    write(target.dir, "solution.py", "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n");
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root });
+      await watcher.ready;
+      expect(screens.at(-1)).toContain("watching problems/lc-0006-legacy-watch/solution.py");
+      expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
+      writeFileSync(path.join(target.dir, "solution.py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(() => expect(screens.at(-1)).toContain("GREEN"), { timeout: 15_000, interval: 100 });
+      watcher.close();
+      expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
+    } finally {
+      stdout.mockRestore();
+    }
+  });
+
+  it("records a save and the run it triggers, but not the first automatic run, which is like opening the problem", async () => {
+    const own = tempDir();
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(own, "lc-0006-recorded", twice, { "solution.py": "class Solution:\n    def solve(self, n: int) -> int:\n        return n\n" });
+    initStudy(own, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    const recorded = () => {
+      const study = openStudy(own);
+      try {
+        return study.db.select({ type: attemptEvents.type, source: attemptEvents.source }).from(attemptEvents).orderBy(attemptEvents.id).all();
+      } finally {
+        study.close();
+      }
+    };
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root: own, record: true });
+      await watcher.ready;
+      expect(recorded()).toEqual([]);
+      writeFileSync(studySolutionPath(target, "py"), "class Solution:\n    def solve(self, n: int) -> int:\n        return n * 2\n");
+      await vi.waitFor(
+        () =>
+          expect(recorded()).toEqual([
+            { type: "edit", source: "watch" },
+            { type: "run", source: "watch" },
+          ]),
+        { timeout: 15_000, interval: 100 },
+      );
+      watcher.close();
+    } finally {
+      stdout.mockRestore();
+      closeCachedStudies();
+      removeTemp(own);
+    }
+  });
+
+  it("records nothing when a save only reformats the stub (CRLF, trailing blanks), not even the run it triggers", async () => {
+    const own = tempDir();
+    const twice = { entry: "solve", params: [{ name: "n", type: "int" }], returns: "int", examples: [{ input: [2], expected: 4 }], hidden: [] };
+    const target = makeProblem(own, "lc-0007-reformatted", twice);
+    initStudy(own, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    const recorded = () => {
+      const study = openStudy(own);
+      try {
+        return {
+          attempts: study.db.select().from(attempts).all(),
+          events: study.db.select().from(attemptEvents).all(),
+        };
+      } finally {
+        study.close();
+      }
+    };
+    const screens: string[] = [];
+    const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      if (String(chunk).startsWith("\x1b[2J")) screens.push(String(chunk));
+      return true;
+    });
+    try {
+      const watcher = await watchTarget(target, "py", { open: false, root: own, record: true });
+      await watcher.ready;
+      const solution = studySolutionPath(target, "py");
+      const stub = readFileSync(solution, "utf8"); // watchTarget wrote it: the solution did not exist
+      const seen = screens.length;
+      writeFileSync(solution, `${stub.replace(/\n/g, "  \r\n")}\r\n\r\n`);
+      // The save's run has finished drawing, so it would have been recorded by now.
+      await vi.waitFor(() => expect(screens.length).toBeGreaterThan(seen), { timeout: 15_000, interval: 100 });
+      watcher.close();
+      expect(recorded()).toEqual({ attempts: [], events: [] });
+    } finally {
+      stdout.mockRestore();
+      closeCachedStudies();
+      removeTemp(own);
+    }
   });
 });

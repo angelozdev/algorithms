@@ -38,10 +38,23 @@ export function conceptLabel(slug: string, concepts: readonly Pick<HomeConcept, 
 }
 
 /** Display names of curated problem lists (Grind 75 spec §5); unknown slugs are made readable. */
-export const LIST_LABELS: Readonly<Record<string, string>> = { "grind-75": "Grind 75" };
+export const LIST_LABELS: Readonly<Record<string, string>> = { "grind-75": "Grind 75", "grind-169": "Grind 169", "neetcode-150": "NeetCode 150" };
 
 export function listLabel(slug: string): string {
   return LIST_LABELS[slug] ?? prettifySlug(slug);
+}
+
+/** The study coach's phases (spec §1), numbered as the coach says them. */
+export const PHASE_LABELS: Readonly<Record<string, string>> = {
+  bases: "0 · Bases",
+  learn: "1 · Learn the list",
+  master: "2 · Master the list",
+  expand: "3 · Expand",
+  pro: "4 · Pro",
+};
+
+export function phaseLabel(phase: string): string {
+  return PHASE_LABELS[phase] ?? prettifySlug(phase);
 }
 
 /** LeetCode's problem number from an id like "lc-0035", or null for any other id. */

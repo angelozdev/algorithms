@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
+import type { EventSource } from "../../study/schema.ts";
 import { FillError, fillExpected } from "./fill-expected.ts";
 import { contentRoot } from "./paths.ts";
 import { formatTerminal } from "./reporter.ts";
@@ -12,11 +13,12 @@ import { LANGS, type Lang, type RunResult, type Target } from "./types.ts";
 import { watchTarget } from "./watcher.ts";
 
 const USAGE = `Usage:
-  pnpm watch <query> [--lang py|ts] [--open]
-  pnpm test <query> [--lang py|ts|all] [--json]
+  pnpm watch <query> [--lang py|ts] [--open] [--no-record]
+  pnpm test <query> [--lang py|ts|all] [--json] [--no-record]
   pnpm fill-expected <query> --ref <path outside the repo>
 
-<query>: an id (lc-0001, greedy/01), a LeetCode number (1), or part of a folder name (two-sum).`;
+<query>: an id (lc-0001, greedy/01), a LeetCode number (1), or part of a folder name (two-sum).
+--no-record: the run is not the user's practice (Claude's runs): the study coach records nothing.`;
 
 class UsageError extends Error {}
 
@@ -26,13 +28,13 @@ function parseLang(value: string | undefined, allowAll: boolean): Lang | "all" {
   throw new UsageError(`--lang must be py, ts${allowAll ? " or all" : ""} (got "${lang}")`);
 }
 
-async function testCommand(target: Target, lang: Lang | "all", json: boolean, root: string): Promise<number> {
-  const langs = lang === "all" ? LANGS.filter((l) => existsSync(solutionPath(target.dir, l))) : [lang];
+async function testCommand(target: Target, lang: Lang | "all", json: boolean, root: string, record: EventSource | undefined): Promise<number> {
+  const langs = lang === "all" ? LANGS.filter((l) => existsSync(solutionPath(target, l))) : [lang];
   if (langs.length === 0) {
     throw new UsageError(`${target.id} has no solution files yet. Start with: pnpm watch ${target.id} --open`);
   }
   const results: RunResult[] = [];
-  for (const l of langs) results.push(await runTarget(target, l, { root }));
+  for (const l of langs) results.push(await runTarget(target, l, { root, record }));
   if (json) process.stdout.write(`${JSON.stringify(lang === "all" ? results : results[0], null, 2)}\n`);
   else process.stdout.write(`${results.map(formatTerminal).join("\n\n")}\n`);
   return results.every((r) => r.green) ? 0 : 1;
@@ -49,6 +51,7 @@ function parseFlags(args: string[]) {
         open: { type: "boolean", default: false },
         json: { type: "boolean", default: false },
         ref: { type: "string" },
+        "no-record": { type: "boolean", default: false },
       },
     });
   } catch (error) {
@@ -63,7 +66,7 @@ async function main(argv: string[]): Promise<number> {
   const root = contentRoot();
   const target = resolveQuery(listTargets(root), positionals.join(" "));
   if (command === "watch") {
-    await watchTarget(target, parseLang(values.lang, false) as Lang, { open: values.open, root });
+    await watchTarget(target, parseLang(values.lang, false) as Lang, { open: values.open, root, record: !values["no-record"] });
     return 0;
   }
   if (command === "fill-expected") {
@@ -74,7 +77,7 @@ async function main(argv: string[]): Promise<number> {
     for (const warning of result.warnings) process.stdout.write(`warning: ${warning}\n`);
     return 0;
   }
-  return testCommand(target, parseLang(values.lang, true), values.json, root);
+  return testCommand(target, parseLang(values.lang, true), values.json, root, values["no-record"] ? undefined : "cli");
 }
 
 main(process.argv.slice(2)).then(

@@ -1,4 +1,4 @@
-import type { HomeConcept, HomeData, HomeExercise, HomeProblem, ItemStatus } from "../../server/types.ts";
+import type { HomeConcept, HomeData, HomeExercise, HomeProblem } from "../../server/types.ts";
 import {
   conceptLabel,
   DIFFICULTIES,
@@ -190,29 +190,6 @@ export interface ProblemList {
 export function problemList(data: HomeData, search: HomeSearch): ProblemList {
   const shown = sortProblems(filterProblems(data.problems, search), search.sort, search.dir);
   return { groups: groupProblems(shown, search.group, data.concepts), matching: shown.length };
-}
-
-export interface ContinueItem {
-  id: string;
-  title: string;
-  status: ItemStatus;
-  inProgress: boolean;
-  difficulty: string | null;
-  /** The first pattern of a problem, or the concept of an exercise. */
-  context: string | null;
-}
-
-/** Problems, then exercises, that are in progress and match the search box. */
-export function continueItems(data: HomeData, q: string): ContinueItem[] {
-  const problems = data.problems
-    .filter((p) => p.inProgress)
-    .map((p) => ({ id: p.id, title: p.title, status: p.status, inProgress: true, difficulty: p.difficulty, context: p.patterns[0] ? patternLabel(p.patterns[0]) : null }));
-  const exercises = data.concepts.flatMap((concept) =>
-    concept.exercises
-      .filter((e) => e.inProgress)
-      .map((e) => ({ id: e.id, title: e.title, status: e.status, inProgress: true, difficulty: null, context: concept.title })),
-  );
-  return [...problems, ...exercises].filter((item) => matchesQuery(item, q));
 }
 
 export interface ConceptRow {

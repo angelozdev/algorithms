@@ -1,0 +1,26 @@
+{
+  "mode": "function",
+  "entry": "robotTrail",
+  "params": [
+    {"name":"moves","type":"string"}
+  ],
+  "returns": "int",
+  "compare": "exact",
+  "examples": [
+    {"input":[""],"expected":1},
+    {"input":["UR"],"expected":3},
+    {"input":["URDL"],"expected":4}
+  ],
+  "hidden": [
+    {"input":["UDUD"],"expected":2},
+    {"input":["RRRR"],"expected":5},
+    {"input":["LLRR"],"expected":3},
+    {"input":["UUDDLLRR"],"expected":5},
+    {"input":["ULDR"],"expected":4},
+    {"input":["RURURU"],"expected":7},
+    {"input":["UUUUDDDD"],"expected":5},
+    {"input":["RDLURDLURDLU"],"expected":4},
+    {"input":["LLLLUUUURRRRDDDD"],"expected":16},
+    {"input":["D"],"expected":2}
+  ]
+}

@@ -68,6 +68,13 @@ export interface TargetData {
   /** Invalid cases.json, or hidden cases without expected values. */
   caseError: string | null;
   solutions: Record<Lang, boolean>;
+  /**
+   * "Start review" (study coach spec §7): the editor stays closed until the user starts the attempt from scratch;
+   * null when it opens as usual.
+   */
+  gate: { kind: "review" | "exam" | "retry"; minutes: number } | null;
+  /** An attempt started from scratch is open (a review, an exam, a retry): "Keep mine" would bring the old code back. */
+  freshStart: boolean;
 }
 
 export interface SolutionData {
@@ -83,19 +90,23 @@ export interface ConceptData {
   readme: string;
   /** README body up to the "## My explanation" heading (the whole body when the section is missing). */
   before: string;
-  /** The user's text without the section's leading HTML comments; null when the section is missing. */
+  /** The user's text: .study/explanations/<slug>.md, or (until pnpm study migrate) the README section's text; "" when there is none; null only when the README is broken. */
   explanation: string | null;
   /** From the next heading to the end ("" when the section is last or missing). */
   after: string;
-  /** Version of the whole README file. */
+  /** Version of the README and of .study/explanations/<slug>.md together. */
   version: string;
   readmeError: string | null;
 }
 
+export type { AnnouncementJson, NotInitializedJson, TodayItem, TodayJson } from "../../study/today.ts";
+
 export type RepoEvent =
   | { kind: "solution"; target: string; lang: Lang; version: string }
   | { kind: "readme"; target?: string; concept?: string }
-  | { kind: "cases" | "stress"; target: string };
+  | { kind: "cases" | "stress"; target: string }
+  /** .study/state.json has a new version (study coach spec §10): recorded progress changed. */
+  | { kind: "progress"; version: string };
 
 export interface ApiErrorBody {
   error: string;

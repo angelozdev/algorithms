@@ -28,7 +28,7 @@ export async function runCustom(
   const cf = loadCaseFile(target.dir);
   const issues = inputIssues(cf, input, "custom");
   if (issues.length > 0) throw new CustomInputError(issues);
-  const solutionPath = ensureSolution(target.dir, cf, lang).path;
+  const solutionPath = ensureSolution(target, cf, lang).path;
   const outcome = await runHarness(
     lang,
     {

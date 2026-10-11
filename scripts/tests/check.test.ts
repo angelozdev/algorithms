@@ -3,6 +3,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { REPO_ROOT, TSX_BIN } from "../../runner/src/paths.ts";
+import { fixedClock } from "../../study/clock.ts";
+import { initStudy } from "../../study/init.ts";
+import { makeLegacyRepo } from "../../study/tests/legacy-fixture.ts";
 import { checkRepo, sectionText } from "../lib/checks.ts";
 import { sync } from "../lib/sync.ts";
 import { cleanupTempDirs, conceptReadme, makeStudyRepo, problemReadme, put } from "./fixture.ts";
@@ -30,10 +33,10 @@ describe("checkRepo", () => {
 
   it("validates frontmatter against the schema and the pattern vocabulary", async () => {
     const root = makeStudyRepo();
-    edit(root, "problems/lc-0001-two-sum/README.md", "hints: 0", "hints: 5");
+    edit(root, "problems/lc-0001-two-sum/README.md", "difficulty: easy", "difficulty: impossible");
     edit(root, "problems/lc-0001-two-sum/README.md", "patterns: [arrays-hashing]", "patterns: [hashing]");
     const errors = await messages(root);
-    expect(errors.some((e) => e.startsWith("problems/lc-0001-two-sum/README.md: frontmatter hints:"))).toBe(true);
+    expect(errors.some((e) => e.startsWith("problems/lc-0001-two-sum/README.md: frontmatter difficulty:"))).toBe(true);
     expect(errors.some((e) => e.startsWith("problems/lc-0001-two-sum/README.md: frontmatter patterns[0]:"))).toBe(true);
   });
 
@@ -55,13 +58,23 @@ describe("checkRepo", () => {
     expect(await messages(root)).toContain("problems/lc-0001-two-sum/cases.json: hidden[0].expected: missing (run pnpm fill-expected)");
   });
 
-  it("checks status consistency", async () => {
-    const root = makeStudyRepo();
-    put(root, "concepts/hash-map/README.md", conceptReadme({ slug: "hash-map", title: "Hash map", status: "mastered", requires: ["arrays"] }));
-    edit(root, "problems/lc-0001-two-sum/README.md", "solved_in: [py]", "solved_in: []");
-    const errors = await messages(root);
-    expect(errors).toContain('concepts/hash-map/README.md: status is mastered but "My explanation" is empty');
-    expect(errors).toContain("problems/lc-0001-two-sum/README.md: status is solved but solved_in is empty");
+  it("warns about personal progress in content until the study store exists, then reports each place as an error", async () => {
+    const root = makeLegacyRepo();
+    const before = await checkRepo(root);
+    expect(before.errors).toEqual([]);
+    expect(before.warnings).toEqual([
+      { file: ".", message: "7 place(s) still hold personal progress from before the study coach; pnpm study migrate moves it to .study/ (study coach spec §9)" },
+    ]);
+    initStudy(root, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    expect(await messages(root)).toEqual([
+      "problems/lc-9001-sample-sum/README.md: personal progress in content: status, hints, solution_revealed, solved_in, complexity, ## Log (pnpm study migrate moves it to .study/)",
+      "problems/lc-9001-sample-sum/solution.py: solution file in a content folder (pnpm study migrate archives it in .study/solutions)",
+      "problems/lc-9002-sample-pairs/README.md: personal progress in content: status, hints, solution_revealed, solved_in, complexity, ## Log (pnpm study migrate moves it to .study/)",
+      "problems/lc-9002-sample-pairs/solution.ts: solution file in a content folder (pnpm study migrate archives it in .study/solutions)",
+      "concepts/sample-map/exercises/01-first/README.md: personal progress in content: status, hints, solution_revealed, solved_in, ## Log (pnpm study migrate moves it to .study/)",
+      "concepts/sample-map/exercises/01-first/solution.py: solution file in a content folder (pnpm study migrate archives it in .study/solutions)",
+      'concepts/sample-map/README.md: personal progress in content: status, "My explanation" text (pnpm study migrate moves it to .study/)',
+    ]);
   });
 
   it("requires the auto sections", async () => {
@@ -69,7 +82,7 @@ describe("checkRepo", () => {
     put(
       root,
       "problems/lc-0001-two-sum/README.md",
-      problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: [], status: "todo", solvedIn: [] }).replace("<!-- auto:concepts -->\n<!-- /auto -->\n", ""),
+      problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: [] }).replace("<!-- auto:concepts -->\n<!-- /auto -->\n", ""),
     );
     expect(await messages(root)).toContain("problems/lc-0001-two-sum/README.md: missing <!-- auto:concepts --> … <!-- /auto --> section");
   });
@@ -122,10 +135,44 @@ describe("checkRepo", () => {
   it("accepts a kebab-case lists field on problems and rejects anything else", async () => {
     const root = makeStudyRepo();
     sync(root);
-    edit(root, "problems/lc-0001-two-sum/README.md", "solution_revealed: false", "solution_revealed: false\nlists: [grind-75]");
+    edit(root, "problems/lc-0001-two-sum/README.md", "concepts: [hash-map]", "concepts: [hash-map]\nlists: [grind-75]");
     expect(await messages(root)).toEqual([]);
     edit(root, "problems/lc-0001-two-sum/README.md", "lists: [grind-75]", "lists: [Grind 75]");
     expect((await messages(root)).some((e) => e.startsWith("problems/lc-0001-two-sum/README.md: frontmatter lists[0]:"))).toBe(true);
+  });
+});
+
+describe("checkRepo: curriculum presets (study coach spec §5, §10)", () => {
+  afterEach(cleanupTempDirs);
+
+  const PRESET = [
+    "id: demo",
+    "phases:",
+    "  bases: { concepts: [arrays] }",
+    "  learn: { list: demo, size: 2, block: 3, mix_after_block: 3 }",
+    "  master: { list: demo, first_try_success: 0.8 }",
+    "  expand: { choose_from: [other], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }",
+    "  pro: { tracks: [interview] }",
+    "patterns:",
+    "  - { pattern: arrays-hashing, concept: hash-map }",
+    "timebox_minutes: { easy: 15, medium: 35, hard: 50 }",
+    "",
+  ].join("\n");
+
+  it("warns about a pattern of the preset's list that the preset does not list", async () => {
+    const root = makeStudyRepo();
+    put(root, "curriculum/demo.yaml", PRESET);
+    edit(root, "problems/lc-0001-two-sum/README.md", "concepts: [hash-map]", "concepts: [hash-map]\nlists: [demo]");
+    edit(root, "problems/lc-0020-valid-parentheses/README.md", "concepts: [stack]", "concepts: [stack]\nlists: [demo]");
+    const report = await checkRepo(root);
+    expect(report.errors).toEqual([]);
+    expect(report.warnings).toContainEqual({ file: "curriculum/demo.yaml", message: 'pattern "stack" is not in patterns, so phase 1 serves it after the listed ones (lc-0020)' });
+  });
+
+  it("reports an invalid preset as errors with paths", async () => {
+    const root = makeStudyRepo();
+    put(root, "curriculum/demo.yaml", PRESET.replace("block: 3", "block: 0"));
+    expect((await checkRepo(root)).errors).toEqual([{ file: "curriculum/demo.yaml", message: "phases.learn.block: Too small: expected number to be >0" }]);
   });
 });
 

@@ -22,6 +22,8 @@ const target = (extra: Partial<TargetData> = {}): TargetData => ({
   exampleInput: null,
   caseError: null,
   solutions: { py: true, ts: false },
+  gate: null,
+  freshStart: false,
   ...extra,
 });
 

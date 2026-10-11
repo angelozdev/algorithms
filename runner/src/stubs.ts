@@ -1,7 +1,8 @@
-import { existsSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { legacySolutionPath, studyRoot, studySolutionPath, targetRoot, writeStudyTsconfig } from "./paths.ts";
 import { NODE_VALUE_RETURN, passedParams } from "./schema.ts";
-import type { CaseFile, Lang } from "./types.ts";
+import type { CaseFile, Lang, Target } from "./types.ts";
 
 const PY_BASE: Record<string, string> = {
   int: "int",
@@ -87,14 +88,23 @@ export function renderStub(cf: CaseFile, lang: Lang): string {
   return `${header}export default function ${cf.entry}(${signature}): ${returns} {\n  ${NOT_IMPLEMENTED_TS}\n}\n`;
 }
 
-export function solutionPath(dir: string, lang: Lang): string {
-  return path.join(dir, `solution.${lang}`);
+/**
+ * The solution file of a target in `lang` (spec §3): .study/solutions/…/solution.<lang>.
+ * LEGACY: while a solution.<lang> still sits in the content folder (before `pnpm study migrate`), that file is
+ * the solution, so the runner, the watcher and the playground never hide work the user already has. Remove this
+ * fallback once the user has migrated (`pnpm check` rejects such files from then on).
+ */
+export function solutionPath(target: Target, lang: Lang): string {
+  const legacy = legacySolutionPath(target, lang);
+  return existsSync(legacy) ? legacy : studySolutionPath(target, lang);
 }
 
-/** Creates solution.<lang> from the signature when it does not exist yet. Never overwrites. */
-export function ensureSolution(dir: string, cf: CaseFile, lang: Lang): { path: string; created: boolean } {
-  const file = solutionPath(dir, lang);
+/** Creates the solution from the signature when it does not exist yet (and .study/tsconfig.json with it). Never overwrites. */
+export function ensureSolution(target: Target, cf: CaseFile, lang: Lang): { path: string; created: boolean } {
+  const file = solutionPath(target, lang);
   if (existsSync(file)) return { path: file, created: false };
+  mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, renderStub(cf, lang), { flag: "wx" });
+  writeStudyTsconfig(studyRoot(targetRoot(target)), { onlyIfMissing: true });
   return { path: file, created: true };
 }

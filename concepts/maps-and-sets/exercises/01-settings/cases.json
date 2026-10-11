@@ -1,0 +1,26 @@
+{
+  "mode": "function",
+  "entry": "applySettings",
+  "params": [
+    {"name":"keys","type":"string[]"},
+    {"name":"values","type":"string[]"}
+  ],
+  "returns": "string[]",
+  "compare": "unordered",
+  "examples": [
+    {"input":[["theme","lang","theme"],["dark","es","light"]],"expected":["theme=light","lang=es"]},
+    {"input":[["beta","beta"],["on",""]],"expected":[]},
+    {"input":[["units"],[""]],"expected":[]}
+  ],
+  "hidden": [
+    {"input":[[],[]],"expected":[]},
+    {"input":[["a","b","c"],["1","2","3"]],"expected":["a=1","b=2","c=3"]},
+    {"input":[["a","a","a"],["1","","2"]],"expected":["a=2"]},
+    {"input":[["x","y","x","y"],["1","2","",""]],"expected":[]},
+    {"input":[["__proto__","constructor"],["on","off"]],"expected":["__proto__=on","constructor=off"]},
+    {"input":[["k-1","k_2","k-1"],["a","b",""]],"expected":["k_2=b"]},
+    {"input":[["tostring","toString"],["","x"]],"expected":["toString=x"]},
+    {"input":[["v"],["0"]],"expected":["v=0"]},
+    {"input":[["a","b","a","b","c"],["x","y","z","","w"]],"expected":["a=z","c=w"]}
+  ]
+}

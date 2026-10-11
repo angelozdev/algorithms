@@ -1,7 +1,9 @@
 import path from "node:path";
+import type { EventSource } from "../../study/schema.ts";
 import { matches } from "./compare.ts";
 import { runHarness } from "./executor.ts";
 import { contentRoot } from "./paths.ts";
+import { recordRun } from "./recording.ts";
 import { assertHiddenFilled, loadCaseFile } from "./schema.ts";
 import { DEFAULT_STRESS_LIMIT_MS, loadStressCases } from "./stress.ts";
 import { ensureSolution } from "./stubs.ts";
@@ -31,6 +33,11 @@ export interface RunOptions {
   root?: string;
   /** Time limit for generating the stress cases (default STRESS_LOAD_TIMEOUT_MS). */
   stressLoadMs?: number;
+  /**
+   * Records this run for the study coach (spec §7). Leave it unset for runs that are not the user's practice:
+   * Claude's (`--no-record`), fill-expected, and tests.
+   */
+  record?: EventSource;
 }
 
 export function truncateLines(text: string, max = STDOUT_MAX_LINES): string {
@@ -74,12 +81,12 @@ function judge(
   };
 }
 
-export async function runTarget(target: Target, lang: Lang, options: RunOptions = {}): Promise<RunResult> {
+async function judgeTarget(target: Target, lang: Lang, options: RunOptions = {}): Promise<RunResult> {
   const root = options.root ?? contentRoot();
   const wallMs = options.examplesWallMs ?? EXAMPLES_WALL_MS;
   const cf = loadCaseFile(target.dir);
   assertHiddenFilled(cf);
-  const solution = ensureSolution(target.dir, cf, lang).path;
+  const solution = ensureSolution(target, cf, lang).path;
   const rel = (file: string): string => path.relative(root, file).split(path.sep).join("/");
   const request = {
     solutionPath: solution,
@@ -194,5 +201,12 @@ export async function runTarget(target: Target, lang: Lang, options: RunOptions 
   stress.status = stress.cases.every((c) => c.status === "pass") ? "pass" : "fail";
   result.stress = stress;
   result.green = stress.status === "pass";
+  return result;
+}
+
+/** Runs examples, then hidden cases, then stress, and records the run when `options.record` says whose it is. */
+export async function runTarget(target: Target, lang: Lang, options: RunOptions = {}): Promise<RunResult> {
+  const result = await judgeTarget(target, lang, options);
+  if (options.record) recordRun(target, lang, result.green, options.record);
   return result;
 }

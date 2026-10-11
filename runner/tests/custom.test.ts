@@ -2,8 +2,9 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { CustomInputError, runCustom } from "../src/custom.ts";
+import { studySolutionPath } from "../src/paths.ts";
 import { CaseFileError } from "../src/schema.ts";
-import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
+import { makeProblem, putSolution, removeTemp, tempDir, write } from "./helpers.ts";
 
 const root = tempDir();
 afterAll(() => removeTemp(root));
@@ -83,10 +84,10 @@ describe("runCustom", () => {
     expect(thrown.error?.message).toMatch(/IndexError/);
     expect(thrown.error?.trace).toContain("line 3");
 
-    write(target.dir, "solution.py", "class Solution:\n    def solve(self, nums)\n        return 0\n");
+    putSolution(target, "py", "class Solution:\n    def solve(self, nums)\n        return 0\n");
     expect((await runCustom(target, "py", [[1]])).fatal?.kind).toBe("load");
 
-    write(target.dir, "solution.py", "class Solution:\n    def solve(self, nums: list[int]) -> int:\n        while True:\n            pass\n");
+    putSolution(target, "py", "class Solution:\n    def solve(self, nums: list[int]) -> int:\n        while True:\n            pass\n");
     const loop = await runCustom(target, "py", [[1]], { wallMs: 1500 });
     expect(loop.error?.kind).toBe("timeout");
   });
@@ -97,6 +98,7 @@ describe("runCustom", () => {
     await expect(runCustom(target, "py", [[1], 2])).rejects.toMatchObject({
       issues: ["custom.input: expected 1 params, got 2"],
     });
+    expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
     expect(existsSync(path.join(target.dir, "solution.py"))).toBe(false);
     write(target.dir, "cases.json", "{ nope");
     await expect(runCustom(target, "py", [[1]])).rejects.toThrow(CaseFileError);

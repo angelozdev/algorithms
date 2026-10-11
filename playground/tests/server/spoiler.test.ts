@@ -15,7 +15,7 @@ const ECHO = {
 };
 
 function echoProblem(root: string, folder: string, id: string, solution: string): void {
-  put(root, `problems/${folder}/README.md`, problemReadme({ id, title: folder, slug: folder, patterns: ["strings"], concepts: [], status: "solving", solvedIn: [] }));
+  put(root, `problems/${folder}/README.md`, problemReadme({ id, title: folder, slug: folder, patterns: ["strings"], concepts: [] }));
   put(root, `problems/${folder}/cases.json`, JSON.stringify(ECHO));
   put(root, `problems/${folder}/solution.py`, solution);
 }

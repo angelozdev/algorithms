@@ -11,7 +11,7 @@ Reply in Spanish.
 1. **Target:** as in the `hint` skill.
 2. **Ask once:** "¿Seguro? Te muestro la solución óptima y el problema queda marcado como revealed." Then wait.
    - A clear yes: go on to step 3.
-   - Anything else means stop. Before stopping, if the target has `status: todo`, set it to `solving` and run `pnpm -s sync`.
+   - Anything else means stop. Record nothing.
 3. **Explain in chat:**
    - the key insight;
    - the approach, step by step;
@@ -20,6 +20,5 @@ Reply in Spanish.
    - links to the relevant concept notes.
 
    Never write the solution to any file.
-4. **Frontmatter:** set `status: revealed` (from `todo` or `solving`) and `solution_revealed: true`, and log `- YYYY-MM-DD · gave up, solution revealed`.
-5. **Sync:** run `pnpm -s sync`.
-6. **Suggest** retrying from scratch in a few days without looking at the solution. `INDEX.md` marks the problem with ↺.
+4. **Record:** run `pnpm -s study record give-up <id>`. It closes the open attempt as given up, so `study status` reports `revealed: true` from now on. "Not recorded" means the item had no open attempt (already solved or revealed), or there is no study database yet; both are fine. Never edit README frontmatter.
+5. **Suggest** retrying from scratch in a few days without looking at the solution.

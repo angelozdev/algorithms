@@ -1,0 +1,1052 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "d317d16a-378b-4bcd-9b58-0c2ad5a084b5",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "tables": {
+    "announcement_acks": {
+      "name": "announcement_acks",
+      "columns": {
+        "announcement_id": {
+          "name": "announcement_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "surface": {
+          "name": "surface",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "at": {
+          "name": "at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "announcement_acks_announcement_id_announcements_id_fk": {
+          "name": "announcement_acks_announcement_id_announcements_id_fk",
+          "tableFrom": "announcement_acks",
+          "tableTo": "announcements",
+          "columnsFrom": [
+            "announcement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "announcement_acks_announcement_id_surface_pk": {
+          "columns": [
+            "announcement_id",
+            "surface"
+          ],
+          "name": "announcement_acks_announcement_id_surface_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "announcement_acks_surface": {
+          "name": "announcement_acks_surface",
+          "value": "\"announcement_acks\".\"surface\" IN ('chat', 'ui')"
+        }
+      }
+    },
+    "announcements": {
+      "name": "announcements",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "at": {
+          "name": "at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phase_log_id": {
+          "name": "phase_log_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "curriculum_log_id": {
+          "name": "curriculum_log_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "local_date": {
+          "name": "local_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "announcements_phase_log_id_phase_log_id_fk": {
+          "name": "announcements_phase_log_id_phase_log_id_fk",
+          "tableFrom": "announcements",
+          "tableTo": "phase_log",
+          "columnsFrom": [
+            "phase_log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "announcements_curriculum_log_id_curriculum_log_id_fk": {
+          "name": "announcements_curriculum_log_id_curriculum_log_id_fk",
+          "tableFrom": "announcements",
+          "tableTo": "curriculum_log",
+          "columnsFrom": [
+            "curriculum_log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "announcements_kind": {
+          "name": "announcements_kind",
+          "value": "\"announcements\".\"kind\" IN ('phase', 'switch', 'return')"
+        },
+        "announcements_reference_matches_kind": {
+          "name": "announcements_reference_matches_kind",
+          "value": "CASE \"announcements\".\"kind\"\n        WHEN 'phase' THEN \"announcements\".\"phase_log_id\" IS NOT NULL AND \"announcements\".\"curriculum_log_id\" IS NULL AND \"announcements\".\"local_date\" IS NULL\n        WHEN 'switch' THEN \"announcements\".\"phase_log_id\" IS NOT NULL AND \"announcements\".\"curriculum_log_id\" IS NOT NULL AND \"announcements\".\"local_date\" IS NULL\n        WHEN 'return' THEN \"announcements\".\"phase_log_id\" IS NULL AND \"announcements\".\"curriculum_log_id\" IS NULL AND \"announcements\".\"local_date\" IS NOT NULL\n        ELSE 0\n      END"
+        }
+      }
+    },
+    "attempt_events": {
+      "name": "attempt_events",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "at": {
+          "name": "at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lang": {
+          "name": "lang",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "run_green": {
+          "name": "run_green",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "attempt_events_by_attempt": {
+          "name": "attempt_events_by_attempt",
+          "columns": [
+            "attempt_id",
+            "at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "attempt_events_attempt_id_attempts_id_fk": {
+          "name": "attempt_events_attempt_id_attempts_id_fk",
+          "tableFrom": "attempt_events",
+          "tableTo": "attempts",
+          "columnsFrom": [
+            "attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "attempt_events_run_iff_verdict": {
+          "name": "attempt_events_run_iff_verdict",
+          "value": "(\"attempt_events\".\"type\" = 'run') = (\"attempt_events\".\"run_green\" IS NOT NULL)"
+        },
+        "attempt_events_hint_iff_no_lang": {
+          "name": "attempt_events_hint_iff_no_lang",
+          "value": "(\"attempt_events\".\"type\" = 'hint') = (\"attempt_events\".\"lang\" IS NULL)"
+        },
+        "attempt_events_type": {
+          "name": "attempt_events_type",
+          "value": "\"attempt_events\".\"type\" IN ('edit', 'save', 'run', 'hint')"
+        },
+        "attempt_events_lang": {
+          "name": "attempt_events_lang",
+          "value": "\"attempt_events\".\"lang\" IN ('py', 'ts')"
+        },
+        "attempt_events_source": {
+          "name": "attempt_events_source",
+          "value": "\"attempt_events\".\"source\" IN ('playground', 'watch', 'cli', 'skill')"
+        }
+      }
+    },
+    "attempts": {
+      "name": "attempts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "exam_id": {
+          "name": "exam_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "rating": {
+          "name": "rating",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "attempts_one_open_per_item": {
+          "name": "attempts_one_open_per_item",
+          "columns": [
+            "item_id"
+          ],
+          "isUnique": true,
+          "where": "\"attempts\".\"ended_at\" IS NULL"
+        },
+        "attempts_by_item": {
+          "name": "attempts_by_item",
+          "columns": [
+            "item_id",
+            "started_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "attempts_exam_id_exams_id_fk": {
+          "name": "attempts_exam_id_exams_id_fk",
+          "tableFrom": "attempts",
+          "tableTo": "exams",
+          "columnsFrom": [
+            "exam_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "attempts_closed_iff_outcome": {
+          "name": "attempts_closed_iff_outcome",
+          "value": "(\"attempts\".\"ended_at\" IS NULL) = (\"attempts\".\"outcome\" IS NULL)"
+        },
+        "attempts_rating_only_on_closed_problems": {
+          "name": "attempts_rating_only_on_closed_problems",
+          "value": "\"attempts\".\"rating\" IS NULL OR (\"attempts\".\"ended_at\" IS NOT NULL AND instr(\"attempts\".\"item_id\", '/') = 0)"
+        },
+        "attempts_ends_after_start": {
+          "name": "attempts_ends_after_start",
+          "value": "\"attempts\".\"ended_at\" IS NULL OR \"attempts\".\"ended_at\" >= \"attempts\".\"started_at\""
+        },
+        "attempts_outcome": {
+          "name": "attempts_outcome",
+          "value": "\"attempts\".\"outcome\" IN ('green', 'gave_up')"
+        },
+        "attempts_rating": {
+          "name": "attempts_rating",
+          "value": "\"attempts\".\"rating\" IN ('again', 'hard', 'good', 'easy')"
+        }
+      }
+    },
+    "cards": {
+      "name": "cards",
+      "columns": {
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "due": {
+          "name": "due",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "stability": {
+          "name": "stability",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "difficulty": {
+          "name": "difficulty",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "scheduled_days": {
+          "name": "scheduled_days",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "learning_steps": {
+          "name": "learning_steps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reps": {
+          "name": "reps",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lapses": {
+          "name": "lapses",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "state": {
+          "name": "state",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_review": {
+          "name": "last_review",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "cards_state": {
+          "name": "cards_state",
+          "value": "\"cards\".\"state\" BETWEEN 0 AND 3"
+        },
+        "cards_problems_only": {
+          "name": "cards_problems_only",
+          "value": "instr(\"cards\".\"item_id\", '/') = 0"
+        }
+      }
+    },
+    "complexity_notes": {
+      "name": "complexity_notes",
+      "columns": {
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "time": {
+          "name": "time",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "space": {
+          "name": "space",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "optimal": {
+          "name": "optimal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "complexity_notes_attempt_id_attempts_id_fk": {
+          "name": "complexity_notes_attempt_id_attempts_id_fk",
+          "tableFrom": "complexity_notes",
+          "tableTo": "attempts",
+          "columnsFrom": [
+            "attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "concept_acceptances": {
+      "name": "concept_acceptances",
+      "columns": {
+        "concept": {
+          "name": "concept",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "curriculum_log": {
+      "name": "curriculum_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "at": {
+          "name": "at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "preset": {
+          "name": "preset",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "curriculum_log_reason": {
+          "name": "curriculum_log_reason",
+          "value": "\"curriculum_log\".\"reason\" IN ('init', 'switch')"
+        }
+      }
+    },
+    "daily_plans": {
+      "name": "daily_plans",
+      "columns": {
+        "local_date": {
+          "name": "local_date",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mode": {
+          "name": "mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "daily_plans_mode": {
+          "name": "daily_plans_mode",
+          "value": "\"daily_plans\".\"mode\" IN ('normal', 'return', 'catch_up')"
+        },
+        "daily_plans_local_date": {
+          "name": "daily_plans_local_date",
+          "value": "\"daily_plans\".\"local_date\" GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'"
+        }
+      }
+    },
+    "exams": {
+      "name": "exams",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "list": {
+          "name": "list",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "seed": {
+          "name": "seed",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pattern_intros": {
+      "name": "pattern_intros",
+      "columns": {
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "introduced_at": {
+          "name": "introduced_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "pauses": {
+      "name": "pauses",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "pauses_one_open": {
+          "name": "pauses_one_open",
+          "columns": [
+            "(1)"
+          ],
+          "isUnique": true,
+          "where": "\"pauses\".\"ended_at\" IS NULL"
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "pauses_ends_after_start": {
+          "name": "pauses_ends_after_start",
+          "value": "\"pauses\".\"ended_at\" IS NULL OR \"pauses\".\"ended_at\" >= \"pauses\".\"started_at\""
+        }
+      }
+    },
+    "phase_log": {
+      "name": "phase_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "at": {
+          "name": "at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "phase": {
+          "name": "phase",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "curriculum_log_id": {
+          "name": "curriculum_log_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "phase_log_curriculum_log_id_curriculum_log_id_fk": {
+          "name": "phase_log_curriculum_log_id_curriculum_log_id_fk",
+          "tableFrom": "phase_log",
+          "tableTo": "curriculum_log",
+          "columnsFrom": [
+            "curriculum_log_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "phase_log_phase": {
+          "name": "phase_log_phase",
+          "value": "\"phase_log\".\"phase\" IN ('bases', 'learn', 'master', 'expand', 'pro')"
+        },
+        "phase_log_reason": {
+          "name": "phase_log_reason",
+          "value": "\"phase_log\".\"reason\" IN ('criteria', 'forced', 'switch')"
+        }
+      }
+    },
+    "plan_items": {
+      "name": "plan_items",
+      "columns": {
+        "local_date": {
+          "name": "local_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "position": {
+          "name": "position",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "slot": {
+          "name": "slot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pattern": {
+          "name": "pattern",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "block_index": {
+          "name": "block_index",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "plan_items_local_date_daily_plans_local_date_fk": {
+          "name": "plan_items_local_date_daily_plans_local_date_fk",
+          "tableFrom": "plan_items",
+          "tableTo": "daily_plans",
+          "columnsFrom": [
+            "local_date"
+          ],
+          "columnsTo": [
+            "local_date"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "plan_items_local_date_position_pk": {
+          "columns": [
+            "local_date",
+            "position"
+          ],
+          "name": "plan_items_local_date_position_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "plan_items_slot": {
+          "name": "plan_items_slot",
+          "value": "\"plan_items\".\"slot\" IN ('continue', 'review', 'new', 'concept')"
+        }
+      }
+    },
+    "profile": {
+      "name": "profile",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "daily_minutes": {
+          "name": "daily_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "language": {
+          "name": "language",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "expansion_list": {
+          "name": "expansion_list",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {
+        "profile_single_row": {
+          "name": "profile_single_row",
+          "value": "\"profile\".\"id\" = 1"
+        },
+        "profile_daily_minutes": {
+          "name": "profile_daily_minutes",
+          "value": "\"profile\".\"daily_minutes\" > 0"
+        },
+        "profile_language": {
+          "name": "profile_language",
+          "value": "\"profile\".\"language\" IN ('py', 'ts')"
+        }
+      }
+    }
+  },
+  "views": {
+    "attempt_stats": {
+      "columns": {
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hints": {
+          "name": "hints",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "active_ms": {
+          "name": "active_ms",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "measured": {
+          "name": "measured",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lang": {
+          "name": "lang",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "name": "attempt_stats",
+      "isExisting": false,
+      "definition": "\nSELECT\n  a.id AS attempt_id,\n  a.item_id AS item_id,\n  CASE\n    WHEN a.exam_id IS NOT NULL THEN 'exam'\n    WHEN EXISTS (\n      SELECT 1 FROM attempts p\n      WHERE p.item_id = a.item_id AND p.id <> a.id AND p.rating IS NOT NULL AND p.ended_at <= a.started_at\n    ) THEN 'review'\n    ELSE 'new'\n  END AS kind,\n  count(CASE WHEN g.type = 'hint' THEN 1 END) AS hints,\n  coalesce(sum(CASE WHEN g.gap <= 300000 THEN g.gap END), 0) AS active_ms,\n  count(CASE WHEN g.type IN ('edit', 'save', 'run') THEN 1 END) >= 3 AS measured,\n  (\n    SELECT e.lang FROM attempt_events e\n    WHERE e.attempt_id = a.id AND e.type = 'run'\n    ORDER BY e.at DESC, e.id DESC LIMIT 1\n  ) AS lang\nFROM attempts a\nLEFT JOIN (\n  SELECT attempt_id, type, at - lag(at) OVER (PARTITION BY attempt_id ORDER BY at, id) AS gap\n  FROM attempt_events\n) g ON g.attempt_id = a.id\nGROUP BY a.id\n"
+    },
+    "item_status": {
+      "columns": {
+        "item_id": {
+          "name": "item_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ever_green": {
+          "name": "ever_green",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "ever_gave_up": {
+          "name": "ever_gave_up",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "last_outcome": {
+          "name": "last_outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "name": "item_status",
+      "isExisting": false,
+      "definition": "\nSELECT\n  a.item_id AS item_id,\n  CASE\n    WHEN max(a.ended_at IS NULL) = 1 THEN 'in_progress'\n    WHEN max(a.outcome = 'green') = 1 THEN 'solved'\n    WHEN max(a.outcome = 'gave_up') = 1 THEN 'revealed'\n    ELSE 'todo'\n  END AS status,\n  coalesce(max(a.outcome = 'green'), 0) AS ever_green,\n  coalesce(max(a.outcome = 'gave_up'), 0) AS ever_gave_up,\n  (\n    SELECT c.outcome FROM attempts c\n    WHERE c.item_id = a.item_id AND c.ended_at IS NOT NULL\n    ORDER BY c.ended_at DESC, c.id DESC LIMIT 1\n  ) AS last_outcome\nFROM attempts a\nGROUP BY a.item_id\n"
+    }
+  },
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {
+      "pauses_one_open": {
+        "columns": {
+          "(1)": {
+            "isExpression": true
+          }
+        }
+      }
+    }
+  }
+}

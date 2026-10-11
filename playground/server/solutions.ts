@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import type { Context } from "hono";
 import { Hono } from "hono";
 import { z } from "zod";
 import { CustomInputError, runCustom } from "../../runner/src/custom.ts";
+import { recordSolutionChange } from "../../runner/src/recording.ts";
 import { runTarget } from "../../runner/src/run.ts";
 import { CaseFileError, loadCaseFile } from "../../runner/src/schema.ts";
 import { ensureSolution, solutionPath } from "../../runner/src/stubs.ts";
@@ -19,8 +21,8 @@ export function contentVersion(text: string): string {
 
 /** Reads solution.<lang>, creating the stub first when it is missing (throws CaseFileError when it cannot). */
 export function readSolution(target: Target, lang: Lang): SolutionData {
-  const file = solutionPath(target.dir, lang);
-  if (!existsSync(file)) ensureSolution(target.dir, loadCaseFile(target.dir), lang);
+  const file = solutionPath(target, lang);
+  if (!existsSync(file)) ensureSolution(target, loadCaseFile(target.dir), lang);
   const code = readFileSync(file, "utf8");
   return { code, version: contentVersion(code) };
 }
@@ -32,9 +34,10 @@ export type WriteResult = { ok: true; version: string } | { ok: false; current: 
  * Read, compare and write are synchronous, so two saves can never interleave.
  */
 export function writeSolution(target: Target, lang: Lang, code: string, baseVersion: string): WriteResult {
-  const file = solutionPath(target.dir, lang);
+  const file = solutionPath(target, lang);
   const disk = existsSync(file) ? readFileSync(file, "utf8") : "";
   if (contentVersion(disk) !== baseVersion) return { ok: false, current: { code: disk, version: contentVersion(disk) } };
+  mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, code);
   return { ok: true, version: contentVersion(code) };
 }
@@ -69,6 +72,8 @@ export function solutionRoutes(root: string) {
       const target = findTarget(root, body.id);
       if (!target) return c.json(unknownTarget(body.id), 404);
       const result = writeSolution(target, body.lang, body.code, body.baseVersion);
+      // An autosave of the user's editor (spec §7): it can start the first attempt, or join the open one.
+      if (result.ok) recordSolutionChange(target, body.lang, body.code, "save", "playground");
       return result.ok ? c.json({ version: result.version }, 200) : c.json(result.current, 409);
     })
     .post("/run", valid("json", z.object({ id, lang })), async (c) => {
@@ -76,7 +81,7 @@ export function solutionRoutes(root: string) {
       const target = findTarget(root, body.id);
       if (!target) return c.json(unknownTarget(body.id), 404);
       try {
-        return c.json(await runTarget(target, body.lang, { root }), 200);
+        return c.json(await runTarget(target, body.lang, { root, record: "playground" }), 200);
       } catch (error) {
         return caseFileError422(c, error);
       }

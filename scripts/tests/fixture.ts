@@ -30,15 +30,7 @@ export const CASES_JSON = JSON.stringify({
   hidden: [{ input: [2], expected: 2 }],
 });
 
-export function problemReadme(fields: {
-  id: string;
-  title: string;
-  slug: string;
-  patterns: string[];
-  concepts: string[];
-  status: string;
-  solvedIn: string[];
-}): string {
+export function problemReadme(fields: { id: string; title: string; slug: string; patterns: string[]; concepts: string[] }): string {
   return [
     "---",
     `id: ${fields.id}`,
@@ -48,11 +40,6 @@ export function problemReadme(fields: {
     "difficulty: easy",
     `patterns: [${fields.patterns.join(", ")}]`,
     `concepts: [${fields.concepts.join(", ")}]`,
-    `status: ${fields.status}`,
-    "hints: 0",
-    "solution_revealed: false",
-    `solved_in: [${fields.solvedIn.join(", ")}]`,
-    "complexity: null",
     "---",
     `# ${fields.title}`,
     "",
@@ -65,23 +52,14 @@ export function problemReadme(fields: {
     "<!-- auto:concepts -->",
     "<!-- /auto -->",
     "",
-    "## Log",
-    "",
   ].join("\n");
 }
 
-export function conceptReadme(fields: {
-  slug: string;
-  title: string;
-  status: string;
-  requires: string[];
-  explanation?: string;
-}): string {
+export function conceptReadme(fields: { slug: string; title: string; requires: string[] }): string {
   return [
     "---",
     `slug: ${fields.slug}`,
     `title: ${fields.title}`,
-    `status: ${fields.status}`,
     `requires: [${fields.requires.join(", ")}]`,
     "related: []",
     "---",
@@ -99,7 +77,6 @@ export function conceptReadme(fields: {
     "## My explanation",
     "",
     "<!-- USER: in your own words -->",
-    ...(fields.explanation ? [fields.explanation] : []),
     "",
     "## Problems",
     "",
@@ -109,50 +86,24 @@ export function conceptReadme(fields: {
   ].join("\n");
 }
 
-export function exerciseReadme(fields: { id: string; title: string; concept: string; status: string; solvedIn: string[] }): string {
-  return [
-    "---",
-    `id: ${fields.id}`,
-    `title: ${fields.title}`,
-    `concept: ${fields.concept}`,
-    `status: ${fields.status}`,
-    "hints: 0",
-    "solution_revealed: false",
-    `solved_in: [${fields.solvedIn.join(", ")}]`,
-    "---",
-    `# ${fields.title}`,
-    "",
-    "## Statement",
-    "",
-    "Short.",
-    "",
-    "## Log",
-    "",
-  ].join("\n");
+export function exerciseReadme(fields: { id: string; title: string; concept: string }): string {
+  return ["---", `id: ${fields.id}`, `title: ${fields.title}`, `concept: ${fields.concept}`, "---", `# ${fields.title}`, "", "## Statement", "", "Short.", ""].join("\n");
 }
 
-/** A small, valid study repo in the OS temp dir. */
+/** A small, valid study repo in the OS temp dir: pure content, no progress (that lives in .study). */
 export function makeStudyRepo(): string {
   const root = makeTempDir("algo-repo-");
-  put(
-    root,
-    "problems/lc-0001-two-sum/README.md",
-    problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: ["hash-map"], status: "solved", solvedIn: ["py"] }),
-  );
+  put(root, "problems/lc-0001-two-sum/README.md", problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: ["hash-map"] }));
   put(root, "problems/lc-0001-two-sum/cases.json", CASES_JSON);
   put(
     root,
     "problems/lc-0020-valid-parentheses/README.md",
-    problemReadme({ id: "lc-0020", title: "Valid Parentheses", slug: "valid-parentheses", patterns: ["stack"], concepts: ["stack"], status: "solving", solvedIn: [] }),
+    problemReadme({ id: "lc-0020", title: "Valid Parentheses", slug: "valid-parentheses", patterns: ["stack"], concepts: ["stack"] }),
   );
   put(root, "problems/lc-0020-valid-parentheses/cases.json", CASES_JSON);
-  put(root, "concepts/arrays/README.md", conceptReadme({ slug: "arrays", title: "Arrays", status: "mastered", requires: [], explanation: "Contiguous memory with O(1) indexing." }));
-  put(root, "concepts/hash-map/README.md", conceptReadme({ slug: "hash-map", title: "Hash map", status: "learning", requires: ["arrays"] }));
-  put(
-    root,
-    "concepts/hash-map/exercises/01-first-repeat/README.md",
-    exerciseReadme({ id: "hash-map/01", title: "First repeat", concept: "hash-map", status: "solved", solvedIn: ["py"] }),
-  );
+  put(root, "concepts/arrays/README.md", conceptReadme({ slug: "arrays", title: "Arrays", requires: [] }));
+  put(root, "concepts/hash-map/README.md", conceptReadme({ slug: "hash-map", title: "Hash map", requires: ["arrays"] }));
+  put(root, "concepts/hash-map/exercises/01-first-repeat/README.md", exerciseReadme({ id: "hash-map/01", title: "First repeat", concept: "hash-map" }));
   put(root, "concepts/hash-map/exercises/01-first-repeat/cases.json", CASES_JSON);
   return root;
 }

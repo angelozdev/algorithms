@@ -1,5 +1,7 @@
 import { removeTemp, tempDir } from "../../../runner/tests/helpers.ts";
 import { conceptReadme, exerciseReadme, problemReadme, put } from "../../../scripts/tests/fixture.ts";
+import { closeCachedStudies } from "../../../study/store.ts";
+import { resetStudy, seedClosedAttempt } from "../../../study/tests/seed.ts";
 import type { createApp } from "../../server/app.ts";
 
 export const HOST = "127.0.0.1:4173";
@@ -36,21 +38,29 @@ export const PY_SUM = "class Solution:\n    def solve(self, nums: list[int]) -> 
 
 const repos: string[] = [];
 
-/** A small study repo inside the project (so TypeScript solutions resolve "lc"). removeRepos() deletes it. */
-export function makeRepo(): string {
+/**
+ * A small study repo inside the project (so TypeScript solutions resolve "lc"). removeRepos() deletes it.
+ * By default its progress is initialized in .study with Two Sum solved; `{ study: false }` leaves no study database.
+ */
+export function makeRepo(options: { study?: boolean } = {}): string {
   const root = tempDir();
   repos.push(root);
   const cases = JSON.stringify(SUM_CASES);
-  put(root, "problems/lc-0001-two-sum/README.md", problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: ["hash-map"], status: "solved", solvedIn: ["py"] }));
+  put(root, "problems/lc-0001-two-sum/README.md", problemReadme({ id: "lc-0001", title: "Two Sum", slug: "two-sum", patterns: ["arrays-hashing"], concepts: ["hash-map"] }));
   put(root, "problems/lc-0001-two-sum/cases.json", cases);
-  put(root, "problems/lc-0020-valid-parentheses/README.md", problemReadme({ id: "lc-0020", title: "Valid Parentheses", slug: "valid-parentheses", patterns: ["stack"], concepts: [], status: "todo", solvedIn: [] }));
+  put(root, "problems/lc-0020-valid-parentheses/README.md", problemReadme({ id: "lc-0020", title: "Valid Parentheses", slug: "valid-parentheses", patterns: ["stack"], concepts: [] }));
   put(root, "problems/lc-0020-valid-parentheses/cases.json", cases);
-  put(root, "concepts/hash-map/README.md", conceptReadme({ slug: "hash-map", title: "Hash map", status: "learning", requires: [] }));
-  put(root, "concepts/hash-map/exercises/01-first-repeat/README.md", exerciseReadme({ id: "hash-map/01", title: "First repeat", concept: "hash-map", status: "todo", solvedIn: [] }));
+  put(root, "concepts/hash-map/README.md", conceptReadme({ slug: "hash-map", title: "Hash map", requires: [] }));
+  put(root, "concepts/hash-map/exercises/01-first-repeat/README.md", exerciseReadme({ id: "hash-map/01", title: "First repeat", concept: "hash-map" }));
   put(root, "concepts/hash-map/exercises/01-first-repeat/cases.json", cases);
+  if (options.study ?? true) {
+    resetStudy(root);
+    seedClosedAttempt(root, "lc-0001", "green");
+  }
   return root;
 }
 
 export function removeRepos(): void {
+  closeCachedStudies();
   for (const root of repos.splice(0)) removeTemp(root);
 }

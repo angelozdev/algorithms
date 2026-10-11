@@ -16,9 +16,10 @@ export const RECONNECT_MS = { first: 500, max: 5_000 } as const;
 const EventsContext = createContext<EventsValue>({ connected: true, subscribe: () => () => {} });
 
 /**
- * One live connection for the whole app. It refreshes the queries a change affects (badges update when Claude
- * edits a README) and passes every event to the pages that listen. After an outage it catches up on what changed
- * meanwhile, and if the browser gave up on the connection, a new one is opened, waiting a little longer each time.
+ * One live connection for the whole app. It refreshes the queries a change affects (status badges update when a
+ * save, run, hint or give-up changes the recorded progress) and passes every event to the pages that listen. After
+ * an outage it catches up on what changed meanwhile, and if the browser gave up on the connection, a new one is
+ * opened, waiting a little longer each time.
  */
 export function EventsProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
@@ -61,11 +62,20 @@ export function EventsProvider({ children }: { children: ReactNode }) {
           void queryClient.invalidateQueries({ queryKey: keys.home });
           if (event.target) void queryClient.invalidateQueries({ queryKey: keys.target(event.target) });
           if (event.concept) void queryClient.invalidateQueries({ queryKey: keys.concept(event.concept) });
+          // A README the coach was waiting on (a missing concept note, say) may now exist: Today can show it live.
+          void queryClient.invalidateQueries({ queryKey: keys.today });
         } else if (event.kind === "cases") {
           void queryClient.invalidateQueries({ queryKey: keys.target(event.target) });
         } else if (event.kind === "solution") {
-          // A new stub turns a todo item into "in progress".
+          // LEGACY: until `pnpm study migrate`, a new solution file turns a todo item into "in progress" (after it,
+          // an attempt does, and that arrives as a progress event).
           void queryClient.invalidateQueries({ queryKey: keys.home });
+        } else if (event.kind === "progress") {
+          // Recorded progress changed (.study/state.json): statuses and hint counts on any page may be stale.
+          void queryClient.invalidateQueries({ queryKey: keys.home });
+          void queryClient.invalidateQueries({ queryKey: keys.targets });
+          void queryClient.invalidateQueries({ queryKey: keys.concepts });
+          void queryClient.invalidateQueries({ queryKey: keys.today });
         }
         for (const listener of listeners.current) listener(event);
       };

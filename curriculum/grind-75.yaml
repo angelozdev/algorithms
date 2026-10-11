@@ -1,0 +1,32 @@
+# Grind 75: the default preset (study coach spec §5, D12).
+# Members: the problems whose frontmatter `lists` has grind-75. They were imported from the LeetCode list
+# rab78cw1 (75 questions, none premium; docs/superpowers/specs/2026-10-03-grind-75-design.md).
+# Pattern order: NeetCode's roadmap order (the order of PATTERNS in lib/schemas.ts), with strings moved up after
+# two-pointers. Each pattern opens with the concept named next to it; the `concept` skill creates missing notes.
+id: grind-75
+phases:
+  bases: { concepts: [big-o, recursion, arrays-and-strings, maps-and-sets, sorting] }
+  learn: { list: grind-75, size: 75, block: 3, mix_after_block: 3 }
+  master: { list: grind-75, first_try_success: 0.8 }
+  expand: { choose_from: [grind-169, neetcode-150], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }
+  pro: { tracks: [interview, competitive] }
+patterns:
+  - { pattern: arrays-hashing, concept: hash-map }
+  - { pattern: two-pointers, concept: two-pointers }
+  - { pattern: strings, concept: string-parsing }
+  - { pattern: sliding-window, concept: sliding-window }
+  - { pattern: stack, concept: stack }
+  - { pattern: binary-search, concept: binary-search }
+  - { pattern: linked-list, concept: linked-list }
+  - { pattern: trees, concept: binary-tree }
+  - { pattern: tries, concept: trie }
+  - { pattern: heap, concept: heap }
+  - { pattern: backtracking, concept: backtracking }
+  - { pattern: graphs, concept: graph-dfs }
+  - { pattern: dp-1d, concept: dynamic-programming }
+  - { pattern: dp-2d, concept: dynamic-programming }
+  - { pattern: greedy, concept: greedy }
+  - { pattern: intervals, concept: intervals }
+  - { pattern: math, concept: binary-representation }
+  - { pattern: bit-manipulation, concept: binary-representation }
+timebox_minutes: { easy: 15, medium: 35, hard: 50 }

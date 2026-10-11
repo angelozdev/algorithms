@@ -1,12 +1,27 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { fixedClock } from "../../study/clock.ts";
+import { pauseStudy } from "../../study/pause.ts";
+import { recordHint, recordWork } from "../../study/record.ts";
+import { openStudy } from "../../study/store.ts";
+import { setCurriculum } from "../../study/switch.ts";
+import { resetStudy, seedClosedAttempt } from "../../study/tests/seed.ts";
+
+// No e2e run may reach the user's own progress (vitest.config.ts does the same for unit tests with `env`, which
+// Playwright has no equivalent of): studyRoot() prefers $ALGO_STUDY to <E2E_ROOT>/.study, so with it set in the
+// shell resetRepo() would empty the user's real store. Every e2e entry point (the config, serve.ts, each spec)
+// imports this file, nothing reads ALGO_STUDY at import time, and the servers they spawn inherit the cleared value.
+process.env.ALGO_STUDY = "";
 
 export const E2E_PORT = 4391;
 /** Inside the project, so TypeScript solutions resolve "lc" like everywhere else. */
 export const E2E_ROOT = fileURLToPath(new URL("./.tmp/repo/", import.meta.url));
 
 export const repoFile = (rel: string): string => path.join(E2E_ROOT, rel);
+
+/** Where the playground keeps Two Sum's Python solution (spec §3: .study/solutions/problems/<id>/). */
+export const SOLUTION_PY = repoFile(".study/solutions/problems/lc-0001/solution.py");
 
 export const TWO_SUM_PY = [
   "class Solution:",
@@ -29,11 +44,6 @@ difficulty: easy
 patterns: [arrays-hashing]
 concepts: [hash-map]
 lists: [grind-75]
-status: todo
-hints: 0
-solution_revealed: false
-solved_in: []
-complexity: null
 ---
 # 1. Two Sum
 
@@ -44,12 +54,8 @@ Return the indices of the two numbers in \`nums\` that add up to \`target\`.
 ## Concepts
 
 <!-- auto:concepts -->
-- [Hash map](../../concepts/hash-map/README.md) · learning
+- [Hash map](../../concepts/hash-map/README.md)
 <!-- /auto -->
-
-## Log
-
-- 2026-09-28 · created for the end-to-end tests
 `;
 
 const CASES = {
@@ -75,7 +81,6 @@ export const EXPLANATION_NOTE = "<!-- Write this yourself, in your own words. Cl
 const CONCEPT_README = `---
 slug: hash-map
 title: Hash map
-status: learning
 requires: []
 related: []
 ---
@@ -97,7 +102,7 @@ ${EXPLANATION_NOTE}
 ## Problems
 
 <!-- auto:problems -->
-- ○ [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
+- [lc-0001 · Two Sum](../../problems/lc-0001-two-sum/README.md)
 <!-- /auto -->
 `;
 
@@ -109,11 +114,6 @@ url: https://leetcode.com/problems/valid-parentheses/
 difficulty: easy
 patterns: [stack]
 concepts: [stack]
-status: solved
-hints: 0
-solution_revealed: false
-solved_in: [py]
-complexity: null
 ---
 # 20. Valid Parentheses
 
@@ -122,7 +122,21 @@ complexity: null
 Say whether every bracket in \`s\` is closed in the right order.
 `;
 
+/** The e2e repo's preset (study coach spec §5): phase 0 is the hash-map concept, and the list is Two Sum's. */
+const PRESET = `id: grind-75
+phases:
+  bases: { concepts: [hash-map] }
+  learn: { list: grind-75, size: 1, block: 3, mix_after_block: 3 }
+  master: { list: grind-75, first_try_success: 0.8 }
+  expand: { choose_from: [grind-75], window: 20, unseen_medium_success: 0.65, medium_minutes: 35 }
+  pro: { tracks: [interview] }
+patterns:
+  - { pattern: arrays-hashing, concept: hash-map }
+timebox_minutes: { easy: 15, medium: 35, hard: 50 }
+`;
+
 const FILES: Record<string, string> = {
+  "curriculum/grind-75.yaml": PRESET,
   "problems/lc-0001-two-sum/README.md": PROBLEM_README,
   "problems/lc-0001-two-sum/cases.json": `${JSON.stringify(CASES, null, 2)}\n`,
   "concepts/hash-map/README.md": CONCEPT_README,
@@ -131,9 +145,54 @@ const FILES: Record<string, string> = {
 
 /** Puts the e2e repo back in its starting state without deleting folders the server is watching. */
 export function resetRepo(): void {
-  for (const lang of ["py", "ts"]) rmSync(repoFile(`problems/lc-0001-two-sum/solution.${lang}`), { force: true });
+  for (const lang of ["py", "ts"]) {
+    rmSync(repoFile(`problems/lc-0001-two-sum/solution.${lang}`), { force: true });
+    rmSync(repoFile(`.study/solutions/problems/lc-0001/solution.${lang}`), { force: true });
+  }
+  rmSync(repoFile(".study/explanations/hash-map.md"), { force: true });
+  // Start review archives here; the playground does not watch history/.
+  rmSync(repoFile(".study/solutions/problems/lc-0001/history"), { recursive: true, force: true });
   for (const [rel, content] of Object.entries(FILES)) {
     mkdirSync(path.dirname(repoFile(rel)), { recursive: true });
     writeFileSync(repoFile(rel), content);
   }
+  // Progress (study coach spec §10): emptied in place, so the running server keeps its handle; then Valid
+  // Parentheses solved, which the home page's status tests rely on.
+  resetStudy(E2E_ROOT);
+  seedClosedAttempt(E2E_ROOT, "lc-0020", "green");
+}
+
+const DAY_MS = 86_400_000;
+
+/** Runs `fn` on the e2e repo's study store, the way the CLI would, at `at` (default: now). */
+function withStudy(fn: (study: ReturnType<typeof openStudy>) => void, at: Date = new Date()): void {
+  const study = openStudy(E2E_ROOT, { clock: fixedClock(at) });
+  try {
+    fn(study);
+  } finally {
+    study.close();
+  }
+}
+
+/** `pnpm study curriculum set grind-75`: the coach starts at phase 0 and announces it. */
+export function startCoach(): void {
+  withStudy((study) => setCurriculum(study, E2E_ROOT, "grind-75", study.clock.now()));
+}
+
+/**
+ * Two Sum solved three days ago with one hint (TWO_SUM_PY): rated Hard, so its card fell due yesterday and today's
+ * plan has its review. Three days is not an absence (7), so there is no welcome-back announcement.
+ */
+export function seedDueReview(): void {
+  mkdirSync(path.dirname(SOLUTION_PY), { recursive: true });
+  writeFileSync(SOLUTION_PY, TWO_SUM_PY);
+  withStudy((study) => {
+    recordHint(study, "lc-0001");
+    recordWork(study, "lc-0001", { type: "run", lang: "py", green: true }, "cli");
+  }, new Date(Date.now() - 3 * DAY_MS));
+}
+
+/** `pnpm study pause` from a terminal, while the page is open. */
+export function pauseFromTerminal(): void {
+  withStudy((study) => pauseStudy(study, study.clock.now()));
 }

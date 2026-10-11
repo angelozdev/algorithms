@@ -1,9 +1,10 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
+import { studySolutionPath } from "../src/paths.ts";
 import { runTarget } from "../src/run.ts";
 import { CaseFileError } from "../src/schema.ts";
-import { makeProblem, removeTemp, tempDir } from "./helpers.ts";
+import { makeProblem, removeTemp, tempDir, write } from "./helpers.ts";
 
 const root = tempDir();
 afterAll(() => removeTemp(root));
@@ -48,7 +49,7 @@ describe("runTarget", () => {
       expect(result.stress).toEqual({ status: "none", cases: [] });
       expect(result.green).toBe(true);
       expect(result.readme).toBe("problems/lc-0001-green/README.md");
-      expect(result.solution).toBe(`problems/lc-0001-green/solution.${lang}`);
+      expect(result.solution).toBe(`.study/solutions/problems/lc-0001/solution.${lang}`);
     }
   });
 
@@ -109,14 +110,23 @@ describe("runTarget", () => {
     expect(result.green).toBe(false);
   });
 
-  it("creates a stub when the solution file is missing", async () => {
+  it("creates a stub under .study when the solution file is missing, never in the content folder", async () => {
     const target = makeProblem(root, "lc-0009-stub", SUM);
     const result = await runTarget(target, "py", { root });
-    const file = path.join(target.dir, "solution.py");
-    expect(existsSync(file)).toBe(true);
-    expect(readFileSync(file, "utf8")).toContain("def solve(self, nums: list[int]) -> int:");
+    expect(readFileSync(studySolutionPath(target, "py"), "utf8")).toContain("def solve(self, nums: list[int]) -> int:");
+    expect(existsSync(path.join(target.dir, "solution.py"))).toBe(false);
+    expect(result.solution).toBe(".study/solutions/problems/lc-0009/solution.py");
     expect(result.examples.cases[0].status).toBe("error");
     expect(result.examples.cases[0].error?.message).toMatch(/NotImplementedError/);
+  });
+
+  it("keeps using a solution that still sits in the content folder (before pnpm study migrate)", async () => {
+    const target = makeProblem(root, "lc-0014-legacy", SUM);
+    write(target.dir, "solution.py", PY.correct);
+    const result = await runTarget(target, "py", { root });
+    expect(result.green).toBe(true);
+    expect(result.solution).toBe("problems/lc-0014-legacy/solution.py");
+    expect(existsSync(studySolutionPath(target, "py"))).toBe(false);
   });
 
   it("truncates captured stdout to 20 lines", async () => {

@@ -8,10 +8,10 @@ import { cleanupTempDirs, makeTempDir, put } from "./fixture.ts";
 const HOOKS = path.join(REPO_ROOT, ".claude", "hooks");
 const PROJECT = "/work/algorithms";
 
-function hook(name: string, input: unknown, projectDir: string) {
+function hook(name: string, input: unknown, projectDir: string, env: Record<string, string> = {}) {
   const run = spawnSync(process.execPath, [path.join(HOOKS, name)], {
     input: JSON.stringify(input),
-    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir, ...env },
     encoding: "utf8",
   });
   expect(run.status).toBe(0);
@@ -367,6 +367,115 @@ describe("guard-solution hook", () => {
   });
 });
 
+describe("guard-solution hook: the study folder", () => {
+  it("denies edits and writes anywhere under .study, and under ALGO_STUDY when it is set", () => {
+    for (const file of [
+      `${PROJECT}/.study/solutions/problems/lc-0001/solution.py`,
+      ".study/solutions/exercises/hash-map/01/solution.ts",
+      `${PROJECT}/.study/solutions/problems/lc-0001/history/2026-10-04T10-00-00-000Z.py`,
+      `${PROJECT}/.study/study.db`,
+      `${PROJECT}/.study/state.json`,
+      `${PROJECT}/.study/explanations/hash-map.md`,
+    ]) {
+      expect(decision({ tool_name: "Write", tool_input: { file_path: file } }), file).toBe("deny");
+    }
+    expect(decision({ tool_name: "Edit", tool_input: { file_path: `${PROJECT}/study/schema.ts` } })).toBe("allow");
+    expect(decision({ tool_name: "Edit", tool_input: { file_path: `${PROJECT}/docs/.study-notes.md` } })).toBe("allow");
+    const elsewhere = hook(
+      "guard-solution.mjs",
+      { tool_name: "Write", tool_input: { file_path: "/progress/solutions/problems/lc-0001/solution.py" } },
+      PROJECT,
+      { ALGO_STUDY: "/progress" },
+    );
+    expect(elsewhere.hookSpecificOutput.permissionDecision).toBe("deny");
+  });
+
+  it("denies shell commands that write, move or delete under .study, or open the database", () => {
+    expectBash(
+      [
+        "rm -rf .study",
+        "rm .study/study.db",
+        "rm -f .stud*/study.db-wal",
+        "echo '{}' > .study/state.json",
+        "mv .study/solutions/problems/lc-0001/solution.py /tmp/",
+        "cp /tmp/ref.py .study/solutions/problems/lc-0001/solution.py",
+        "sed -i '' 's/a/b/' .study/explanations/hash-map.md",
+        "find . -path './.study/*' -delete",
+        "git clean -fdX .study",
+        `sqlite3 .study/study.db "DELETE FROM attempts"`,
+        `python3 -c "open('.study/state.json', 'w')"`,
+      ],
+      "deny",
+    );
+    expect(bashReason("rm -rf .study")).toContain(".study/ holds the user's solutions");
+    expect(bashReason(`sqlite3 .study/study.db "select 1"`)).toContain("never open the progress database");
+  });
+
+  it("gives the .study reason, not the generic solution-discard reason, for a git command that discards .study", () => {
+    expect(bashReason("git clean -fdX .study")).toContain(".study/ holds the user's solutions");
+    expect(bashReason("git clean -fdX .study")).not.toContain("uncommitted solution work");
+    expect(bashReason("git checkout -- .study/state.json")).toContain(".study/ holds the user's solutions");
+    expect(bashReason("git checkout -- .study/state.json")).not.toContain("uncommitted solution work");
+  });
+
+  it("denies the study commands that belong to the user, in every launcher form", () => {
+    expectBash(
+      [
+        "pnpm study migrate",
+        "pnpm -s study migrate --dry-run",
+        "pnpm study start lc-0001",
+        "pnpm -s study pause",
+        "pnpm study resume",
+        "pnpm study phase set learn",
+        "pnpm run study start lc-0001",
+        "pnpm exec tsx study/cli.ts migrate",
+        "npx tsx study/cli.ts start lc-0001",
+        "node --import tsx study/cli.ts pause",
+      ],
+      "deny",
+    );
+    expect(bashReason("pnpm study migrate")).toContain("for the user only");
+  });
+
+  it("denies the playground routes that start or pause study time", () => {
+    expectBash(
+      [
+        "curl -X POST http://127.0.0.1:4173/api/study/start/lc-0001",
+        "curl -X POST http://127.0.0.1:4173/api/study/pause",
+        `node -e "fetch('http://127.0.0.1:4173/api/study/resume', { method: 'POST' })"`,
+      ],
+      "deny",
+    );
+  });
+
+  it("gives the study-command reason, not the generic playground reason, for the /api/study routes", () => {
+    expect(bashReason("curl -X POST http://127.0.0.1:4173/api/study/pause")).toContain("for the user only");
+    expect(bashReason("curl -X POST http://127.0.0.1:4173/api/study/pause")).toContain("/api/study/start|pause|resume");
+    expect(bashReason(`node -e "fetch('http://127.0.0.1:4173/api/study/resume', { method: 'POST' })"`)).toContain("for the user only");
+  });
+
+  it("still lets Claude read progress and use the study CLI's other commands", () => {
+    expectBash(
+      [
+        "cat .study/state.json",
+        "ls .study/solutions/problems",
+        "cp -r .study/solutions /tmp/backup",
+        "pnpm -s study status lc-0001 --json",
+        "pnpm -s study status --json",
+        "pnpm -s study record hint lc-0001",
+        "pnpm -s study record complexity lc-0001 --time 'O(n)' --space 'O(1)' --optimal",
+        "pnpm -s study phase",
+        "pnpm -s study curriculum",
+        "pnpm -s study curriculum set grind-169",
+        "pnpm -s study init",
+        "pnpm -s today --json",
+        "echo hi > notes.study.md",
+      ],
+      "allow",
+    );
+  });
+});
+
 describe("reminder hook", () => {
   afterEach(cleanupTempDirs);
 
@@ -379,7 +488,7 @@ describe("reminder hook", () => {
     const output = hook("reminder.mjs", { prompt: "hola" }, root);
     expect(output.hookSpecificOutput.hookEventName).toBe("UserPromptSubmit");
     const context = output.hookSpecificOutput.additionalContext as string;
-    expect(context).toContain("2. Never edit solution.py / solution.ts.");
+    expect(context).toContain("2. Never edit solution files or anything under .study/.");
     expect(context).toContain("Language/syntax questions are not hints");
     expect(context).toContain("In progress: lc-0001 (hints 1), hash-map/01 (hints 0).");
     expect(context).not.toContain("lc-0009");
@@ -411,6 +520,39 @@ describe("reminder hook", () => {
     const output = hook("reminder.mjs", { prompt: "hola" }, root);
     expect(output.hookSpecificOutput.additionalContext).toContain("In progress: nothing.");
   });
+
+  it("counts a todo item as in progress when its solution sits under .study", () => {
+    const root = makeTempDir("algo-hook-");
+    put(root, "problems/lc-0070-climbing-stairs/README.md", "---\nid: lc-0070\nstatus: todo\nhints: 0\n---\n");
+    put(root, ".study/solutions/problems/lc-0070/solution.py", "class Solution:\n    pass\n");
+    put(root, "concepts/hash-map/exercises/01-first-repeat/README.md", "---\nid: hash-map/01\nstatus: todo\nhints: 1\n---\n");
+    put(root, ".study/solutions/exercises/hash-map/01/solution.ts", "export default function f() {}\n");
+    const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: lc-0070 (hints 0), hash-map/01 (hints 1).");
+  });
+
+  it("lists the open attempts from .study/state.json once the study store exists, ignoring old frontmatter", () => {
+    const root = makeTempDir("algo-hook-");
+    put(root, "problems/lc-0001-two-sum/README.md", "---\nid: lc-0001\nstatus: solving\nhints: 1\n---\n");
+    put(
+      root,
+      ".study/state.json",
+      JSON.stringify({ version: "abc", phase: null, inProgress: [{ id: "lc-0020", kind: "review", hints: 2, startedAt: "2026-10-04T10:00:00.000Z" }], today: null }),
+    );
+    const context = hook("reminder.mjs", { prompt: "hola" }, root).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: lc-0020 (review, hints 2).");
+    expect(context).not.toContain("lc-0001");
+    expect(context).toContain("--no-record");
+  });
+
+  it("reads state.json from ALGO_STUDY and says when nothing is open", () => {
+    const root = makeTempDir("algo-hook-");
+    const study = makeTempDir("algo-progress-");
+    put(study, "state.json", JSON.stringify({ version: "abc", phase: null, inProgress: [], today: null }));
+    put(root, "problems/lc-0001-two-sum/README.md", "---\nid: lc-0001\nstatus: solving\nhints: 1\n---\n");
+    const context = hook("reminder.mjs", { prompt: "hola" }, root, { ALGO_STUDY: study }).hookSpecificOutput.additionalContext as string;
+    expect(context).toContain("In progress: nothing.");
+  });
 });
 
 describe("settings.json", () => {
@@ -420,5 +562,10 @@ describe("settings.json", () => {
     expect(pre.matcher).toBe("Edit|Write|MultiEdit|NotebookEdit|Bash");
     expect(pre.hooks[0].command).toContain("$CLAUDE_PROJECT_DIR/.claude/hooks/guard-solution.mjs");
     expect(settings.hooks.UserPromptSubmit[0].hooks[0].command).toContain("$CLAUDE_PROJECT_DIR/.claude/hooks/reminder.mjs");
+  });
+
+  it("lets Claude read and record progress through the study CLI without a prompt", () => {
+    const settings = JSON.parse(readFileSync(path.join(REPO_ROOT, ".claude", "settings.json"), "utf8"));
+    expect(settings.permissions.allow).toEqual(expect.arrayContaining(["Bash(pnpm -s study:*)", "Bash(pnpm -s today:*)"]));
   });
 });

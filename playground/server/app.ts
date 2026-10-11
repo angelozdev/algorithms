@@ -5,6 +5,7 @@ import { conceptRoutes } from "./concepts.ts";
 import { EventHub, eventRoutes } from "./events.ts";
 import { formCsrf, hostGuard } from "./guard.ts";
 import { solutionRoutes } from "./solutions.ts";
+import { studyRoutes } from "./study.ts";
 import { targetRoutes } from "./targets.ts";
 
 export interface ServerContext {
@@ -20,6 +21,7 @@ export function createApp(ctx: ServerContext) {
     .route("/api", targetRoutes(ctx.root))
     .route("/api", solutionRoutes(ctx.root))
     .route("/api", conceptRoutes(ctx.root))
+    .route("/api", studyRoutes(ctx.root))
     .route("/api", eventRoutes(hub));
   app.onError((error, c) => {
     if (error instanceof HTTPException) return error.getResponse();

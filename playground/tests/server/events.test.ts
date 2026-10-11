@@ -1,8 +1,9 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
+import { writeStateFile } from "../../../study/state-file.ts";
 import { createApp } from "../../server/app.ts";
-import { classify } from "../../server/events.ts";
+import { classify, ignoredPath } from "../../server/events.ts";
 import { contentVersion } from "../../server/solutions.ts";
 import { type App, call, makeRepo, PY_SUM, removeRepos } from "./helpers.ts";
 
@@ -11,6 +12,8 @@ import { type App, call, makeRepo, PY_SUM, removeRepos } from "./helpers.ts";
 process.env.CHOKIDAR_INTERVAL = "50";
 
 afterEach(removeRepos);
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Reads Server-Sent Events from a response body, skipping comments. */
 async function openEvents(app: App) {
@@ -55,6 +58,49 @@ describe("classify", () => {
       expect(classify(root, file), file).toBeNull();
     }
   });
+
+  it("maps the user's solutions under the study root to solution events, and ignores the rest of it", () => {
+    expect(classify(root, "/repo/.study/solutions/problems/lc-0001/solution.py")).toEqual({
+      kind: "solution",
+      target: "lc-0001",
+      lang: "py",
+      version: contentVersion(""),
+    });
+    expect(classify(root, "/repo/.study/solutions/exercises/hash-map/01/solution.ts")).toMatchObject({ kind: "solution", target: "hash-map/01", lang: "ts" });
+    expect(classify(root, "/progress/solutions/problems/lc-0001/solution.py", "/progress")).toMatchObject({ kind: "solution", target: "lc-0001" });
+    for (const file of ["/repo/.study/solutions/problems/lc-0001/history/2026-10-04T10-00-00-000Z.py", "/repo/.study/study.db", "/repo/.study/tsconfig.json"]) {
+      expect(classify(root, file), file).toBeNull();
+    }
+  });
+
+  it("turns state.json into a progress event carrying its version", () => {
+    expect(classify(root, "/repo/.study/state.json")).toEqual({ kind: "progress", version: "missing" });
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/state.json")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/.state.json.123.tmp")).toBe(true);
+  });
+
+  it("turns a change to .study/explanations/<slug>.md into that concept's readme event", () => {
+    expect(classify(root, "/repo/.study/explanations/hash-map.md")).toEqual({ kind: "readme", concept: "hash-map" });
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations/hash-map.md")).toBe(false);
+    expect(ignoredPath("/repo", "/repo/.study", "/repo/.study/explanations/history/hash-map-2026-10-04T10-00-00-000Z-legacy.md")).toBe(true);
+  });
+});
+
+describe("ignoredPath", () => {
+  it("lets chokidar into problems/, concepts/ and the solutions under the study root, and nowhere else", () => {
+    const kept = ["/repo", "/repo/problems/lc-0001-two-sum/README.md", "/repo/.study", "/repo/.study/solutions", "/repo/.study/solutions/problems/lc-0001/solution.py"];
+    const skipped = [
+      "/repo/runner/src/run.ts",
+      "/repo/.study/study.db",
+      "/repo/.study/study.db-wal",
+      "/repo/.study/solutions/problems/lc-0001/history",
+      "/repo/.study/exports/progress.json",
+      "/repo/problems/lc-0001-two-sum/__pycache__",
+    ];
+    for (const file of kept) expect(ignoredPath("/repo", "/repo/.study", file), file).toBe(false);
+    for (const file of skipped) expect(ignoredPath("/repo", "/repo/.study", file), file).toBe(true);
+  });
 });
 
 describe("GET /api/events", () => {
@@ -88,6 +134,38 @@ describe("GET /api/events", () => {
     const events = await openEvents(createApp({ root: empty }));
     try {
       expect((await events.next()).event).toBe("ready");
+    } finally {
+      await events.close();
+    }
+  });
+
+  it("reports the user's solutions under .study, even when .study appears after the page opened", async () => {
+    const root = makeRepo();
+    const events = await openEvents(createApp({ root }));
+    try {
+      expect((await events.next()).event).toBe("ready");
+      mkdirSync(path.join(root, ".study/solutions/problems/lc-0001"), { recursive: true });
+      writeFileSync(path.join(root, ".study/solutions/problems/lc-0001/solution.py"), PY_SUM);
+      expect(JSON.parse((await events.next()).data)).toEqual({ kind: "solution", target: "lc-0001", lang: "py", version: contentVersion(PY_SUM) });
+    } finally {
+      await events.close();
+    }
+  });
+
+  it("sends one progress event per new state.json snapshot", async () => {
+    const root = makeRepo();
+    const events = await openEvents(createApp({ root }));
+    try {
+      expect((await events.next()).event).toBe("ready");
+      // Phases a fresh or seeded store never has, so both writes are real changes.
+      const first = writeStateFile(path.join(root, ".study"), { phase: "expand", inProgress: [], today: null }).state;
+      expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: first.version });
+      // chokidar drops every further "change" of a path for 50ms after reporting one (its _throttle), and never
+      // reports it later: a second write that a 50ms poll catches inside that window would be lost for good. The
+      // window's timer started before the first event reached us, so it has always expired when this sleep ends.
+      await sleep(120);
+      const second = writeStateFile(path.join(root, ".study"), { phase: "pro", inProgress: [], today: null }).state;
+      expect(JSON.parse((await events.next()).data)).toEqual({ kind: "progress", version: second.version });
     } finally {
       await events.close();
     }

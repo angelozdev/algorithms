@@ -1,14 +1,20 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { eq } from "drizzle-orm";
 import { afterEach, describe, expect, it } from "vitest";
+import type { RunResult } from "../../../runner/src/types.ts";
 import { put } from "../../../scripts/tests/fixture.ts";
+import { fixedClock } from "../../../study/clock.ts";
+import { initStudy } from "../../../study/init.ts";
+import { attemptEvents, attempts, itemStatusView } from "../../../study/schema.ts";
+import { openStudy } from "../../../study/store.ts";
 import { createApp } from "../../server/app.ts";
 import type { ApiErrorBody, SolutionData } from "../../server/types.ts";
 import { call, HOST, makeRepo, PY_SUM, removeRepos } from "./helpers.ts";
 
 afterEach(removeRepos);
 
-const SOLUTION = "problems/lc-0001-two-sum/solution.py";
+const SOLUTION = ".study/solutions/problems/lc-0001/solution.py";
 
 // The root tsconfig has no DOM lib, so `Response` here is @types/node's (undici-types), whose
 // `.json()` returns `Promise<unknown>` rather than DOM's `Promise<any>`. Cast once per call site.
@@ -92,6 +98,18 @@ describe("GET/PUT /api/solution", () => {
     expect(res.status).toBe(400);
     expect(readFileSync(path.join(root, SOLUTION), "utf8")).toBe(before);
   });
+
+  it("keeps reading and writing a solution that still sits in the content folder (before pnpm study migrate)", async () => {
+    const root = makeRepo();
+    put(root, "problems/lc-0001-two-sum/solution.py", "# the user's work\n");
+    const app = createApp({ root });
+    const read = await json<SolutionData>(await call(app, "/api/solution?id=lc-0001&lang=py"));
+    expect(read.code).toBe("# the user's work\n");
+    const saved = await call(app, "/api/solution", { method: "PUT", json: { id: "lc-0001", lang: "py", code: PY_SUM, baseVersion: read.version } });
+    expect(saved.status).toBe(200);
+    expect(readFileSync(path.join(root, "problems/lc-0001-two-sum/solution.py"), "utf8")).toBe(PY_SUM);
+    expect(existsSync(path.join(root, SOLUTION))).toBe(false);
+  });
 });
 
 describe("POST /api/run", () => {
@@ -166,5 +184,46 @@ describe("anti-spoiler: a broken cases.json never leaks part of a hidden expecte
     expect(target.status).toBe(200);
     const targetText = await noSecret(target);
     expect(JSON.parse(targetText).caseError).toContain("invalid JSON");
+  });
+});
+
+describe("recording (study coach spec §7)", () => {
+  /** lc-0020's progress only: the fixture may seed other items. */
+  const progress = (root: string) => {
+    const study = openStudy(root);
+    try {
+      return {
+        status: study.db.select().from(itemStatusView).where(eq(itemStatusView.itemId, "lc-0020")).all().map((row) => [row.itemId, row.status]),
+        events: study.db
+          .select({ type: attemptEvents.type, source: attemptEvents.source })
+          .from(attemptEvents)
+          .innerJoin(attempts, eq(attempts.id, attemptEvents.attemptId))
+          .where(eq(attempts.itemId, "lc-0020"))
+          .orderBy(attemptEvents.id)
+          .all(),
+      };
+    } finally {
+      study.close();
+    }
+  };
+
+  it("records nothing for opening a problem or saving the stub, a save of real work opens the attempt, and a green Run closes it", async () => {
+    const root = makeRepo();
+    initStudy(root, { clock: fixedClock("2026-10-04T10:00:00Z"), timezone: "UTC" });
+    const app = createApp({ root });
+    const first = await json<SolutionData>(await call(app, "/api/solution?id=lc-0020&lang=py"));
+    await call(app, "/api/solution", { method: "PUT", json: { id: "lc-0020", lang: "py", code: first.code, baseVersion: first.version } });
+    expect(progress(root)).toEqual({ status: [], events: [] });
+    await call(app, "/api/solution", { method: "PUT", json: { id: "lc-0020", lang: "py", code: PY_SUM, baseVersion: first.version } });
+    expect(progress(root).status).toEqual([["lc-0020", "in_progress"]]);
+    const run = await json<RunResult>(await call(app, "/api/run", { json: { id: "lc-0020", lang: "py" } }));
+    expect(run.green).toBe(true);
+    expect(progress(root)).toEqual({
+      status: [["lc-0020", "solved"]],
+      events: [
+        { type: "save", source: "playground" },
+        { type: "run", source: "playground" },
+      ],
+    });
   });
 });

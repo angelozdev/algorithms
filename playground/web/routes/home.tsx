@@ -1,19 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { getRouteApi, useNavigate } from "@tanstack/react-router";
 import { Inbox, SearchX, TriangleAlert } from "lucide-react";
+import type { ReactNode } from "react";
 import type { HomeData } from "../../server/types.ts";
 import { homeQuery } from "../api.ts";
 import { Alert, AlertDescription, AlertTitle } from "../components/ui/alert.tsx";
 import { Button } from "../components/ui/button.tsx";
 import { Skeleton } from "../components/ui/skeleton.tsx";
 import { ConceptList } from "../home/ConceptList.tsx";
-import { ContinueCards } from "../home/ContinueCards.tsx";
 import { HomeHeader } from "../home/HomeHeader.tsx";
-import { conceptRows, continueItems, problemList } from "../home/model.ts";
+import { conceptRows, problemList } from "../home/model.ts";
 import { ProblemTable } from "../home/ProblemTable.tsx";
 import { ProblemToolbar } from "../home/ProblemToolbar.tsx";
 import { clearFilters, type HomeSearch, type SortKey } from "../home/search.ts";
 import { SectionTitle } from "../home/SectionTitle.tsx";
+import { TodaySection } from "../home/TodaySection.tsx";
 
 const route = getRouteApi("/");
 
@@ -22,9 +23,11 @@ export interface HomeViewProps {
   search: HomeSearch;
   /** Changes part of the view; the page writes it to the URL. */
   onSearch(change: Partial<HomeSearch>): void;
+  /** The Today section (study coach spec §10: it replaces Continue); the page passes TodaySection. */
+  today?: ReactNode;
 }
 
-export function HomeView({ data, search, onSearch }: HomeViewProps) {
+export function HomeView({ data, search, onSearch, today }: HomeViewProps) {
   const list = problemList(data, search);
   const solved = data.problems.filter((problem) => problem.status === "solved").length;
   const sortBy = (key: SortKey) => onSearch(search.sort === key ? { dir: search.dir === "asc" ? "desc" : "asc" } : { sort: key, dir: "asc" });
@@ -32,7 +35,7 @@ export function HomeView({ data, search, onSearch }: HomeViewProps) {
   return (
     <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-6 text-[13px]">
       <HomeHeader solved={solved} total={data.problems.length} query={search.q} onQuery={(q) => onSearch({ q })} />
-      <ContinueCards items={continueItems(data, search.q)} />
+      {today}
       <section aria-labelledby="home-problems" className="mb-8">
         <SectionTitle id="home-problems">Problems</SectionTitle>
         {data.problems.length === 0 ? (
@@ -100,5 +103,5 @@ export function HomePage() {
       </Alert>
     );
   }
-  return <HomeView data={home.data} search={search} onSearch={onSearch} />;
+  return <HomeView data={home.data} search={search} onSearch={onSearch} today={<TodaySection />} />;
 }

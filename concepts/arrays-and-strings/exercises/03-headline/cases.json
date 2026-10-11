@@ -1,0 +1,26 @@
+{
+  "mode": "function",
+  "entry": "headline",
+  "params": [
+    {"name":"text","type":"string"}
+  ],
+  "returns": "string",
+  "compare": "exact",
+  "examples": [
+    {"input":["  live   SENSOR data "],"expected":"Live Sensor Data"},
+    {"input":["iOT"],"expected":"Iot"},
+    {"input":["   "],"expected":""}
+  ],
+  "hidden": [
+    {"input":[""],"expected":""},
+    {"input":["a"],"expected":"A"},
+    {"input":["ALL CAPS HERE"],"expected":"All Caps Here"},
+    {"input":["  x  "],"expected":"X"},
+    {"input":["2nd floor 3d view"],"expected":"2nd Floor 3d View"},
+    {"input":["mIxEd"],"expected":"Mixed"},
+    {"input":["one two  three   four"],"expected":"One Two Three Four"},
+    {"input":["a b c"],"expected":"A B C"},
+    {"input":["123 456"],"expected":"123 456"},
+    {"input":["hELLO wORLD 42"],"expected":"Hello World 42"}
+  ]
+}
