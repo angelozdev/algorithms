@@ -9,7 +9,8 @@ import { type FixedClock, fixedClock } from "../clock.ts";
 import { runStudyCli } from "../commands.ts";
 import { recordWork } from "../record.ts";
 import { openStudy } from "../store.ts";
-import { DAY, makeCoachRepo, MONDAY, TZ } from "./coach-fixture.ts";
+import type { TodayJson } from "../today.ts";
+import { DAY, makeCoachRepo, MONDAY, solve, TZ } from "./coach-fixture.ts";
 
 // The coach skill is instructions for Claude, so it is checked where it touches code (study coach spec §11):
 // every command it runs is one the hook allows and the CLI accepts, every command it leaves to the user is one
@@ -140,6 +141,13 @@ const todayJson = z
   })
   .strict();
 const todayResponse = z.union([z.object({ initialized: z.literal(false), next: z.enum(["init", "migrate"]) }).strict(), todayJson]);
+
+// Compile-time only (ruling M8, optional): every shape the schema accepts must fit the real TodayJson type, so a
+// schema field typed differently from the CLI's own type (not just a missing or renamed one) fails `tsc --noEmit`
+// too. Only this direction type-checks: `AnnouncementJson.payload` is deliberately a loose `Record<string,
+// unknown>`, which a per-`key` literal payload is not assignable back to, so the reverse direction is skipped.
+type AssertAssignableTo<_T extends TodayJson> = true;
+type _TodayJsonSchemaFitsRealType = AssertAssignableTo<z.infer<typeof todayJson>>;
 
 describe("the coach skill (study coach spec §11)", () => {
   it("runs exactly the study commands listed here, and quotes the user-only ones for the user", () => {
@@ -292,6 +300,41 @@ describe("the coach skill (study coach spec §11)", () => {
         expect.objectContaining({ key: "curriculum-switched", payload: expect.objectContaining({ from: expect.objectContaining({ preset: "demo-list" }) }) }),
       ]),
     });
+
+    // The user's `phase set <phase>` (ruling M8): denied to Claude by the hook (tested above), but the next
+    // `today` still carries a `phase-set` announcement with `from`/`to`. "pro" has no exit criteria (spec §6.1),
+    // so it also shows the rule stays put until the next real change, with no auto-advance to mask it.
+    const beforePhaseSet = (await today()) as z.infer<typeof todayJson>;
+    const phaseBeforeSet = beforePhaseSet.phase!.id;
+    expect((await cli(["phase", "set", "pro"])).code).toBe(0); // the user's `pnpm study phase set <phase>`
+    const afterPhaseSet = (await today()) as z.infer<typeof todayJson>;
+    expect(afterPhaseSet).toMatchObject({
+      phase: { id: "pro" },
+      announcements: expect.arrayContaining([expect.objectContaining({ key: "phase-set", payload: { from: phaseBeforeSet, to: "pro" } })]),
+    });
+
+    // A solved problem (the coach-fixture `solve` helper), then a clock jump of 7+ days with no activity
+    // (ruling M8): `mode: "return"` and a `welcome-back` announcement with `daysAway`, and the solved problem's
+    // due review now shows up as a real `review` item (not only in examples.md, against the test's own schema).
+    const coachLike = { root, study: openStudy(root, { clock }), clock };
+    try {
+      solve(coachLike, "lc-9101");
+    } finally {
+      coachLike.study.close();
+    }
+    clock.advance(9 * DAY);
+    const afterGap = (await today()) as z.infer<typeof todayJson>;
+    expect(afterGap).toMatchObject({
+      mode: "return",
+      announcements: expect.arrayContaining([expect.objectContaining({ key: "welcome-back", payload: expect.objectContaining({ daysAway: expect.any(Number) }) })]),
+    });
+    expect(afterGap.items).toContainEqual(expect.objectContaining({ kind: "review", id: "lc-9101" }));
+
+    // The user's `pause` and `resume` (ruling M8): `today` reflects the pause, then clears it.
+    expect((await cli(["pause"])).code).toBe(0); // the user's `pnpm study pause`
+    expect(await today()).toMatchObject({ paused: { since: expect.any(String) } });
+    expect((await cli(["resume"])).code).toBe(0); // the user's `pnpm study resume`
+    expect(await today()).toMatchObject({ paused: null });
 
     expect([...ran].sort()).toEqual([...CLAUDE_RUNS].sort());
   });
