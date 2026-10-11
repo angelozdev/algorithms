@@ -121,6 +121,16 @@ const GATE_TEXT: Record<NonNullable<TargetData["gate"]>["kind"], { title: string
   },
 };
 
+/** The concept trail shown inside the statement pane: a README link pushes a slug, Back pops the last one. */
+function useConceptTrail() {
+  const [trail, setTrail] = useState<string[]>([]);
+  return {
+    trail,
+    onConcept: (slug: string) => setTrail((current) => (current.at(-1) === slug ? current : [...current, slug])),
+    onBack: () => setTrail((current) => current.slice(0, -1)),
+  };
+}
+
 /**
  * "Start review" (study coach spec §7): the statement, and instead of the editor a button that asks the server to
  * archive the old solution, write a fresh stub and open the attempt. The old code is never loaded here, so the
@@ -128,7 +138,7 @@ const GATE_TEXT: Record<NonNullable<TargetData["gate"]>["kind"], { title: string
  */
 function GatedWorkspace({ target, gate, lang, onLang, onStarted }: { target: TargetData; gate: NonNullable<TargetData["gate"]>; lang: Lang; onLang(lang: Lang): void; onStarted(): void }) {
   const queryClient = useQueryClient();
-  const [trail, setTrail] = useState<string[]>([]);
+  const { trail, onConcept, onBack } = useConceptTrail();
   const text = GATE_TEXT[gate.kind];
   const start = useMutation({
     mutationFn: () => startReview(target.id, lang),
@@ -144,12 +154,7 @@ function GatedWorkspace({ target, gate, lang, onLang, onStarted }: { target: Tar
       <WorkHeader target={target} lang={lang} onLang={onLang} running={false} elapsedMs={0} canRun={false} onRun={() => {}} langLock={null} />
       <div className="flex min-h-0 flex-1">
         <div className="w-2/5 overflow-y-auto border-r bg-card p-4">
-          <StatementPane
-            target={target}
-            trail={trail}
-            onConcept={(slug) => setTrail((current) => (current.at(-1) === slug ? current : [...current, slug]))}
-            onBack={() => setTrail((current) => current.slice(0, -1))}
-          />
+          <StatementPane target={target} trail={trail} onConcept={onConcept} onBack={onBack} />
         </div>
         <section aria-labelledby="gate-title" className="flex flex-1 items-center justify-center p-6">
           <div className="max-w-sm space-y-3 text-center">
@@ -268,7 +273,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
   // Kept across a re-run (and a failed one) so the previous result stays visible, dimmed, while running.
   const [result, setResult] = useState<RunResult | null>(null);
   const [stale, setStale] = useState(false);
-  const [trail, setTrail] = useState<string[]>([]);
+  const { trail, onConcept, onBack } = useConceptTrail();
   const custom = useRef<CustomInputHandle>(null);
   const columns = useDefaultLayout({ id: "work-columns", storage: localStorage });
   const rows = useDefaultLayout({ id: "work-rows", storage: localStorage });
@@ -366,12 +371,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
       )}
       <Group orientation="horizontal" className="min-h-0 flex-1" defaultLayout={columns.defaultLayout} onLayoutChanged={columns.onLayoutChanged}>
         <Panel id="statement" defaultSize="40%" minSize="20%" className="overflow-y-auto bg-card p-4">
-          <StatementPane
-            target={target}
-            trail={trail}
-            onConcept={(slug) => setTrail((current) => (current.at(-1) === slug ? current : [...current, slug]))}
-            onBack={() => setTrail((current) => current.slice(0, -1))}
-          />
+          <StatementPane target={target} trail={trail} onConcept={onConcept} onBack={onBack} />
         </Panel>
         <Separator className={cn("w-px after:inset-y-0 after:-inset-x-1", separator)} />
         <Panel id="code" minSize="30%">
