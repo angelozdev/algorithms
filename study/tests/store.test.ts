@@ -137,4 +137,12 @@ describe("cachedStudy", () => {
     study.close();
     expect(() => cachedStudy(root)).toThrow(StudySchemaOutdatedError);
   });
+
+  it("binds its handle to the env clock at the first open (ALGO_STUDY_NOW in tests)", () => {
+    const root = makeTempDir("algo-study-");
+    openStudy(root, { migrate: true }).close();
+    vi.stubEnv("ALGO_STUDY_NOW", "2026-11-04T14:00:00.000Z");
+    const study = cachedStudy(root);
+    expect(study!.clock.now().toISOString()).toBe("2026-11-04T14:00:00.000Z");
+  });
 });

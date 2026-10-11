@@ -68,6 +68,13 @@ export interface TargetData {
   /** Invalid cases.json, or hidden cases without expected values. */
   caseError: string | null;
   solutions: Record<Lang, boolean>;
+  /**
+   * "Start review" (study coach spec §7): the editor stays closed until the user starts the attempt from scratch;
+   * null when it opens as usual.
+   */
+  gate: { kind: "review" | "exam" | "retry"; minutes: number } | null;
+  /** An attempt started from scratch is open (a review, an exam, a retry): "Keep mine" would bring the old code back. */
+  freshStart: boolean;
 }
 
 export interface SolutionData {
@@ -91,6 +98,8 @@ export interface ConceptData {
   version: string;
   readmeError: string | null;
 }
+
+export type { AnnouncementJson, NotInitializedJson, TodayItem, TodayJson } from "../../study/today.ts";
 
 export type RepoEvent =
   | { kind: "solution"; target: string; lang: Lang; version: string }

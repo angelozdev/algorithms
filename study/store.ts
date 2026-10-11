@@ -7,7 +7,7 @@ import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { readMigrationFiles } from "drizzle-orm/migrator";
 import { studyRoot } from "../runner/src/paths.ts";
-import { type Clock, systemClock } from "./clock.ts";
+import { type Clock, envClock, systemClock } from "./clock.ts";
 import * as schema from "./schema.ts";
 
 export const MIGRATIONS_DIR = fileURLToPath(new URL("./migrations", import.meta.url));
@@ -131,9 +131,10 @@ function cache(): Map<string, CacheEntry> {
 /**
  * The shared handle of `root`'s study database for long-lived processes (the playground server, pnpm watch),
  * or null while it does not exist. A database replaced on disk (a reset and `pnpm study init`) is reopened.
- * Throws StudySchemaOutdatedError like openStudy.
+ * Throws StudySchemaOutdatedError like openStudy. The clock is bound at the handle's first open, so long-lived
+ * callers rely on the default env clock (ALGO_STUDY_NOW in tests, the system clock otherwise).
  */
-export function cachedStudy(root: string, clock: Clock = systemClock): Study | null {
+export function cachedStudy(root: string, clock: Clock = envClock()): Study | null {
   const file = dbPath(studyRoot(root));
   const entries = cache();
   const entry = entries.get(file);

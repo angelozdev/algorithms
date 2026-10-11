@@ -9,6 +9,8 @@ import type { Target } from "../../runner/src/types.ts";
 import { problemGroups } from "../../scripts/lib/render.ts";
 import type { ItemStatusValue } from "../../study/schema.ts";
 import { allItemProgress, conceptProgress, emptyProgress, type ItemProgress } from "../../study/status.ts";
+import { envClock } from "../../study/clock.ts";
+import { startGate } from "../../study/start.ts";
 import { cachedStudy, type Study } from "../../study/store.ts";
 import type { ConceptStatus, HomeData, ItemStatus, TargetData } from "./types.ts";
 import { valid } from "./validate.ts";
@@ -106,7 +108,10 @@ export function targetData(root: string, target: Target): TargetData {
   const repo = scanRepo(root);
   const entry = [...repo.problems, ...repo.exercises].find((e) => e.dir === target.dir);
   const data = entry?.data ?? {};
-  const view: ItemView = entry ? itemView(entry, loadProgress(root)) : { status: "todo", inProgress: false, hints: 0 };
+  const progress = loadProgress(root);
+  const view: ItemView = entry ? itemView(entry, progress) : { status: "todo", inProgress: false, hints: 0 };
+  const item = progress?.items.get(target.id);
+  const gate = progress ? startGate(progress.study, root, target.id, envClock().now()) : null;
   let signature: TargetData["signature"] = null;
   let exampleInput: unknown = null;
   let caseError: string | null = null;
@@ -134,6 +139,8 @@ export function targetData(root: string, target: Target): TargetData {
     exampleInput,
     caseError,
     solutions: { py: existsSync(solutionPath(target, "py")), ts: existsSync(solutionPath(target, "ts")) },
+    gate: gate ? { kind: gate.kind, minutes: gate.minutes } : null,
+    freshStart: item?.open != null && (item.everGreen || item.revealed),
   };
 }
 
