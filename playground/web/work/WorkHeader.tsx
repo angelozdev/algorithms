@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ExternalLink, Lightbulb, LoaderCircle, Play } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { type Lang, LANGS } from "../../../runner/src/types.ts";
 import type { HomeData, TargetData } from "../../server/types.ts";
 import { homeQuery } from "../api.ts";
@@ -28,6 +28,8 @@ export interface WorkHeaderProps {
   onRun(): void;
   /** Why the language cannot change now (text that is not on disk and nothing will save by itself), or null. */
   langLock: string | null;
+  /** Item actions at the end of the header (the reset menu), or nothing. */
+  menu?: ReactNode;
 }
 
 type Crumb = { label: string; pattern: string } | { label: string; concept: string } | { label: string };
@@ -82,7 +84,7 @@ function LanguageSwitch({ lang, onLang, lock }: { lang: Lang; onLang(lang: Lang)
   );
 }
 
-export function WorkHeader({ target, lang, onLang, running, elapsedMs, canRun, onRun, langLock }: WorkHeaderProps) {
+export function WorkHeader({ target, lang, onLang, running, elapsedMs, canRun, onRun, langLock, menu }: WorkHeaderProps) {
   const home = useQuery(homeQuery());
   const crumbs = middleCrumbs(target, home.data);
   const kind = statusKind(target.status, target.inProgress);
@@ -156,6 +158,7 @@ export function WorkHeader({ target, lang, onLang, running, elapsedMs, canRun, o
             {running ? `Running… ${(elapsedMs / 1000).toFixed(1)} s` : "Run"}
           </Button>
         </Hint>
+        {menu}
       </div>
     </header>
   );

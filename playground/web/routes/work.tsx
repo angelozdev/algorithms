@@ -27,12 +27,14 @@ import { useSolutionSync } from "../hooks/useSolutionSync.ts";
 import { useUnsavedGuard } from "../hooks/useUnsavedGuard.ts";
 import { pickLang, readRememberedLang, rememberLang } from "../lang.ts";
 import { shortcut } from "../lib/keys.ts";
+import { ResetMenu } from "../work/ResetMenu.tsx";
 import { WorkHeader } from "../work/WorkHeader.tsx";
 import { cn } from "cn";
 
 type PanelTab = "tests" | "custom" | "console";
 
 const NOT_SAVED = "Your code is not saved yet, so it was not run. Resolve the message at the top, then try again.";
+const NOT_RESET = "Your code is not saved yet, so nothing was reset. Resolve the message at the top, then try again.";
 
 export function ProblemPage() {
   const { id } = useParams({ from: "/p/$id" });
@@ -80,6 +82,7 @@ function WorkPage({ id }: { id: string }) {
   // Once the editor has opened on this page, a gate that appears later (a card falling due at midnight) waits for
   // the next visit: it must never close an editor with text in it.
   const [opened, setOpened] = useState(false);
+  const [generation, setGeneration] = useState(0);
   if (target.isPending) return <WorkSkeleton />;
   // A failed refresh (a live event refetches the target) keeps the last data: unmounting the workspace for it
   // would throw away the editor and any text it has not saved yet.
@@ -100,7 +103,8 @@ function WorkPage({ id }: { id: string }) {
     return <GatedWorkspace target={target.data} gate={target.data.gate} lang={lang} onLang={choose} onStarted={() => setOpened(true)} />;
   }
   if (!opened) setOpened(true);
-  return <Workspace key={lang} target={target.data} lang={lang} onLang={choose} />;
+  // A reset rewrites the solution on disk: a fresh Workspace loads it with an empty undo history (item reset spec §5.2).
+  return <Workspace key={`${lang}:${generation}`} target={target.data} lang={lang} onLang={choose} onReset={() => setGeneration((n) => n + 1)} />;
 }
 
 const GATE_TEXT: Record<NonNullable<TargetData["gate"]>["kind"], { title: string; button: string; body: string }> = {
@@ -151,7 +155,17 @@ function GatedWorkspace({ target, gate, lang, onLang, onStarted }: { target: Tar
   });
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <WorkHeader target={target} lang={lang} onLang={onLang} running={false} elapsedMs={0} canRun={false} onRun={() => {}} langLock={null} />
+      <WorkHeader
+        target={target}
+        lang={lang}
+        onLang={onLang}
+        running={false}
+        elapsedMs={0}
+        canRun={false}
+        onRun={() => {}}
+        langLock={null}
+        menu={<ResetMenu target={target} prepare={async () => true} onReset={() => {}} />}
+      />
       <div className="flex min-h-0 flex-1">
         <div className="w-2/5 overflow-y-auto border-r bg-card p-4">
           <StatementPane target={target} trail={trail} onConcept={onConcept} onBack={onBack} />
@@ -256,7 +270,7 @@ function StatementPane({ target, trail, onConcept, onBack }: { target: TargetDat
   return <Markdown source={target.markdown} readmePath={target.readme} onConcept={onConcept} />;
 }
 
-function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; onLang(lang: Lang): void }) {
+function Workspace({ target, lang, onLang, onReset }: { target: TargetData; lang: Lang; onLang(lang: Lang): void; onReset(): void }) {
   const queryClient = useQueryClient();
   const connected = useConnected();
   const source = useMemo(
@@ -314,6 +328,13 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
     return runCustomInput(target.id, lang, input);
   };
 
+  // The reset menu must archive what the user sees, never a stale save: save the editor's text first, and refuse
+  // the reset (rather than let it go ahead against unsaved text) when that save does not land (controller ruling,
+  // item reset spec §5.2).
+  const prepareReset = async () => {
+    if (!(await flush())) throw new Error(NOT_RESET);
+  };
+
   const actions = {
     run: () => {
       if (canRun) run.mutate();
@@ -358,6 +379,7 @@ function Workspace({ target, lang, onLang }: { target: TargetData; lang: Lang; o
         canRun={canRun}
         onRun={actions.run}
         langLock={langLock}
+        menu={<ResetMenu target={target} prepare={prepareReset} onReset={onReset} />}
       />
       {sync.conflict && (
         // An attempt started from scratch (spec §7): keeping this tab's text would bring the archived code back.
