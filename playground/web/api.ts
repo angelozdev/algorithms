@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { hc } from "hono/client";
 import type { CustomResult, Lang, RunResult } from "../../runner/src/types.ts";
 import type { AppType } from "../server/app.ts";
-import type { ConceptData, HomeData, NotInitializedJson, SolutionData, TargetData, TodayJson } from "../server/types.ts";
+import type { ConceptData, HomeData, NotInitializedJson, ResetAction, ResetPreview, SolutionData, TargetData, TodayJson } from "../server/types.ts";
 
 export const client = hc<AppType>("/");
 
@@ -94,6 +94,20 @@ export async function startReview(id: string, lang: Lang): Promise<{ kind: strin
   return res.json();
 }
 
+/** What each reset of an item would cost (item reset spec §4). */
+export async function getResetPreview(id: string): Promise<ResetPreview> {
+  const res = await client.api.study.reset[":id{.+}"].$get({ param: { id } });
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
+/** Item reset (spec §3): clean the code, discard the open attempt, or erase everything. */
+export async function postReset(id: string, action: ResetAction): Promise<{ action: ResetAction }> {
+  const res = await client.api.study.reset[":id{.+}"].$post({ param: { id }, json: { action } });
+  if (!res.ok) return fail(res);
+  return res.json();
+}
+
 export async function ackAnnouncement(id: number): Promise<void> {
   const res = await client.api.study.ack[":id{[0-9]+}"].$post({ param: { id: String(id) } });
   if (!res.ok) return fail(res);
@@ -118,6 +132,7 @@ export const keys = {
   /** Every concept query (prefix). */
   concepts: ["concept"] as const,
   today: ["today"] as const,
+  reset: (id: string) => ["reset", id] as const,
 };
 
 export const homeQuery = () => queryOptions({ queryKey: keys.home, queryFn: getHome });
