@@ -13,11 +13,15 @@ export interface InProgressItem {
   startedAt: string;
 }
 
-/** Today's plan at a glance. Plan B (the scheduler) fills it; Plan A always writes null. */
+/** Today at a glance once the coach has started (null before): the playground refetches its Today section when it changes. */
 export interface TodaySummary {
   date: string;
+  /** Items in today's stored plan (0 before `today` makes it, and while paused). */
   planned: number;
   done: number;
+  paused: boolean;
+  /** Announcements the playground has not acknowledged yet. */
+  announcements: number;
 }
 
 /**

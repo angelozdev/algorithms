@@ -12,7 +12,7 @@ import {
   type Outcome,
 } from "./schema.ts";
 import type { InProgressItem } from "./state-file.ts";
-import { openAttemptList } from "./state.ts";
+import { openAttemptList } from "./open-attempts.ts";
 import type { Study } from "./store.ts";
 
 export interface OpenAttempt {
