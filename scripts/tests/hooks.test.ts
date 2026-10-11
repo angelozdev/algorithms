@@ -431,6 +431,9 @@ describe("guard-solution hook: the study folder", () => {
         "pnpm exec tsx study/cli.ts migrate",
         "npx tsx study/cli.ts start lc-0001",
         "node --import tsx study/cli.ts pause",
+        "pnpm study reset lc-0001 --code",
+        "pnpm -s study reset lc-0001 --all --yes",
+        "npx tsx study/cli.ts reset hash-map/01 --attempt",
       ],
       "deny",
     );
@@ -443,6 +446,8 @@ describe("guard-solution hook: the study folder", () => {
         "curl -X POST http://127.0.0.1:4173/api/study/start/lc-0001",
         "curl -X POST http://127.0.0.1:4173/api/study/pause",
         `node -e "fetch('http://127.0.0.1:4173/api/study/resume', { method: 'POST' })"`,
+        "curl -X POST http://127.0.0.1:4173/api/study/reset/lc-0001",
+        "curl http://127.0.0.1:4173/api/study/reset/lc-0001",
       ],
       "deny",
     );

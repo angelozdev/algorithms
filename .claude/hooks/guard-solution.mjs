@@ -60,17 +60,17 @@ const STUDY_REASON =
   "Blocked by the study rules (CLAUDE.md rule 2): .study/ holds the user's solutions, their history and the progress database. " +
   "Do not write, move or delete anything there. Record progress only with pnpm -s study record ….";
 const STUDY_COMMAND_REASON =
-  "Blocked by the study rules: this study command is for the user only (migrate, start, pause, resume, phase set), " +
-  "whether run through the CLI or the playground's /api/study/start|pause|resume routes. Ask the user to run it.";
+  "Blocked by the study rules: this study command is for the user only (migrate, start, pause, resume, reset, phase set), " +
+  "whether run through the CLI or the playground's /api/study/start|pause|resume|reset routes. Ask the user to run it.";
 const SQLITE_REASON =
   "Blocked by the study rules: never open the progress database directly. Read it with pnpm -s study status … --json " +
   "and write it with pnpm -s study record ….";
 /** Playground routes that touch the user's files or study time (reading a solution creates its stub). */
-const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation|study\/(?:start|pause|resume))\b/;
-/** The playground routes that start, pause or resume study time: same user-only rule as the CLI verbs. */
-const PLAYGROUND_STUDY = /\/api\/study\/(?:start|pause|resume)\b/;
+const PLAYGROUND_FILES = /\/api\/(?:solution|concept\/explanation|study\/(?:start|pause|resume|reset))\b/;
+/** The playground routes that start, pause, resume or reset: same user-only rule as the CLI verbs. */
+const PLAYGROUND_STUDY = /\/api\/study\/(?:start|pause|resume|reset)\b/;
 /** Study subcommands only the user runs; phase only with `set`. `curriculum set` stays allowed (spec §6.5). */
-const USER_ONLY_STUDY = new Set(["migrate", "start", "pause", "resume"]);
+const USER_ONLY_STUDY = new Set(["migrate", "start", "pause", "resume", "reset"]);
 const HTTP_CLIENTS = new Set(["curl", "wget", "http", "https", "xh", "xhs"]);
 
 function deny(reason) {

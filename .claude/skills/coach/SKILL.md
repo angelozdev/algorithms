@@ -157,6 +157,7 @@ Tell the user the exact command and never run it yourself (the hook blocks it, a
 | pause the coach (a trip, exams) | `pnpm study pause`, or Pause on the playground home |
 | resume it | `pnpm study resume`, or Resume |
 | start a review or an exam from a terminal | `pnpm study start <id>` (the playground's Start review does the same) |
+| reset an item: clean its code, discard its open attempt, or erase it | `pnpm study reset <id> --code`, `--attempt` or `--all --yes`, or the "⋯" menu on the item's page. Erasing cannot be undone, and items with an exam attempt only allow `--code` |
 | force a phase | `pnpm study phase set <phase>`, with `bases`, `learn`, `master`, `expand` or `pro`. Warn that it skips the phase's criteria. Once they have run it, the coach refreshes today's plan (§6's rule covers it) |
 | move the old progress into `.study/` | `pnpm study migrate --dry-run`, then `pnpm study migrate` |
 
